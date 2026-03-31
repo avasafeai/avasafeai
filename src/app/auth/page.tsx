@@ -1,17 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 type Mode = 'login' | 'signup' | 'magic'
 
-export default function AuthPage() {
+function AuthForm() {
   const router = useRouter()
+  const params = useSearchParams()
   const supabase = createClient()
 
-  const [mode, setMode] = useState<Mode>('login')
+  const [mode, setMode] = useState<Mode>((params.get('mode') as Mode) ?? 'login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
@@ -27,13 +28,9 @@ export default function AuthPage() {
     if (mode === 'magic') {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/apply` },
+        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
       })
-      if (error) {
-        setError(error.message)
-      } else {
-        setMagicSent(true)
-      }
+      if (error) { setError(error.message) } else { setMagicSent(true) }
       setLoading(false)
       return
     }
@@ -44,146 +41,137 @@ export default function AuthPage() {
         password,
         options: { data: { full_name: fullName } },
       })
-      if (error) {
-        setError(error.message)
-        setLoading(false)
-        return
-      }
-      router.push('/apply')
+      if (error) { setError(error.message); setLoading(false); return }
+      router.push('/onboarding')
       return
     }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
-    router.push('/apply')
+    if (error) { setError(error.message); setLoading(false); return }
+    router.push('/dashboard')
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-slate-50">
-      <div className="w-full max-w-sm">
-        <Link href="/" className="block text-center font-bold text-xl mb-8 text-slate-900">
-          Avasafe AI
-        </Link>
+    <div className="w-full max-w-sm">
+      <Link href="/" className="block text-center font-display font-semibold text-xl mb-8"
+        style={{ color: 'var(--color-navy)' }}>
+        Avasafe AI
+      </Link>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          <h1 className="text-xl font-semibold text-slate-900 mb-6">
-            {mode === 'signup' ? 'Create your account' : 'Welcome back'}
-          </h1>
+      <div className="card">
+        <h1 className="font-display text-xl font-semibold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+          {mode === 'signup' ? 'Create your account' : 'Welcome back'}
+        </h1>
+        <p className="text-sm mb-6" style={{ color: 'var(--color-text-secondary)' }}>
+          {mode === 'signup'
+            ? 'Start securing your documents today.'
+            : 'Sign in to access your document locker.'}
+        </p>
 
-          {magicSent ? (
-            <div className="text-center py-4">
-              <p className="text-slate-700 font-medium">Check your email</p>
-              <p className="text-slate-500 text-sm mt-1">
-                We sent a magic link to <strong>{email}</strong>.
-              </p>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {mode === 'signup' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Full name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="Priya Sharma"
-                  />
-                </div>
-              )}
-
+        {magicSent ? (
+          <div className="text-center py-4">
+            <p className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Check your email</p>
+            <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+              Magic link sent to <strong>{email}</strong>.
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {mode === 'signup' && (
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                  Full name
+                </label>
                 <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="you@example.com"
+                  type="text" required value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="input-field"
+                  placeholder="Priya Sharma"
                 />
               </div>
+            )}
 
-              {mode !== 'magic' && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="••••••••"
-                    minLength={8}
-                  />
-                </div>
-              )}
+            <div>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                Email
+              </label>
+              <input
+                type="email" required value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-field"
+                placeholder="you@example.com"
+              />
+            </div>
 
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
-              )}
+            {mode !== 'magic' && (
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
+                  Password
+                </label>
+                <input
+                  type="password" required value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-field"
+                  placeholder="••••••••"
+                  minLength={8}
+                />
+              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-indigo-600 text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60"
-              >
-                {loading
-                  ? 'Please wait...'
-                  : mode === 'magic'
-                  ? 'Send magic link'
-                  : mode === 'signup'
-                  ? 'Create account'
-                  : 'Sign in'}
+            {error && (
+              <p className="text-sm rounded-lg px-4 py-2.5"
+                style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" disabled={loading} className="btn-primary w-full mt-1"
+              style={{ opacity: loading ? 0.6 : 1 }}>
+              {loading
+                ? 'Please wait…'
+                : mode === 'magic' ? 'Send magic link'
+                : mode === 'signup' ? 'Create account'
+                : 'Sign in'}
+            </button>
+          </form>
+        )}
+
+        <div className="mt-5 flex flex-col gap-2 text-center text-sm">
+          {mode === 'login' && (
+            <>
+              <button onClick={() => setMode('magic')} className="hover:underline"
+                style={{ color: 'var(--color-navy)' }}>
+                Sign in with magic link
               </button>
-            </form>
+              <button onClick={() => setMode('signup')}
+                style={{ color: 'var(--color-text-secondary)' }}>
+                Don&apos;t have an account? Sign up
+              </button>
+            </>
           )}
-
-          <div className="mt-5 flex flex-col gap-2 text-center text-sm">
-            {mode === 'login' && (
-              <>
-                <button
-                  onClick={() => setMode('magic')}
-                  className="text-indigo-600 hover:underline"
-                >
-                  Sign in with magic link instead
-                </button>
-                <button
-                  onClick={() => setMode('signup')}
-                  className="text-slate-500 hover:text-slate-900"
-                >
-                  Don&apos;t have an account? Sign up
-                </button>
-              </>
-            )}
-            {mode === 'signup' && (
-              <button
-                onClick={() => setMode('login')}
-                className="text-slate-500 hover:text-slate-900"
-              >
-                Already have an account? Sign in
-              </button>
-            )}
-            {mode === 'magic' && (
-              <button
-                onClick={() => setMode('login')}
-                className="text-slate-500 hover:text-slate-900"
-              >
-                Back to password sign in
-              </button>
-            )}
-          </div>
+          {mode === 'signup' && (
+            <button onClick={() => setMode('login')} style={{ color: 'var(--color-text-secondary)' }}>
+              Already have an account? Sign in
+            </button>
+          )}
+          {mode === 'magic' && (
+            <button onClick={() => setMode('login')} style={{ color: 'var(--color-text-secondary)' }}>
+              Back to password sign in
+            </button>
+          )}
         </div>
       </div>
+    </div>
+  )
+}
+
+export default function AuthPage() {
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center px-4"
+      style={{ background: 'var(--color-background)' }}>
+      <Suspense>
+        <AuthForm />
+      </Suspense>
     </main>
   )
 }

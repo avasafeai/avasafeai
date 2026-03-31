@@ -1,23 +1,16 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-
 export const metadata: Metadata = {
-  title: 'Avasafe AI — Apply for your OCI card without the headache',
+  title: 'Avasafe AI — Your OCI card. Your passport renewal. Done.',
   description:
-    'AI-powered OCI card application. Self-serve. No human ever sees your documents.',
+    'AVA securely stores your documents and automatically prepares every application — so you never have to navigate a government portal again.',
 }
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-white text-slate-900`}>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

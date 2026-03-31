@@ -1,19 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --color-navy:             #0F2D52;
+  --color-gold:             #C9882A;
+  --color-background:       #FAFAF8;
+  --color-surface:          #FFFFFF;
+  --color-border:           #E5E7EB;
+  --color-text-primary:     #1A1A1A;
+  --color-text-secondary:   #6B6B6B;
+  --color-text-tertiary:    #9CA3AF;
+  --color-success:          #1A6B3A;
+  --color-warning:          #92400E;
+  --color-error:            #B91C1C;
+  --color-success-bg:       #F0FFF4;
+  --color-warning-bg:       #FFFBEB;
+  --color-error-bg:         #FEF2F2;
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .font-display { font-family: var(--font-display); }
+  .font-body    { font-family: var(--font-body); }
+  .font-mono    { font-family: var(--font-mono); }
+
+  .text-balance { text-wrap: balance; }
+
+  .card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 24px;
+  }
+
+  .btn-primary {
+    background: var(--color-navy);
+    color: white;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: background 150ms, transform 100ms;
+  }
+  .btn-primary:hover { background: #0a2040; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-gold {
+    background: var(--color-gold);
+    color: white;
+    border-radius: 10px;
+    padding: 14px 28px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    transition: background 150ms, transform 100ms;
+  }
+  .btn-gold:hover { background: #b07522; }
+  .btn-gold:active { transform: scale(0.98); }
+
+  .input-field {
+    width: 100%;
+    height: 48px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0 14px;
+    font-size: 0.9375rem;
+    font-family: var(--font-body);
+    color: var(--color-text-primary);
+    background: var(--color-surface);
+    transition: border-color 150ms, box-shadow 150ms;
+    outline: none;
+  }
+  .input-field:focus {
+    border-color: var(--color-navy);
+    box-shadow: 0 0 0 3px rgba(15,45,82,0.12);
   }
 }
