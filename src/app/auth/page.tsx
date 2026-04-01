@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import Logo from '@/components/Logo'
 
 type Mode = 'login' | 'signup' | 'magic'
 
@@ -53,9 +54,8 @@ function AuthForm() {
 
   return (
     <div className="w-full max-w-sm">
-      <Link href="/" className="block text-center font-display font-semibold text-xl mb-8"
-        style={{ color: 'var(--color-navy)' }}>
-        Avasafe AI
+      <Link href="/" className="block text-center mb-8">
+        <Logo size="lg" />
       </Link>
 
       <div className="card">

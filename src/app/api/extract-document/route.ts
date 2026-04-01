@@ -38,19 +38,27 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
-  const mediaType = file.type === 'application/pdf'
-    ? 'image/jpeg'
-    : (file.type as 'image/jpeg' | 'image/png')
+
+  const isPdf = file.type === 'application/pdf'
+
+  // Build the document source block — PDFs use the document API, images use the image API
+  type ContentBlock =
+    | { type: 'document'; source: { type: 'base64'; media_type: 'application/pdf'; data: string } }
+    | { type: 'image'; source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png'; data: string } }
+
+  const docBlock: ContentBlock = isPdf
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: file.type as 'image/jpeg' | 'image/png', data: base64 } }
 
   const message = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
-    system: 'You are a document extraction specialist. Extract all visible fields from this identity document image with perfect accuracy. Return only valid JSON, no explanation, no markdown.',
+    system: 'You are a document extraction specialist. Extract all visible fields from this identity document with perfect accuracy. Return only valid JSON, no explanation, no markdown.',
     messages: [{
       role: 'user',
       content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-        { type: 'text', text: `Extract all fields from this document image:
+        docBlock,
+        { type: 'text', text: `Extract all fields from this document:
 {
   "document_type": "us_passport | indian_passport | oci_card | other",
   "first_name": "",

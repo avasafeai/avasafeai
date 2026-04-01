@@ -4,6 +4,7 @@ import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
+import Logo from '@/components/Logo'
 import { ExtractedPassportData } from '@/types/supabase'
 import { CheckCircle, Upload } from 'lucide-react'
 
@@ -100,9 +101,7 @@ export default function OnboardingPage() {
         <div className="w-full max-w-lg">
           {/* Header */}
           <div className="text-center mb-10">
-            <span className="font-display font-semibold text-xl" style={{ color: 'var(--color-navy)' }}>
-              Avasafe AI
-            </span>
+            <Logo size="lg" />
             <p className="text-xs mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
               Step 1 of 1 — Read your passport
             </p>

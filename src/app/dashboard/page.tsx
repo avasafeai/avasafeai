@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { FileText, Bell, ChevronRight, Plus, AlertTriangle } from 'lucide-react'
+import Logo from '@/components/Logo'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   us_passport: 'US Passport',
@@ -42,9 +43,8 @@ export default async function DashboardPage() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-56 border-r px-4 py-6 gap-1"
         style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-        <Link href="/dashboard" className="font-display font-semibold text-lg mb-8 block px-3"
-          style={{ color: 'var(--color-navy)' }}>
-          Avasafe AI
+        <Link href="/dashboard" className="mb-8 block px-3">
+          <Logo />
         </Link>
         {[
           { href: '/dashboard', label: 'Dashboard', icon: FileText },

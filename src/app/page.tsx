@@ -1,11 +1,13 @@
 import Link from 'next/link'
-import { Lock, Shield, Star, ChevronDown } from 'lucide-react'
+import { Lock, Shield, Star } from 'lucide-react'
+import Logo from '@/components/Logo'
+import FaqAccordion from '@/components/FaqAccordion'
 
 const HOW_IT_WORKS = [
   {
     step: '01',
-    title: 'Upload your documents',
-    body: 'AVA reads your passports and documents using AI — extracting every field instantly. You upload once and reuse forever.',
+    title: 'Upload your documents once',
+    body: 'AVA reads your passports and identity documents using AI — extracting every field instantly. Upload once, reuse for every future application automatically.',
   },
   {
     step: '02',
@@ -15,7 +17,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     title: 'Two steps. You\'re done.',
-    body: 'Pay the government fee with one tap. Drop an envelope at UPS. AVA handles every other step — and tracks your application to approval.',
+    body: 'Pay the government fee with one tap. Drop an envelope at UPS. AVA handles every other step — and tracks your application all the way to approval.',
   },
 ]
 
@@ -70,7 +72,7 @@ const PRICING = [
 const FAQ = [
   {
     q: 'Is it safe to upload my passport?',
-    a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Raw images are deleted after extraction, only structured data is stored.',
+    a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Raw images are deleted immediately after extraction; only structured data is stored.',
   },
   {
     q: 'What exactly does AVA do for my OCI application?',
@@ -81,11 +83,15 @@ const FAQ = [
     a: 'Two things only. Pay the government fee directly (one tap — AVA opens the pre-filled payment page). Drop an envelope at UPS. That\'s it. About 10 minutes total.',
   },
   {
+    q: 'How is this different from human-powered services?',
+    a: 'Traditional services require you to send your passport details to a human via WhatsApp or email. Avasafe is fully automated — no human ever touches your documents. Your data never leaves our encrypted system.',
+  },
+  {
     q: 'What if my application gets rejected?',
     a: 'If the rejection is caused by an error in AVA\'s validation, we fix your application at no cost. Our validation checks every known rejection cause before you pay.',
   },
   {
-    q: 'What about complex edge cases — name changes, previous rejections, etc.?',
+    q: 'What about complex edge cases — name changes, previous rejections?',
     a: 'AVA handles most cases automatically. For genuine edge cases, human support is available for Locker + Apply and Family plan members.',
   },
 ]
@@ -94,11 +100,11 @@ export default function HomePage() {
   return (
     <main style={{ background: 'var(--color-background)' }}>
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b"
-        style={{ background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(8px)', borderColor: 'var(--color-border)' }}>
-        <span className="font-display font-semibold text-lg tracking-tight" style={{ color: 'var(--color-navy)' }}>
-          Avasafe AI
-        </span>
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b"
+        style={{ background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(8px)', borderColor: 'var(--color-border)' }}
+      >
+        <Logo />
         <div className="flex items-center gap-6">
           <Link href="#pricing" className="text-sm hidden sm:block" style={{ color: 'var(--color-text-secondary)' }}>
             Pricing
@@ -115,24 +121,28 @@ export default function HomePage() {
       {/* Hero */}
       <section className="pt-32 pb-24 px-6" style={{ background: 'var(--color-navy)' }}>
         <div className="max-w-3xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-medium tracking-wide uppercase"
-            style={{ background: 'rgba(201,136,42,0.15)', color: 'var(--color-gold)', border: '1px solid rgba(201,136,42,0.3)' }}>
-            OCI Card · Passport Renewal
+          <div
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-medium tracking-wide uppercase"
+            style={{ background: 'rgba(201,136,42,0.15)', color: 'var(--color-gold)', border: '1px solid rgba(201,136,42,0.3)' }}
+          >
+            Document Locker · Application Services
           </div>
 
-          <h1 className="font-display text-5xl sm:text-6xl leading-tight text-white mb-6 text-balance">
-            Your OCI card.<br />
-            Your passport renewal.<br />
-            <em>Done in minutes, not weeks.</em>
+          <h1 className="font-display font-bold text-5xl sm:text-6xl leading-tight text-white mb-6 text-balance">
+            Your documents, safe.<br />
+            Your applications, done.<br />
+            <span className="italic font-semibold" style={{ color: 'var(--color-gold)' }}>Automatically.</span>
           </h1>
 
           <p className="text-lg mb-10 text-balance max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.7)' }}>
-            AVA securely stores your documents and automatically prepares every application
-            — so you never have to navigate a government portal again.
+            AVA securely stores your identity documents and automatically prepares every
+            government application — so you never have to navigate a portal again.
           </p>
 
-          <Link href="/auth?mode=signup"
-            className="inline-flex items-center gap-2 btn-gold text-base px-8 py-4 rounded-xl">
+          <Link
+            href="/auth?mode=signup"
+            className="inline-flex items-center gap-2 btn-gold text-base px-8 py-4 rounded-xl"
+          >
             Start for free
             <span aria-hidden>→</span>
           </Link>
@@ -142,12 +152,18 @@ export default function HomePage() {
 
           {/* Two-step promise */}
           <div className="mt-16 grid sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div className="rounded-xl p-5 text-left" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div
+              className="rounded-xl p-5 text-left"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
               <div className="font-mono text-xs mb-2" style={{ color: 'var(--color-gold)' }}>Step 1 of 2</div>
               <p className="text-white font-medium text-sm">Pay the government fee</p>
               <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>AVA pre-fills it. One tap. 30 seconds.</p>
             </div>
-            <div className="rounded-xl p-5 text-left" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div
+              className="rounded-xl p-5 text-left"
+              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+            >
               <div className="font-mono text-xs mb-2" style={{ color: 'var(--color-gold)' }}>Step 2 of 2</div>
               <p className="text-white font-medium text-sm">Drop envelope at UPS</p>
               <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Label included. 5 minutes. Any location.</p>
@@ -160,11 +176,16 @@ export default function HomePage() {
       </section>
 
       {/* Trust signals */}
-      <section className="px-6 py-12" style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}>
+      <section
+        className="px-6 py-12"
+        style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}
+      >
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-8">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(15,45,82,0.08)' }}
+            >
               <Lock size={16} style={{ color: 'var(--color-navy)' }} />
             </div>
             <div>
@@ -174,8 +195,10 @@ export default function HomePage() {
           </div>
           <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--color-border)' }} />
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(15,45,82,0.08)' }}
+            >
               <Shield size={16} style={{ color: 'var(--color-navy)' }} />
             </div>
             <div>
@@ -185,8 +208,10 @@ export default function HomePage() {
           </div>
           <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--color-border)' }} />
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}>
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: 'rgba(15,45,82,0.08)' }}
+            >
               <Star size={16} style={{ color: 'var(--color-navy)' }} />
             </div>
             <div>
@@ -203,20 +228,22 @@ export default function HomePage() {
           <p className="text-xs font-medium uppercase tracking-widest text-center mb-4" style={{ color: 'var(--color-gold)' }}>
             How it works
           </p>
-          <h2 className="font-display text-3xl sm:text-4xl text-center mb-16 text-balance" style={{ color: 'var(--color-navy)' }}>
-            Unlike Documitra, AVA doesn&apos;t guide you.<br />
-            <em>She does it for you.</em>
+          <h2 className="font-display font-bold text-3xl sm:text-4xl text-center mb-16 text-balance" style={{ color: 'var(--color-navy)' }}>
+            Unlike human-powered services, AVA doesn&apos;t guide you.<br />
+            <span className="italic font-semibold">She does it for you.</span>
           </h2>
 
           <div className="flex flex-col gap-12">
             {HOW_IT_WORKS.map((item) => (
               <div key={item.step} className="flex gap-8 items-start">
-                <div className="font-display text-4xl font-semibold flex-shrink-0 w-14 text-right leading-none pt-1"
-                  style={{ color: 'rgba(15,45,82,0.15)' }}>
+                <div
+                  className="font-display font-bold text-4xl flex-shrink-0 w-14 text-right leading-none pt-1"
+                  style={{ color: 'rgba(15,45,82,0.15)' }}
+                >
                   {item.step}
                 </div>
                 <div>
-                  <h3 className="font-display text-xl font-semibold mb-2" style={{ color: 'var(--color-navy)' }}>
+                  <h3 className="font-display font-semibold text-xl mb-2" style={{ color: 'var(--color-navy)' }}>
                     {item.title}
                   </h3>
                   <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.7' }}>{item.body}</p>
@@ -225,26 +252,32 @@ export default function HomePage() {
             ))}
           </div>
 
-          {/* Competitor callout */}
-          <div className="mt-16 rounded-xl p-6" style={{ background: 'rgba(15,45,82,0.04)', border: '1px solid rgba(15,45,82,0.1)' }}>
+          {/* Privacy callout — no competitor name */}
+          <div
+            className="mt-16 rounded-xl p-6"
+            style={{ background: 'rgba(15,45,82,0.04)', border: '1px solid rgba(15,45,82,0.1)' }}
+          >
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)', lineHeight: '1.7' }}>
-              <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Unlike services that send your passport details over WhatsApp</span>{' '}
+              <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+                Unlike human-powered services that require sharing your passport details with strangers
+              </span>{' '}
               — Avasafe handles everything automatically. No humans. No risk. Just done.
-            </p>
-            <p className="text-xs mt-3 font-medium" style={{ color: 'var(--color-text-tertiary)' }}>
-              Documitra is the travel agent. Avasafe AI is Expedia.
             </p>
           </div>
         </div>
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="px-6 py-24" style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}>
+      <section
+        id="pricing"
+        className="px-6 py-24"
+        style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}
+      >
         <div className="max-w-4xl mx-auto">
           <p className="text-xs font-medium uppercase tracking-widest text-center mb-4" style={{ color: 'var(--color-gold)' }}>
             Pricing
           </p>
-          <h2 className="font-display text-3xl sm:text-4xl text-center mb-4 text-balance" style={{ color: 'var(--color-navy)' }}>
+          <h2 className="font-display font-bold text-3xl sm:text-4xl text-center mb-4 text-balance" style={{ color: 'var(--color-navy)' }}>
             Simple, transparent pricing
           </h2>
           <p className="text-center mb-16" style={{ color: 'var(--color-text-secondary)' }}>
@@ -253,20 +286,26 @@ export default function HomePage() {
 
           <div className="grid sm:grid-cols-3 gap-6">
             {PRICING.map((plan) => (
-              <div key={plan.name}
+              <div
+                key={plan.name}
                 className="rounded-xl p-6 flex flex-col"
                 style={{
                   background: plan.highlighted ? 'var(--color-navy)' : 'var(--color-background)',
                   border: plan.highlighted ? 'none' : '1px solid var(--color-border)',
                   boxShadow: plan.highlighted ? '0 8px 32px rgba(15,45,82,0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
-                }}>
-                <p className="text-xs font-medium uppercase tracking-wide mb-3"
-                  style={{ color: plan.highlighted ? 'var(--color-gold)' : 'var(--color-text-tertiary)' }}>
+                }}
+              >
+                <p
+                  className="text-xs font-medium uppercase tracking-wide mb-3"
+                  style={{ color: plan.highlighted ? 'var(--color-gold)' : 'var(--color-text-tertiary)' }}
+                >
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span className="font-display text-4xl font-semibold"
-                    style={{ color: plan.highlighted ? 'white' : 'var(--color-navy)' }}>
+                  <span
+                    className="font-display font-bold text-4xl"
+                    style={{ color: plan.highlighted ? 'white' : 'var(--color-navy)' }}
+                  >
                     {plan.price}
                   </span>
                   <span className="text-sm" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.5)' : 'var(--color-text-tertiary)' }}>
@@ -284,13 +323,15 @@ export default function HomePage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/auth?mode=signup"
+                <Link
+                  href="/auth?mode=signup"
                   className="block text-center rounded-xl py-3 text-sm font-medium transition-colors"
                   style={{
                     background: plan.highlighted ? 'var(--color-gold)' : 'transparent',
                     color: plan.highlighted ? 'white' : 'var(--color-navy)',
                     border: plan.highlighted ? 'none' : '1px solid var(--color-navy)',
-                  }}>
+                  }}
+                >
                   {plan.cta}
                 </Link>
               </div>
@@ -307,22 +348,10 @@ export default function HomePage() {
       {/* FAQ */}
       <section className="px-6 py-24">
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-display text-3xl text-center mb-12" style={{ color: 'var(--color-navy)' }}>
+          <h2 className="font-display font-bold text-3xl text-center mb-12" style={{ color: 'var(--color-navy)' }}>
             Common questions
           </h2>
-          <div className="flex flex-col gap-0">
-            {FAQ.map((item, i) => (
-              <div key={i}
-                className="py-6"
-                style={{ borderBottom: i < FAQ.length - 1 ? '1px solid var(--color-border)' : 'none' }}>
-                <div className="flex items-start justify-between gap-4">
-                  <h3 className="font-medium" style={{ color: 'var(--color-text-primary)' }}>{item.q}</h3>
-                  <ChevronDown size={16} className="flex-shrink-0 mt-0.5" style={{ color: 'var(--color-text-tertiary)' }} />
-                </div>
-                <p className="mt-3 text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{item.a}</p>
-              </div>
-            ))}
-          </div>
+          <FaqAccordion items={FAQ} />
         </div>
       </section>
 
@@ -331,8 +360,9 @@ export default function HomePage() {
         <p className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: 'var(--color-gold)' }}>
           Get started today
         </p>
-        <h2 className="font-display text-4xl sm:text-5xl text-white mb-6 text-balance">
-          Apply once.<br /><em>Reuse everywhere.</em>
+        <h2 className="font-display font-bold text-4xl sm:text-5xl text-white mb-6 text-balance">
+          Apply once.<br />
+          <span className="italic font-semibold" style={{ color: 'var(--color-gold)' }}>Reuse everywhere.</span>
         </h2>
         <p className="mb-10 text-balance" style={{ color: 'rgba(255,255,255,0.6)' }}>
           Your documents, safe. Your applications, done.
@@ -343,8 +373,11 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-8 text-center text-sm" style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-tertiary)' }}>
-        © {new Date().getFullYear()} Avasafe AI · Your documents, safe. Your applications, done.
+      <footer
+        className="px-6 py-8 text-center text-sm"
+        style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-tertiary)' }}
+      >
+        © {new Date().getFullYear()} Avasafe · Your documents, safe. Your applications, done.
       </footer>
     </main>
   )

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AvaMessage from '@/components/AvaMessage'
+import Logo from '@/components/Logo'
 
 const SERVICES = [
   {
@@ -34,9 +35,8 @@ export default async function ApplyPage() {
       style={{ background: 'var(--color-background)' }}>
       <div className="w-full max-w-lg">
         <div className="text-center mb-10">
-          <Link href="/dashboard" className="font-display font-semibold text-xl"
-            style={{ color: 'var(--color-navy)' }}>
-            Avasafe AI
+          <Link href="/dashboard">
+            <Logo size="lg" />
           </Link>
         </div>
 
