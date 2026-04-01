@@ -1,21 +1,26 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import ProgressBar from '@/components/ProgressBar'
+import DashboardShell from '@/components/DashboardShell'
+import { CheckCircle, Circle, Clock } from 'lucide-react'
 
 const STATUS_TIMELINE = [
-  { key: 'paid', label: 'Payment received' },
-  { key: 'submitted', label: 'Submitted to VFS' },
-  { key: 'approved', label: 'Approved' },
+  { key: 'paid',              label: 'Payment received',       desc: 'Your application fee has been received.' },
+  { key: 'package_generated', label: 'Package prepared',       desc: 'AVA has prepared your complete application package.' },
+  { key: 'submitted',         label: 'Submitted to VFS',       desc: 'Your physical package has been received at VFS.' },
+  { key: 'approved',          label: 'Approved',               desc: 'Your application has been approved.' },
 ]
 
-const STATUS_ORDER = ['draft', 'ready', 'paid', 'submitted', 'approved']
+const STATUS_ORDER = ['draft', 'locker_ready', 'form_complete', 'validated', 'paid', 'package_generated', 'submitted', 'approved']
+
+const SERVICE_LABELS: Record<string, string> = {
+  oci_new: 'OCI Card — New Application',
+  oci_renewal: 'OCI Card — Renewal',
+  passport_renewal: 'Indian Passport Renewal',
+}
 
 export default async function StatusPage() {
   const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
   const { data: app } = await supabase
@@ -31,64 +36,90 @@ export default async function StatusPage() {
   const currentIndex = STATUS_ORDER.indexOf(app.status)
 
   return (
-    <main className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto">
-        <ProgressBar currentStep={4} />
+    <DashboardShell activePage="applications" pageTitle="Application Status">
+      <div style={{ maxWidth: 640 }}>
 
-        <div className="px-6 py-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-1">Application status</h1>
-          <p className="text-slate-500 text-sm mb-8">
-            We&apos;ll notify you by email and WhatsApp at each step.
+        {/* App summary card */}
+        <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, marginBottom: 24, boxShadow: 'var(--shadow-sm)' }}>
+          <p style={{ fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 6 }}>Service</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, color: 'var(--navy)', marginBottom: 16 }}>
+            {SERVICE_LABELS[app.service_type] ?? app.service_type}
           </p>
 
           {app.vfs_reference && (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 mb-6">
-              <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide mb-0.5">
-                VFS Reference Number
-              </p>
-              <p className="font-mono text-lg font-bold text-indigo-900">{app.vfs_reference}</p>
+            <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', display: 'inline-block' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>VFS Reference</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>{app.vfs_reference}</p>
             </div>
           )}
 
-          <div className="bg-white border border-slate-200 rounded-2xl p-6">
-            <ol className="relative flex flex-col gap-6">
-              {STATUS_TIMELINE.map((s, i) => {
-                const statusIdx = STATUS_ORDER.indexOf(s.key)
-                const done = currentIndex >= statusIdx
-                const active = currentIndex === statusIdx
+          {app.arn && (
+            <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', display: 'inline-block', marginLeft: app.vfs_reference ? 12 : 0 }}>
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>Application Reference (ARN)</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>{app.arn}</p>
+            </div>
+          )}
+        </div>
 
-                return (
-                  <li key={s.key} className="flex items-start gap-4">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                        done
-                          ? 'bg-indigo-600 text-white'
-                          : active
-                          ? 'bg-indigo-100 text-indigo-700 border-2 border-indigo-600'
-                          : 'bg-slate-100 text-slate-400'
-                      }`}
-                    >
-                      {done ? '✓' : i + 1}
-                    </div>
-                    <div>
-                      <p
-                        className={`font-medium ${
-                          done ? 'text-slate-900' : 'text-slate-400'
-                        }`}
-                      >
-                        {s.label}
-                      </p>
-                      {active && (
-                        <p className="text-xs text-indigo-600 mt-0.5">In progress…</p>
-                      )}
-                    </div>
-                  </li>
-                )
-              })}
-            </ol>
-          </div>
+        {/* Timeline */}
+        <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 24 }}>Progress</h2>
+          <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {STATUS_TIMELINE.map((s, i) => {
+              const statusIdx = STATUS_ORDER.indexOf(s.key)
+              const done = currentIndex >= statusIdx
+              const active = currentIndex === statusIdx
+              const isLast = i === STATUS_TIMELINE.length - 1
+
+              return (
+                <li key={s.key} style={{ display: 'flex', gap: 16, position: 'relative' }}>
+                  {/* Line */}
+                  {!isLast && (
+                    <div style={{
+                      position: 'absolute', left: 15, top: 32, bottom: 0, width: 2,
+                      background: done && !active ? 'var(--success)' : 'var(--border)',
+                    }} />
+                  )}
+
+                  {/* Icon */}
+                  <div style={{ flexShrink: 0, width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1,
+                    background: done ? (active ? 'var(--navy)' : 'var(--success)') : 'var(--surface)',
+                    border: active ? '2px solid var(--navy)' : done ? 'none' : '2px solid var(--border)',
+                  }}>
+                    {done && !active
+                      ? <CheckCircle size={16} color="white" />
+                      : active
+                      ? <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white', animation: 'pulse 2s ease-in-out infinite' }} />
+                      : <Circle size={14} color="var(--text-tertiary)" />
+                    }
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ flex: 1, paddingBottom: isLast ? 0 : 28 }}>
+                    <p style={{ fontSize: 15, fontWeight: done ? 600 : 400, color: done ? 'var(--text-primary)' : 'var(--text-tertiary)', marginBottom: 3 }}>
+                      {s.label}
+                    </p>
+                    {active && (
+                      <p style={{ fontSize: 13, color: 'var(--navy)', fontWeight: 500 }}>In progress...</p>
+                    )}
+                    {done && !active && (
+                      <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{s.desc}</p>
+                    )}
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+
+        {/* Notification note */}
+        <div style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Clock size={14} color="var(--text-tertiary)" />
+          <p style={{ fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+            AVA will notify you by email at every stage.
+          </p>
         </div>
       </div>
-    </main>
+    </DashboardShell>
   )
 }

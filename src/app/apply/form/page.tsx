@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
 import Link from 'next/link'
+import { CheckCircle } from 'lucide-react'
 
 const VFS_CENTERS: Record<string, string> = {
   CA: 'San Francisco VFS Global',
@@ -215,180 +216,321 @@ export default function FormPage() {
 
   const current = STEPS[step]
   const totalSteps = STEPS.length
-  const progress = ((step + 1) / totalSteps) * 100
+  const progressPct = ((step + 1) / totalSteps) * 100
   const canContinue = stepIsComplete(current, form)
   const vfsCenter = form.address_state ? VFS_CENTERS[form.address_state] : null
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    height: 56,
+    borderRadius: 10,
+    border: '1.5px solid var(--border)',
+    padding: '0 16px',
+    fontSize: 16,
+    fontFamily: 'var(--font-body)',
+    color: 'var(--text-primary)',
+    background: 'white',
+    outline: 'none',
+    transition: 'border-color 150ms ease',
+    boxSizing: 'border-box',
+  }
+
   return (
-    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-background)' }}>
-      {/* Progress bar */}
-      <div className="h-1 w-full" style={{ background: 'var(--color-border)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column' }}>
+      {/* Progress bar — 2px at very top */}
+      <div style={{ height: 2, background: 'var(--border)', width: '100%' }}>
         <div
-          className="h-full transition-all duration-400"
-          style={{ width: `${progress}%`, background: 'var(--color-navy)' }}
+          style={{
+            height: '100%',
+            width: `${progressPct}%`,
+            background: 'var(--navy)',
+            transition: 'width 400ms ease',
+          }}
         />
       </div>
 
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--color-border)', background: 'var(--color-surface)' }}>
-          <Link href="/apply">
-            <Logo />
-          </Link>
-          <span className="font-mono text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
-            Step {step + 1} of {totalSteps}
-          </span>
-        </div>
+      {/* Header */}
+      <header
+        style={{
+          height: 64,
+          background: 'white',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 24px',
+          flexShrink: 0,
+        }}
+      >
+        <Link href="/apply" style={{ textDecoration: 'none' }}>
+          <Logo size="md" />
+        </Link>
+        <span
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          Step {step + 1} of {totalSteps}
+        </span>
+      </header>
 
-        {/* Content */}
-        <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-          <div className="w-full max-w-lg">
-            <AnimatePresence mode="wait" custom={direction}>
+      {/* Content */}
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px 24px',
+        }}
+      >
+        <div style={{ width: '100%', maxWidth: 560 }}>
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={step}
+              custom={direction}
+              initial={{ opacity: 0, x: direction * 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction * -24 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+            >
+              {/* AVA message */}
               <motion.div
-                key={step}
-                custom={direction}
-                initial={{ opacity: 0, x: direction * 32 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: direction * -32 }}
-                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.05 }}
+                style={{ marginBottom: 24 }}
               >
-                {/* AVA message */}
-                <AvaMessage message={current.ava} className="mb-8" />
+                <AvaMessage message={current.ava} />
+              </motion.div>
 
-                {/* Question card */}
-                <div className="card">
-                  <h2 className="font-display font-semibold text-lg mb-5" style={{ color: 'var(--color-navy)' }}>
-                    {current.label}
-                  </h2>
+              {/* Question card */}
+              <div
+                style={{
+                  background: 'white',
+                  borderRadius: 16,
+                  padding: 28,
+                  boxShadow: 'var(--shadow-sm)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                {/* Big question label */}
+                <h2
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600,
+                    fontSize: 28,
+                    color: 'var(--navy)',
+                    marginBottom: 24,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {current.label}
+                </h2>
 
-                  <div className="flex flex-col gap-4">
-                    {current.group ? (
-                      current.group.map((g) => (
-                        <div key={g.field}>
-                          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
-                            {g.label}
-                          </label>
-                          {g.options ? (
-                            <select
-                              value={form[g.field]}
-                              onChange={(e) => update(g.field, e.target.value)}
-                              className="input-field"
-                              style={{ height: 48 }}
-                            >
-                              <option value="">Select…</option>
-                              {g.options.map((o) => (
-                                <option key={o} value={o}>{o}</option>
-                              ))}
-                            </select>
-                          ) : (
-                            <input
-                              type={g.type ?? 'text'}
-                              value={form[g.field]}
-                              onChange={(e) => update(g.field, e.target.value)}
-                              placeholder={g.placeholder}
-                              className="input-field"
-                            />
-                          )}
-                        </div>
-                      ))
-                    ) : current.options ? (
-                      <div className="flex flex-col gap-2">
-                        {current.options.map((o) => (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {current.group ? (
+                    current.group.map((g) => (
+                      <div key={g.field}>
+                        <label
+                          style={{
+                            display: 'block',
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
+                            marginBottom: 8,
+                          }}
+                        >
+                          {g.label}
+                        </label>
+                        {g.options ? (
+                          <select
+                            value={form[g.field]}
+                            onChange={(e) => update(g.field, e.target.value)}
+                            style={{ ...inputStyle }}
+                          >
+                            <option value="">Select…</option>
+                            {g.options.map((o) => (
+                              <option key={o} value={o}>{o}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type={g.type ?? 'text'}
+                            value={form[g.field]}
+                            onChange={(e) => update(g.field, e.target.value)}
+                            placeholder={g.placeholder}
+                            style={inputStyle}
+                            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                          />
+                        )}
+                      </div>
+                    ))
+                  ) : current.options ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {current.options.map((o) => {
+                        const selected = form[current.field!] === o
+                        return (
                           <button
                             key={o}
                             type="button"
                             onClick={() => update(current.field!, o)}
-                            className="w-full text-left px-4 py-3.5 rounded-lg border text-sm font-medium transition-all"
                             style={{
-                              borderColor: form[current.field!] === o ? 'var(--color-navy)' : 'var(--color-border)',
-                              background: form[current.field!] === o ? 'rgba(15,45,82,0.06)' : 'var(--color-surface)',
-                              color: form[current.field!] === o ? 'var(--color-navy)' : 'var(--color-text-primary)',
+                              width: '100%',
+                              minHeight: 64,
+                              textAlign: 'left',
+                              padding: '16px 20px',
+                              borderRadius: 16,
+                              border: selected ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+                              background: selected ? 'var(--gold-subtle)' : 'white',
+                              color: 'var(--text-primary)',
+                              fontSize: 15,
+                              fontWeight: selected ? 500 : 400,
+                              fontFamily: 'var(--font-body)',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              transition: 'border-color 150ms ease, background 150ms ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!selected) e.currentTarget.style.borderColor = 'var(--navy-light)'
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!selected) e.currentTarget.style.borderColor = 'var(--border)'
                             }}
                           >
-                            {o}
+                            <span>{o}</span>
+                            {selected && <CheckCircle size={18} color="var(--gold)" />}
                           </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div>
-                        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--color-text-primary)' }}>
-                          {current.label}
-                        </label>
-                        <input
-                          type={current.type ?? 'text'}
-                          value={form[current.field!]}
-                          onChange={(e) => update(current.field!, e.target.value)}
-                          placeholder={current.placeholder}
-                          className="input-field"
-                        />
-                      </div>
-                    )}
-
-                    {/* VFS center auto-detection */}
-                    {current.id === 'address' && vfsCenter && (
-                      <div
-                        className="rounded-lg px-4 py-3 text-sm"
-                        style={{ background: 'rgba(15,45,82,0.06)', color: 'var(--color-navy)' }}
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div>
+                      <label
+                        style={{
+                          display: 'block',
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: 'var(--text-primary)',
+                          marginBottom: 8,
+                        }}
                       >
-                        <span className="font-medium">Your VFS centre:</span>{' '}
-                        <span>{vfsCenter}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
+                        {current.label}
+                      </label>
+                      <input
+                        type={current.type ?? 'text'}
+                        value={form[current.field!]}
+                        onChange={(e) => update(current.field!, e.target.value)}
+                        placeholder={current.placeholder}
+                        style={inputStyle}
+                        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
+                        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                      />
+                    </div>
+                  )}
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-6">
+                  {/* VFS center auto-detection */}
+                  {current.id === 'address' && vfsCenter && (
+                    <div
+                      style={{
+                        borderRadius: 10,
+                        padding: '12px 16px',
+                        background: 'var(--gold-subtle)',
+                        border: '1px solid var(--gold)',
+                        fontSize: 14,
+                        color: 'var(--navy)',
+                      }}
+                    >
+                      <span style={{ fontWeight: 600 }}>Your VFS centre: </span>
+                      <span>{vfsCenter}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Navigation */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 24,
+              gap: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={step === 0}
+              className="btn-ghost"
+              style={{
+                opacity: step === 0 ? 0.3 : 1,
+                cursor: step === 0 ? 'not-allowed' : 'pointer',
+              }}
+            >
+              Back
+            </button>
+
+            {step < STEPS.length - 1 ? (
               <button
                 type="button"
-                onClick={goBack}
-                disabled={step === 0}
-                className="px-6 py-3 rounded-xl border text-sm font-medium transition-colors disabled:opacity-30"
-                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+                onClick={goNext}
+                disabled={!canContinue}
+                className="btn-navy"
+                style={{ opacity: canContinue ? 1 : 0.4, cursor: canContinue ? 'pointer' : 'not-allowed' }}
               >
-                Back
+                Continue →
               </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinish}
+                disabled={saving || !canContinue}
+                className="btn-gold"
+                style={{ opacity: (saving || !canContinue) ? 0.4 : 1, cursor: (saving || !canContinue) ? 'not-allowed' : 'pointer' }}
+              >
+                {saving ? 'Saving…' : 'Review my application →'}
+              </button>
+            )}
+          </div>
 
-              {step < STEPS.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!canContinue}
-                  className="btn-primary px-8 py-3 text-sm disabled:opacity-40"
-                >
-                  Continue →
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleFinish}
-                  disabled={saving || !canContinue}
-                  className="btn-gold px-8 py-3 text-sm disabled:opacity-40"
-                >
-                  {saving ? 'Saving…' : 'Review my application →'}
-                </button>
-              )}
-            </div>
-
-            {/* Step dots */}
-            <div className="flex justify-center gap-1.5 mt-8">
-              {STEPS.map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-full transition-all duration-300"
-                  style={{
-                    width: i === step ? 20 : 6,
-                    height: 6,
-                    background: i === step ? 'var(--color-navy)' : i < step ? 'var(--color-gold)' : 'var(--color-border)',
-                  }}
-                />
-              ))}
-            </div>
+          {/* Step dots */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 6,
+              marginTop: 32,
+            }}
+          >
+            {STEPS.map((_, i) => (
+              <div
+                key={i}
+                style={{
+                  borderRadius: 999,
+                  height: 6,
+                  width: i === step ? 20 : 6,
+                  background: i === step
+                    ? 'var(--navy)'
+                    : i < step
+                    ? 'var(--gold)'
+                    : 'var(--border)',
+                  transition: 'all 300ms ease',
+                  flexShrink: 0,
+                }}
+              />
+            ))}
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }

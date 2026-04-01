@@ -1,22 +1,36 @@
+import Link from 'next/link'
+
 interface LogoProps {
-  className?: string
   size?: 'sm' | 'md' | 'lg'
+  className?: string
 }
 
-export default function Logo({ className = '', size = 'md' }: LogoProps) {
-  const sizeClasses = {
-    sm: 'text-base',
-    md: 'text-xl',
-    lg: 'text-2xl',
-  }
+const sizes = {
+  sm: '20px',
+  md: '24px',
+  lg: '32px',
+}
+
+export default function Logo({ size = 'md', className = '' }: LogoProps) {
+  const fontSize = sizes[size]
 
   return (
-    <span
-      className={`font-display font-bold tracking-tight inline-flex items-center gap-0.5 ${sizeClasses[size]} ${className}`}
-      style={{ color: 'var(--color-navy)' }}
-    >
-      <span>ava</span>
-      <span style={{ color: 'var(--color-gold)' }}>safe</span>
-    </span>
+    <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} className={className}>
+      <span
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontWeight: 700,
+          fontSize,
+          lineHeight: 1,
+          letterSpacing: '-0.02em',
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          gap: 0,
+        }}
+      >
+        <span style={{ color: 'var(--navy)' }}>ava</span>
+        <span style={{ color: 'var(--gold)' }}>safe</span>
+      </span>
+    </Link>
   )
 }

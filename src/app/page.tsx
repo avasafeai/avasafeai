@@ -1,23 +1,48 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { Lock, Shield, Star } from 'lucide-react'
 import Logo from '@/components/Logo'
 import FaqAccordion from '@/components/FaqAccordion'
 
+// ─── Animation constants ────────────────────────────────────────────────────
+const EASE = [0.16, 1, 0.32, 1] as const
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: (delay = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: EASE, delay },
+  }),
+}
+
+const fadeIn = {
+  hidden: { opacity: 0 },
+  visible: (delay = 0) => ({
+    opacity: 1,
+    transition: { duration: 0.4, ease: EASE, delay },
+  }),
+}
+
+// ─── Data ───────────────────────────────────────────────────────────────────
 const HOW_IT_WORKS = [
   {
     step: '01',
     title: 'Upload your documents once',
-    body: 'AVA reads your passports and identity documents using AI — extracting every field instantly. Upload once, reuse for every future application automatically.',
+    body: 'Take a photo of your passport. AVA reads every field in seconds. You confirm. Done. Every future application starts from here.',
   },
   {
     step: '02',
-    title: 'AVA prepares everything',
-    body: 'AVA fills both the government portal and VFS portal automatically, validates against every known rejection cause, and generates your complete mailing package.',
+    title: 'Tell AVA what you need',
+    body: 'Starting an OCI application? Renewing your passport? AVA already has what she needs. Review your pre-filled application in minutes, not hours.',
   },
   {
     step: '03',
-    title: 'Two steps. You\'re done.',
-    body: 'Pay the government fee with one tap. Drop an envelope at UPS. AVA handles every other step — and tracks your application all the way to approval.',
+    title: 'Two steps and you\'re done',
+    body: 'Pay the government fee with one tap. Drop the envelope AVA prepared at any UPS location. AVA tracks everything and updates you at every step.',
   },
 ]
 
@@ -69,6 +94,24 @@ const PRICING = [
   },
 ]
 
+const TRUST_SIGNALS = [
+  {
+    icon: Shield,
+    title: 'Your passport never leaves your locker',
+    body: 'No human at Avasafe ever sees your documents. Ever.',
+  },
+  {
+    icon: Star,
+    title: 'If we make a mistake, we fix it free',
+    body: 'Our validation catches rejections before they happen. If we miss one, your next application is on us.',
+  },
+  {
+    icon: Lock,
+    title: 'As secure as your bank',
+    body: 'AES-256 encryption. The same standard used by financial institutions worldwide.',
+  },
+]
+
 const FAQ = [
   {
     q: 'Is it safe to upload my passport?',
@@ -96,288 +139,1073 @@ const FAQ = [
   },
 ]
 
-export default function HomePage() {
+// ─── Hero word-by-word animation ────────────────────────────────────────────
+const HEADLINE = 'Government paperwork, handled.'
+
+function AnimatedHeadline() {
+  const words = HEADLINE.split(' ')
   return (
-    <main style={{ background: 'var(--color-background)' }}>
-      {/* Nav */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-b"
-        style={{ background: 'rgba(250,250,248,0.95)', backdropFilter: 'blur(8px)', borderColor: 'var(--color-border)' }}
+    <h1
+      style={{
+        fontSize: 'clamp(44px, 7vw, 80px)',
+        fontFamily: 'var(--font-display)',
+        fontWeight: 700,
+        color: 'var(--navy)',
+        lineHeight: 1.1,
+        letterSpacing: '-0.02em',
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0 0.28em',
+        justifyContent: 'center',
+        marginBottom: 24,
+      }}
+    >
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.4,
+            ease: EASE,
+            delay: 0.2 + i * 0.08,
+          }}
+          style={{ display: 'inline-block' }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </h1>
+  )
+}
+
+// ─── Decorative document card ────────────────────────────────────────────────
+function DocumentCard() {
+  return (
+    <>
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(-2deg); }
+          50%       { transform: translateY(-12px) rotate(-2deg); }
+        }
+      `}</style>
+      <motion.div
+        initial={{ opacity: 0, y: 40, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: EASE, delay: 1.6 }}
+        style={{
+          width: 260,
+          height: 340,
+          background: 'linear-gradient(135deg, var(--navy-mid), var(--navy))',
+          borderRadius: 24,
+          boxShadow: '0 40px 80px rgba(10,22,40,0.25), 0 0 0 1px rgba(201,136,42,0.15)',
+          position: 'relative',
+          padding: 28,
+          animation: 'float 6s ease-in-out infinite',
+          flexShrink: 0,
+        }}
       >
-        <Logo />
-        <div className="flex items-center gap-6">
-          <Link href="#pricing" className="text-sm hidden sm:block" style={{ color: 'var(--color-text-secondary)' }}>
+        {/* Gold header bar */}
+        <div
+          style={{
+            height: 4,
+            background: 'linear-gradient(90deg, var(--gold), var(--gold-light))',
+            borderRadius: 100,
+            marginBottom: 20,
+          }}
+        />
+        {/* Label */}
+        <div
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 9,
+            letterSpacing: '0.12em',
+            color: 'rgba(201,136,42,0.7)',
+            textTransform: 'uppercase',
+            marginBottom: 16,
+          }}
+        >
+          United States of America
+        </div>
+        {/* Fake photo placeholder */}
+        <div
+          style={{
+            width: 52,
+            height: 64,
+            background: 'rgba(255,255,255,0.08)',
+            borderRadius: 6,
+            border: '1px solid rgba(255,255,255,0.1)',
+            marginBottom: 18,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.12)' }} />
+        </div>
+        {/* Fake field rows */}
+        {[80, 60, 100, 70, 90].map((w, i) => (
+          <div
+            key={i}
+            style={{
+              height: 6,
+              width: `${w}%`,
+              background: i === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
+              borderRadius: 100,
+              marginBottom: 10,
+            }}
+          />
+        ))}
+        {/* Gold checkmark badge */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 24,
+            right: 24,
+            width: 32,
+            height: 32,
+            borderRadius: '50%',
+            background: 'rgba(201,136,42,0.2)',
+            border: '1px solid rgba(201,136,42,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 14,
+          }}
+        >
+          ✓
+        </div>
+      </motion.div>
+    </>
+  )
+}
+
+// ─── Navigation ──────────────────────────────────────────────────────────────
+function Nav() {
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  return (
+    <div
+      style={{
+        position: 'sticky',
+        top: 24,
+        zIndex: 50,
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '0 24px',
+        pointerEvents: 'none',
+      }}
+    >
+      <nav
+        style={{
+          width: '100%',
+          maxWidth: 900,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 20px',
+          borderRadius: 100,
+          background: scrolled
+            ? 'rgba(255,255,255,0.92)'
+            : 'rgba(255,255,255,0.80)',
+          border: '1px solid var(--border)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          boxShadow: scrolled ? 'var(--shadow-md)' : 'var(--shadow-sm)',
+          transition: 'background 300ms ease, box-shadow 300ms ease',
+          pointerEvents: 'auto',
+        }}
+      >
+        <Logo size="md" />
+        <div className="hidden sm:flex items-center gap-6">
+          <Link
+            href="#pricing"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
             Pricing
           </Link>
-          <Link href="/auth" className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Link
+            href="/auth"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              color: 'var(--text-secondary)',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-body)',
+            }}
+          >
             Sign in
           </Link>
-          <Link href="/auth?mode=signup" className="btn-gold text-sm px-5 py-2.5 rounded-lg font-medium inline-block">
-            Start free
+          <Link href="/auth?mode=signup" className="btn-pill-navy" style={{ padding: '10px 20px', fontSize: 14 }}>
+            Get started free
           </Link>
         </div>
       </nav>
+    </div>
+  )
+}
 
-      {/* Hero */}
-      <section className="pt-32 pb-24 px-6" style={{ background: 'var(--color-navy)' }}>
-        <div className="max-w-3xl mx-auto text-center">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8 text-xs font-medium tracking-wide uppercase"
-            style={{ background: 'rgba(201,136,42,0.15)', color: 'var(--color-gold)', border: '1px solid rgba(201,136,42,0.3)' }}
-          >
-            Document Locker · Application Services
-          </div>
+// ─── Page ────────────────────────────────────────────────────────────────────
+export default function HomePage() {
+  return (
+    <main style={{ background: 'var(--off-white)', overflowX: 'hidden' }}>
+      <Nav />
 
-          <h1 className="font-display font-bold text-5xl sm:text-6xl leading-tight text-white mb-6 text-balance">
-            Your documents, safe.<br />
-            Your applications, done.<br />
-            <span className="italic font-semibold" style={{ color: 'var(--color-gold)' }}>Automatically.</span>
-          </h1>
-
-          <p className="text-lg mb-10 text-balance max-w-2xl mx-auto" style={{ color: 'rgba(255,255,255,0.7)' }}>
-            AVA securely stores your identity documents and automatically prepares every
-            government application — so you never have to navigate a portal again.
-          </p>
-
-          <Link
-            href="/auth?mode=signup"
-            className="inline-flex items-center gap-2 btn-gold text-base px-8 py-4 rounded-xl"
-          >
-            Start for free
-            <span aria-hidden>→</span>
-          </Link>
-          <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            No credit card required · Cancel anytime
-          </p>
-
-          {/* Two-step promise */}
-          <div className="mt-16 grid sm:grid-cols-2 gap-4 max-w-lg mx-auto">
-            <div
-              className="rounded-xl p-5 text-left"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <div className="font-mono text-xs mb-2" style={{ color: 'var(--color-gold)' }}>Step 1 of 2</div>
-              <p className="text-white font-medium text-sm">Pay the government fee</p>
-              <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>AVA pre-fills it. One tap. 30 seconds.</p>
-            </div>
-            <div
-              className="rounded-xl p-5 text-left"
-              style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <div className="font-mono text-xs mb-2" style={{ color: 'var(--color-gold)' }}>Step 2 of 2</div>
-              <p className="text-white font-medium text-sm">Drop envelope at UPS</p>
-              <p className="text-xs mt-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Label included. 5 minutes. Any location.</p>
-            </div>
-          </div>
-          <p className="mt-4 text-xs font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            AVA handles every other step.
-          </p>
-        </div>
-      </section>
-
-      {/* Trust signals */}
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section
-        className="px-6 py-12"
-        style={{ background: 'var(--color-surface)', borderBottom: '1px solid var(--color-border)' }}
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '80px 24px 100px',
+          background: 'var(--off-white)',
+        }}
       >
-        <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-8">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}
-            >
-              <Lock size={16} style={{ color: 'var(--color-navy)' }} />
-            </div>
-            <div>
-              <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>Bank-level encryption</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>AES-256, zero-knowledge storage</p>
-            </div>
-          </div>
-          <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--color-border)' }} />
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}
-            >
-              <Shield size={16} style={{ color: 'var(--color-navy)' }} />
-            </div>
-            <div>
-              <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>No human sees your documents</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>AI-only processing, technically enforced</p>
-            </div>
-          </div>
-          <div className="w-px h-8 hidden sm:block" style={{ background: 'var(--color-border)' }} />
-          <div className="flex items-center gap-3">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(15,45,82,0.08)' }}
-            >
-              <Star size={16} style={{ color: 'var(--color-navy)' }} />
-            </div>
-            <div>
-              <p className="font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>Rejection guarantee</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>We fix it free if our validation fails you</p>
-            </div>
-          </div>
-        </div>
-      </section>
+        <div
+          style={{
+            maxWidth: 760,
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+          }}
+        >
+          <AnimatedHeadline />
 
-      {/* How it works */}
-      <section className="px-6 py-24">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-xs font-medium uppercase tracking-widest text-center mb-4" style={{ color: 'var(--color-gold)' }}>
-            How it works
-          </p>
-          <h2 className="font-display font-bold text-3xl sm:text-4xl text-center mb-16 text-balance" style={{ color: 'var(--color-navy)' }}>
-            Unlike human-powered services, AVA doesn&apos;t guide you.<br />
-            <span className="italic font-semibold">She does it for you.</span>
-          </h2>
-
-          <div className="flex flex-col gap-12">
-            {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="flex gap-8 items-start">
-                <div
-                  className="font-display font-bold text-4xl flex-shrink-0 w-14 text-right leading-none pt-1"
-                  style={{ color: 'rgba(15,45,82,0.15)' }}
-                >
-                  {item.step}
-                </div>
-                <div>
-                  <h3 className="font-display font-semibold text-xl mb-2" style={{ color: 'var(--color-navy)' }}>
-                    {item.title}
-                  </h3>
-                  <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.7' }}>{item.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Privacy callout — no competitor name */}
-          <div
-            className="mt-16 rounded-xl p-6"
-            style={{ background: 'rgba(15,45,82,0.04)', border: '1px solid rgba(15,45,82,0.1)' }}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, ease: EASE, delay: 1.0 }}
+            style={{
+              fontSize: 20,
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.6,
+              maxWidth: 600,
+              marginBottom: 40,
+            }}
           >
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)', lineHeight: '1.7' }}>
-              <span className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-                Unlike human-powered services that require sharing your passport details with strangers
-              </span>{' '}
-              — Avasafe handles everything automatically. No humans. No risk. Just done.
-            </p>
-          </div>
-        </div>
-      </section>
+            Upload your passport once. AVA fills every application, validates every field, and
+            prepares your complete mailing package. You drop an envelope at UPS. That&apos;s it.
+          </motion.p>
 
-      {/* Pricing */}
-      <section
-        id="pricing"
-        className="px-6 py-24"
-        style={{ background: 'var(--color-surface)', borderTop: '1px solid var(--color-border)' }}
-      >
-        <div className="max-w-4xl mx-auto">
-          <p className="text-xs font-medium uppercase tracking-widest text-center mb-4" style={{ color: 'var(--color-gold)' }}>
-            Pricing
-          </p>
-          <h2 className="font-display font-bold text-3xl sm:text-4xl text-center mb-4 text-balance" style={{ color: 'var(--color-navy)' }}>
-            Simple, transparent pricing
-          </h2>
-          <p className="text-center mb-16" style={{ color: 'var(--color-text-secondary)' }}>
-            + $29 per application on Locker + Apply and Family plans
-          </p>
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 1.3 }}
+            style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 }}
+          >
+            <Link href="/auth?mode=signup" className="btn-pill-navy">
+              Get started free
+            </Link>
+            <Link
+              href="#how-it-works"
+              style={{
+                fontSize: 15,
+                fontWeight: 500,
+                color: 'var(--navy)',
+                fontFamily: 'var(--font-display)',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              See how it works →
+            </Link>
+          </motion.div>
 
-          <div className="grid sm:grid-cols-3 gap-6">
-            {PRICING.map((plan) => (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 1.5 }}
+            style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 48, fontFamily: 'var(--font-body)' }}
+          >
+            No credit card needed. Cancel anytime.
+          </motion.p>
+
+          {/* Micro-trust badges */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 1.6 }}
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 10,
+              justifyContent: 'center',
+              marginBottom: 80,
+            }}
+          >
+            {[
+              { icon: Lock, label: '256-bit encrypted' },
+              { icon: Shield, label: 'No human access' },
+              { icon: Star, label: 'Free fix guarantee' },
+            ].map(({ icon: Icon, label }) => (
               <div
-                key={plan.name}
-                className="rounded-xl p-6 flex flex-col"
+                key={label}
                 style={{
-                  background: plan.highlighted ? 'var(--color-navy)' : 'var(--color-background)',
-                  border: plan.highlighted ? 'none' : '1px solid var(--color-border)',
-                  boxShadow: plan.highlighted ? '0 8px 32px rgba(15,45,82,0.25)' : '0 1px 3px rgba(0,0,0,0.06)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 14px',
+                  borderRadius: 100,
+                  border: '1px solid var(--border)',
+                  background: 'var(--white)',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: 'var(--text-tertiary)',
+                  fontFamily: 'var(--font-body)',
                 }}
               >
+                <Icon size={12} style={{ color: 'var(--gold)' }} />
+                {label}
+              </div>
+            ))}
+          </motion.div>
+
+          {/* Decorative doc card */}
+          <DocumentCard />
+        </div>
+      </section>
+
+      {/* ── TWO STEPS ────────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: 'var(--navy)',
+          padding: '100px 24px',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Decorative large numbers */}
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '5%',
+            transform: 'translateY(-50%)',
+            fontSize: 180,
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            color: 'var(--gold)',
+            opacity: 0.06,
+            lineHeight: 1,
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        >
+          01
+        </div>
+        <div
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: '5%',
+            transform: 'translateY(-50%)',
+            fontSize: 180,
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            color: 'var(--gold)',
+            opacity: 0.06,
+            lineHeight: 1,
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        >
+          02
+        </div>
+
+        <div style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(28px, 4vw, 44px)',
+              color: 'white',
+              textAlign: 'center',
+              marginBottom: 64,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Two things. That&apos;s all we ask.
+          </motion.h2>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 32,
+            }}
+          >
+            {/* Step 1 */}
+            <motion.div
+              initial={{ opacity: 0, x: -40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, ease: EASE, delay: 0.1 }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 20,
+                padding: 40,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: 'var(--gold)',
+                  letterSpacing: '0.1em',
+                  marginBottom: 16,
+                  textTransform: 'uppercase',
+                }}
+              >
+                01
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: 22,
+                  color: 'white',
+                  marginBottom: 12,
+                  lineHeight: 1.3,
+                }}
+              >
+                Pay the government fee
+              </h3>
+              <p
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 16,
+                  color: 'rgba(255,255,255,0.6)',
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                AVA opens the payment page pre-filled. One tap.
+              </p>
+            </motion.div>
+
+            {/* Step 2 */}
+            <motion.div
+              initial={{ opacity: 0, x: 40 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, ease: EASE, delay: 0.2 }}
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 20,
+                padding: 40,
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: 'var(--gold)',
+                  letterSpacing: '0.1em',
+                  marginBottom: 16,
+                  textTransform: 'uppercase',
+                }}
+              >
+                02
+              </div>
+              <h3
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 700,
+                  fontSize: 22,
+                  color: 'white',
+                  marginBottom: 12,
+                  lineHeight: 1.3,
+                }}
+              >
+                Drop an envelope at UPS
+              </h3>
+              <p
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 16,
+                  color: 'rgba(255,255,255,0.6)',
+                  lineHeight: 1.6,
+                  margin: 0,
+                }}
+              >
+                Your package is printed, signed, addressed. Five minutes.
+              </p>
+            </motion.div>
+          </div>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.4}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontStyle: 'italic',
+              fontSize: 20,
+              color: 'var(--gold)',
+              textAlign: 'center',
+              marginTop: 56,
+              marginBottom: 0,
+            }}
+          >
+            Everything else? AVA.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* ── TRUST SIGNALS ────────────────────────────────────────────────── */}
+      <section style={{ background: 'var(--off-white)', padding: '100px 24px' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--gold)',
+              textAlign: 'center',
+              marginBottom: 56,
+            }}
+          >
+            Why teams trust Avasafe
+          </motion.p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 24,
+            }}
+          >
+            {TRUST_SIGNALS.map(({ icon: Icon, title, body }, i) => (
+              <motion.div
+                key={title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i * 0.08}
+                whileHover={{ y: -6, boxShadow: 'var(--shadow-lg)' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                style={{
+                  background: 'var(--white)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 16,
+                  boxShadow: 'var(--shadow-md)',
+                  padding: 32,
+                  cursor: 'default',
+                }}
+              >
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    background: 'rgba(201,136,42,0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 20,
+                  }}
+                >
+                  <Icon size={22} style={{ color: 'var(--gold)' }} />
+                </div>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700,
+                    fontSize: 18,
+                    color: 'var(--navy)',
+                    marginBottom: 10,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {title}
+                </h3>
                 <p
-                  className="text-xs font-medium uppercase tracking-wide mb-3"
-                  style={{ color: plan.highlighted ? 'var(--color-gold)' : 'var(--color-text-tertiary)' }}
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 15,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.65,
+                    margin: 0,
+                  }}
+                >
+                  {body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
+      <section
+        id="how-it-works"
+        style={{ background: 'var(--navy)', padding: '100px 24px', position: 'relative', overflow: 'hidden' }}
+      >
+        <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: 'var(--gold)',
+              textAlign: 'center',
+              marginBottom: 16,
+            }}
+          >
+            How it works
+          </motion.p>
+
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0.05}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(26px, 4vw, 38px)',
+              color: 'white',
+              textAlign: 'center',
+              marginBottom: 72,
+              lineHeight: 1.25,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Here&apos;s what happens after you sign up
+          </motion.h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {HOW_IT_WORKS.map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i * 0.2}
+                style={{ display: 'flex', gap: 28, alignItems: 'flex-start', paddingBottom: i < HOW_IT_WORKS.length - 1 ? 0 : 0 }}
+              >
+                {/* Step number + connecting line */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                  <div
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
+                      fontSize: 64,
+                      color: 'var(--gold)',
+                      opacity: 0.35,
+                      lineHeight: 1,
+                      width: 72,
+                      textAlign: 'right',
+                    }}
+                  >
+                    {item.step}
+                  </div>
+                  {i < HOW_IT_WORKS.length - 1 && (
+                    <div
+                      style={{
+                        width: 2,
+                        height: 48,
+                        background: 'rgba(201,136,42,0.25)',
+                        marginTop: 8,
+                        marginBottom: 8,
+                        alignSelf: 'center',
+                      }}
+                    />
+                  )}
+                </div>
+
+                <div style={{ paddingTop: 8, paddingBottom: i < HOW_IT_WORKS.length - 1 ? 48 : 0 }}>
+                  <h3
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
+                      fontSize: 22,
+                      color: 'white',
+                      marginBottom: 10,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {item.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontFamily: 'var(--font-body)',
+                      fontSize: 16,
+                      color: 'rgba(255,255,255,0.65)',
+                      lineHeight: 1.65,
+                      margin: 0,
+                    }}
+                  >
+                    {item.body}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── PRICING ──────────────────────────────────────────────────────── */}
+      <section
+        id="pricing"
+        style={{
+          background: 'var(--off-white)',
+          padding: '100px 24px',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(26px, 4vw, 38px)',
+              color: 'var(--navy)',
+              textAlign: 'center',
+              marginBottom: 12,
+              letterSpacing: '-0.01em',
+            }}
+          >
+            One locker. Every application.
+          </motion.h2>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.1}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 17,
+              color: 'var(--text-secondary)',
+              textAlign: 'center',
+              marginBottom: 64,
+            }}
+          >
+            Store your documents once. Use them forever.
+          </motion.p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 20,
+              alignItems: 'start',
+            }}
+          >
+            {PRICING.map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i * 0.08}
+                whileHover={{ y: -4, boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-md)' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+                style={{
+                  background: plan.highlighted ? 'var(--white)' : 'var(--surface)',
+                  border: plan.highlighted ? '2px solid var(--gold)' : '1px solid var(--border)',
+                  borderRadius: 16,
+                  boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-sm)',
+                  padding: 28,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transform: plan.highlighted ? 'scale(1.04)' : 'scale(1)',
+                  position: 'relative',
+                }}
+              >
+                {plan.highlighted && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: -13,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'var(--gold)',
+                      color: 'white',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-body)',
+                      padding: '4px 14px',
+                      borderRadius: 100,
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Most popular
+                  </div>
+                )}
+
+                <p
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-body)',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: plan.highlighted ? 'var(--gold)' : 'var(--text-tertiary)',
+                    marginBottom: 12,
+                  }}
                 >
                   {plan.name}
                 </p>
-                <div className="flex items-baseline gap-1 mb-1">
+
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 4 }}>
                   <span
-                    className="font-display font-bold text-4xl"
-                    style={{ color: plan.highlighted ? 'white' : 'var(--color-navy)' }}
+                    style={{
+                      fontFamily: 'var(--font-display)',
+                      fontWeight: 700,
+                      fontSize: 40,
+                      color: 'var(--navy)',
+                      letterSpacing: '-0.02em',
+                    }}
                   >
                     {plan.price}
                   </span>
-                  <span className="text-sm" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.5)' : 'var(--color-text-tertiary)' }}>
+                  <span style={{ fontSize: 14, color: 'var(--text-tertiary)', fontFamily: 'var(--font-body)' }}>
                     {plan.period}
                   </span>
                 </div>
-                <p className="text-sm mb-6" style={{ color: plan.highlighted ? 'rgba(255,255,255,0.6)' : 'var(--color-text-secondary)' }}>
+
+                <p
+                  style={{
+                    fontSize: 14,
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'var(--font-body)',
+                    marginBottom: 24,
+                    lineHeight: 1.5,
+                  }}
+                >
                   {plan.description}
                 </p>
-                <ul className="flex flex-col gap-2 mb-8 flex-1">
+
+                <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28, flex: 1, listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm">
-                      <span className="mt-0.5 flex-shrink-0" style={{ color: plan.highlighted ? 'var(--color-gold)' : 'var(--color-success)' }}>✓</span>
-                      <span style={{ color: plan.highlighted ? 'rgba(255,255,255,0.8)' : 'var(--color-text-secondary)' }}>{f}</span>
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, fontFamily: 'var(--font-body)' }}>
+                      <span style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }}>✓</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{f}</span>
                     </li>
                   ))}
                 </ul>
+
                 <Link
                   href="/auth?mode=signup"
-                  className="block text-center rounded-xl py-3 text-sm font-medium transition-colors"
                   style={{
-                    background: plan.highlighted ? 'var(--color-gold)' : 'transparent',
-                    color: plan.highlighted ? 'white' : 'var(--color-navy)',
-                    border: plan.highlighted ? 'none' : '1px solid var(--color-navy)',
+                    display: 'block',
+                    textAlign: 'center',
+                    borderRadius: 100,
+                    padding: '12px 20px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-display)',
+                    textDecoration: 'none',
+                    background: plan.highlighted ? 'var(--navy)' : 'transparent',
+                    color: plan.highlighted ? 'white' : 'var(--navy)',
+                    border: plan.highlighted ? 'none' : '1.5px solid var(--navy)',
+                    transition: 'background 200ms ease, transform 150ms ease',
                   }}
                 >
                   {plan.cta}
                 </Link>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <p className="text-center mt-8 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>Rejection guarantee included</span>{' '}
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.3}
+            style={{
+              textAlign: 'center',
+              marginTop: 40,
+              fontSize: 14,
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Rejection guarantee included</span>{' '}
             on all Locker + Apply and Family applications.
-          </p>
+          </motion.p>
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="px-6 py-24">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="font-display font-bold text-3xl text-center mb-12" style={{ color: 'var(--color-navy)' }}>
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <section style={{ padding: '100px 24px', background: 'var(--white)' }}>
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(24px, 3vw, 32px)',
+              color: 'var(--navy)',
+              textAlign: 'center',
+              marginBottom: 48,
+              letterSpacing: '-0.01em',
+            }}
+          >
             Common questions
-          </h2>
-          <FaqAccordion items={FAQ} />
+          </motion.h2>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0.1}
+          >
+            <FaqAccordion items={FAQ} />
+          </motion.div>
         </div>
       </section>
 
-      {/* Bottom CTA */}
-      <section className="px-6 py-24 text-center" style={{ background: 'var(--color-navy)' }}>
-        <p className="text-xs font-medium uppercase tracking-widest mb-4" style={{ color: 'var(--color-gold)' }}>
-          Get started today
-        </p>
-        <h2 className="font-display font-bold text-4xl sm:text-5xl text-white mb-6 text-balance">
-          Apply once.<br />
-          <span className="italic font-semibold" style={{ color: 'var(--color-gold)' }}>Reuse everywhere.</span>
-        </h2>
-        <p className="mb-10 text-balance" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          Your documents, safe. Your applications, done.
-        </p>
-        <Link href="/auth?mode=signup" className="inline-flex items-center gap-2 btn-gold text-base px-8 py-4 rounded-xl">
-          Start for free →
-        </Link>
+      {/* ── BOTTOM CTA ───────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: 'var(--navy)',
+          padding: '100px 24px',
+          textAlign: 'center',
+        }}
+      >
+        <motion.h2
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          custom={0}
+          style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: 'clamp(28px, 5vw, 52px)',
+            color: 'white',
+            marginBottom: 16,
+            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+          }}
+        >
+          Ready to never touch a government portal again?
+        </motion.h2>
+
+        <motion.p
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeIn}
+          custom={0.1}
+          style={{
+            fontFamily: 'var(--font-body)',
+            fontSize: 17,
+            color: 'var(--gold)',
+            marginBottom: 40,
+          }}
+        >
+          Takes 2 minutes. No credit card needed.
+        </motion.p>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          custom={0.2}
+        >
+          <Link href="/auth?mode=signup" className="btn-pill-white">
+            Get started free
+          </Link>
+        </motion.div>
       </section>
 
-      {/* Footer */}
+      {/* ── FOOTER ───────────────────────────────────────────────────────── */}
       <footer
-        className="px-6 py-8 text-center text-sm"
-        style={{ borderTop: '1px solid var(--color-border)', color: 'var(--color-text-tertiary)' }}
+        style={{
+          background: 'var(--off-white)',
+          borderTop: '1px solid var(--border)',
+          padding: '32px 24px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 12,
+        }}
       >
-        © {new Date().getFullYear()} Avasafe · Your documents, safe. Your applications, done.
+        <Logo size="sm" />
+        <p
+          style={{
+            fontSize: 13,
+            fontFamily: 'var(--font-body)',
+            color: 'var(--text-tertiary)',
+          }}
+        >
+          &copy; 2026 Avasafe AI
+        </p>
       </footer>
     </main>
   )

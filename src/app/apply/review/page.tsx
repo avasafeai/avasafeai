@@ -1,26 +1,25 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import ProgressBar from '@/components/ProgressBar'
-import AvaMessage from '@/components/AvaMessage'
-import TrustBadges from '@/components/TrustBadges'
+import { useRouter } from 'next/navigation'
 import { ValidationResult } from '@/types/supabase'
-import { CheckCircle } from 'lucide-react'
+import { CheckCircle, AlertTriangle, XCircle, ShieldCheck } from 'lucide-react'
+import Logo from '@/components/Logo'
 
 export default function ReviewPage() {
   const router = useRouter()
-  const params = useParams()
-  const serviceType = params?.service as string ?? 'oci_new'
 
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [paying, setPaying] = useState(false)
   const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [serviceType, setServiceType] = useState('oci_new')
 
   useEffect(() => {
     const id = sessionStorage.getItem('application_id')
+    const svc = sessionStorage.getItem('service_type') ?? 'oci_new'
     setApplicationId(id)
+    setServiceType(svc)
     if (!id) { setLoading(false); return }
 
     fetch(`/api/validate-application?application_id=${id}`)
@@ -47,132 +46,159 @@ export default function ReviewPage() {
   }
 
   return (
-    <main className="min-h-screen" style={{ background: 'var(--color-background)' }}>
-      <div className="max-w-2xl mx-auto">
-        <ProgressBar currentStep={2} />
-        <div className="px-6 py-8">
-          <h1 className="font-display text-2xl font-semibold mb-1" style={{ color: 'var(--color-navy)' }}>
+    <main style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
+      {/* Progress bar */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 2, background: 'var(--border)', zIndex: 50 }}>
+        <div style={{ height: '100%', background: 'var(--navy)', width: '85%', transition: 'width 600ms ease' }} />
+      </div>
+
+      {/* Header */}
+      <header style={{ position: 'sticky', top: 0, background: 'rgba(250,250,248,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px', zIndex: 40 }}>
+        <Logo size="sm" />
+        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-tertiary)', letterSpacing: '0.05em' }}>
+          STEP 4 OF 5
+        </span>
+      </header>
+
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px 80px' }}>
+        {/* Title */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 32, color: 'var(--navy)', marginBottom: 8, lineHeight: 1.2 }}>
             Review your application
           </h1>
-          <p className="text-sm mb-8" style={{ color: 'var(--color-text-secondary)' }}>
+          <p style={{ fontSize: 15, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
             AVA has validated everything against known rejection causes.
           </p>
+        </div>
 
-          {loading ? (
-            <div className="flex items-center gap-3 rounded-xl px-5 py-4"
-              style={{ background: 'rgba(15,45,82,0.06)' }}>
-              <div className="flex gap-1">
-                {[0,1,2].map(i => (
-                  <div key={i} className="w-1.5 h-1.5 rounded-full animate-bounce"
-                    style={{ background: 'var(--color-navy)', animationDelay: `${i*0.15}s` }} />
-                ))}
-              </div>
-              <span className="text-sm" style={{ color: 'var(--color-navy)' }}>AVA is running final checks…</span>
+        {loading ? (
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 24px', display: 'flex', alignItems: 'center', gap: 14, boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[0,1,2].map(i => (
+                <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--gold)',
+                  animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i*0.15}s` }} />
+              ))}
             </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {/* Clean state */}
-              {isReady && blockers.length === 0 && warnings.length === 0 && (
-                <AvaMessage message="Everything looks perfect — no errors found. Your application is ready for submission." />
-              )}
+            <span style={{ fontSize: 15, color: 'var(--text-secondary)' }}>AVA is running final checks...</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
-              {/* Blockers */}
-              {blockers.length > 0 && (
+            {/* Status banner */}
+            {!loading && blockers.length === 0 && warnings.length === 0 && (
+              <div style={{ background: '#F0FFF4', border: '1px solid rgba(26,107,58,0.25)', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <CheckCircle size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-2"
-                    style={{ color: 'var(--color-error)' }}>
-                    Must fix before paying
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {blockers.map((e, i) => (
-                      <div key={i} className="rounded-xl px-4 py-3"
-                        style={{ background: 'var(--color-error-bg)', border: '1px solid rgba(185,28,28,0.2)' }}>
-                        <p className="text-sm font-semibold capitalize" style={{ color: 'var(--color-error)' }}>
-                          {e.field.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-sm mt-0.5" style={{ color: 'var(--color-error)' }}>{e.issue}</p>
-                        {e.fix && (
-                          <p className="text-xs mt-1 font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                            Fix: {e.fix}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--success)', marginBottom: 3 }}>Everything looks perfect</p>
+                  <p style={{ fontSize: 14, color: '#276749', lineHeight: 1.5 }}>No errors found. Your application is ready for submission.</p>
                 </div>
-              )}
-
-              {/* Warnings */}
-              {warnings.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-2"
-                    style={{ color: 'var(--color-warning)' }}>
-                    Recommendations
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    {warnings.map((e, i) => (
-                      <div key={i} className="rounded-xl px-4 py-3"
-                        style={{ background: 'var(--color-warning-bg)', border: '1px solid rgba(146,64,14,0.2)' }}>
-                        <p className="text-sm font-semibold capitalize" style={{ color: 'var(--color-warning)' }}>
-                          {e.field.replace(/_/g, ' ')}
-                        </p>
-                        <p className="text-sm mt-0.5" style={{ color: 'var(--color-warning)' }}>{e.issue}</p>
-                        {e.fix && (
-                          <p className="text-xs mt-1 font-medium" style={{ color: 'var(--color-text-secondary)' }}>
-                            Fix: {e.fix}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Passed checks */}
-              {passed.length > 0 && (
-                <div className="card">
-                  <p className="text-xs font-semibold uppercase tracking-wide mb-3"
-                    style={{ color: 'var(--color-success)' }}>
-                    Passed checks
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {passed.map((check, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <CheckCircle size={13} style={{ color: 'var(--color-success)', flexShrink: 0 }} />
-                        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{check}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <TrustBadges />
-
-              <div className="flex gap-3">
-                <button onClick={() => router.back()}
-                  className="flex-1 py-3 rounded-xl text-sm font-medium transition-colors"
-                  style={{ border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)' }}>
-                  Edit application
-                </button>
-                <button onClick={handlePay} disabled={!isReady || paying}
-                  className="flex-1 btn-gold rounded-xl"
-                  style={{ opacity: (!isReady || paying) ? 0.5 : 1 }}>
-                  {paying ? 'Redirecting…' : 'Pay $29 and submit →'}
-                </button>
               </div>
+            )}
 
-              {!isReady && blockers.length > 0 && (
-                <p className="text-xs text-center" style={{ color: 'var(--color-text-tertiary)' }}>
-                  Fix all blockers above to enable payment.
-                </p>
-              )}
+            {blockers.length > 0 && (
+              <div style={{ background: 'var(--error-bg)', border: '1px solid rgba(185,28,28,0.2)', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <XCircle size={20} color="var(--error)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--error)', marginBottom: 3 }}>Issues found that may cause rejection</p>
+                  <p style={{ fontSize: 14, color: '#991B1B' }}>Fix all blockers below before proceeding to payment.</p>
+                </div>
+              </div>
+            )}
 
-              <p className="text-xs text-center" style={{ color: 'var(--color-text-tertiary)' }}>
-                Protected by our rejection guarantee. If our validation causes a rejection, we fix it free.
+            {warnings.length > 0 && blockers.length === 0 && (
+              <div style={{ background: 'var(--warning-bg)', border: '1px solid rgba(146,64,14,0.2)', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                <AlertTriangle size={20} color="var(--warning)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--warning)', marginBottom: 3 }}>A few things to double-check</p>
+                  <p style={{ fontSize: 14, color: '#92400E' }}>These are recommendations. You can still proceed.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Blockers */}
+            {blockers.length > 0 && (
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--error)', marginBottom: 14 }}>Must fix before paying</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {blockers.map((e, i) => (
+                    <div key={i} style={{ borderRadius: 10, padding: '14px 16px', background: 'var(--error-bg)', border: '1px solid rgba(185,28,28,0.15)' }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--error)', textTransform: 'capitalize', marginBottom: 3 }}>
+                        {e.field.replace(/_/g, ' ')}
+                      </p>
+                      <p style={{ fontSize: 14, color: '#991B1B', lineHeight: 1.5 }}>{e.issue}</p>
+                      {e.fix && (
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, fontWeight: 500 }}>Fix: {e.fix}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Warnings */}
+            {warnings.length > 0 && (
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--warning)', marginBottom: 14 }}>Recommendations</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {warnings.map((e, i) => (
+                    <div key={i} style={{ borderRadius: 10, padding: '14px 16px', background: 'var(--warning-bg)', border: '1px solid rgba(146,64,14,0.15)' }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--warning)', textTransform: 'capitalize', marginBottom: 3 }}>
+                        {e.field.replace(/_/g, ' ')}
+                      </p>
+                      <p style={{ fontSize: 14, color: '#92400E', lineHeight: 1.5 }}>{e.issue}</p>
+                      {e.fix && (
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6, fontWeight: 500 }}>Fix: {e.fix}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Passed checks */}
+            {passed.length > 0 && (
+              <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--success)', marginBottom: 14 }}>Passed checks</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {passed.map((check, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle size={14} color="var(--success)" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>{check}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Trust badge */}
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-sm)' }}>
+              <ShieldCheck size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Rejection guarantee included.</strong>{' '}
+                If our validation causes a rejection, we fix it at no cost.
               </p>
             </div>
-          )}
-        </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              <button onClick={() => router.back()}
+                style={{ flex: 1, height: 52, borderRadius: 12, border: '1.5px solid var(--border)', background: 'white', fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+                Edit application
+              </button>
+              <button onClick={handlePay} disabled={!isReady || paying}
+                className="btn-gold"
+                style={{ flex: 2, height: 52, borderRadius: 12, opacity: (!isReady || paying) ? 0.5 : 1, cursor: (!isReady || paying) ? 'not-allowed' : 'pointer' }}>
+                {paying ? 'Redirecting...' : 'Pay $29 and continue →'}
+              </button>
+            </div>
+
+            {!isReady && blockers.length > 0 && (
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
+                Fix all blockers above to enable payment.
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </main>
   )
