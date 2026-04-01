@@ -29,7 +29,7 @@ function AuthForm() {
     if (mode === 'magic') {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/onboarding` },
+        options: { emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin}/dashboard` },
       })
       if (error) { setError(error.message) } else { setMagicSent(true) }
       setLoading(false)
