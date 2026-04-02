@@ -85,7 +85,7 @@ export default function OnboardingPage() {
 
   async function handleConfirm() {
     setState('saving')
-    router.push('/dashboard')
+    router.push('/onboarding/plan')
   }
 
   const isUploadPhase = state === 'idle' || state === 'uploading'
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
                 letterSpacing: '0.04em',
               }}
             >
-              Step 1 of 1
+              Step 1 of 2
             </span>
           </div>
 

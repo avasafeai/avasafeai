@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Lock, Shield, Star } from 'lucide-react'
+import { Lock, Shield, Check, Zap, ShieldCheck, EyeOff, Trash2, UserCheck, X } from 'lucide-react'
 import Logo from '@/components/Logo'
 import FaqAccordion from '@/components/FaqAccordion'
 
@@ -31,88 +31,144 @@ const fadeIn = {
 const HOW_IT_WORKS = [
   {
     step: '01',
-    title: 'Upload your documents once',
-    body: 'Take a photo of your passport. AVA reads every field in seconds. You confirm. Done. Every future application starts from here.',
+    title: 'Upload your documents',
+    body: 'Take a photo of your passport. AVA reads every field instantly. Upload once — every future application is pre-filled automatically.',
   },
   {
     step: '02',
-    title: 'Tell AVA what you need',
-    body: 'Starting an OCI application? Renewing your passport? AVA already has what she needs. Review your pre-filled application in minutes, not hours.',
+    title: 'AVA prepares everything',
+    body: 'AVA fills both government portals, validates against every rejection cause, and generates your complete mailing package. Automatically.',
   },
   {
     step: '03',
-    title: 'Two steps and you\'re done',
-    body: 'Pay the government fee with one tap. Drop the envelope AVA prepared at any UPS location. AVA tracks everything and updates you at every step.',
+    title: 'You submit in two steps',
+    body: 'Pay the government fee — one tap. Drop the prepared envelope at UPS — five minutes. AVA tracks everything from there.',
+  },
+]
+
+const PAIN_POINTS = [
+  { title: 'Wrong photo size', body: 'Photo dimensions rejected by VFS.' },
+  { title: 'Name mismatch', body: 'Different names across passport and Indian documents.' },
+  { title: 'Wrong VFS centre', body: 'Applied to the wrong jurisdiction for your state.' },
+  { title: 'Missing documents', body: 'Incomplete checklist causes immediate return.' },
+  { title: 'Expired address proof', body: 'Utility bill older than 3 months not accepted.' },
+  { title: 'Apostille missing', body: 'US-issued documents need apostille since December 2024.' },
+]
+
+const AVA_FILLS_COLUMNS = [
+  {
+    icon: Lock,
+    title: 'Your documents stay private',
+    body: 'AVA stores everything in your encrypted locker. No human at Avasafe ever sees your documents. Not even us.',
+  },
+  {
+    icon: Zap,
+    title: 'AVA pre-fills everything',
+    body: 'Every field on both government portals — pre-filled, validated, and copied to your clipboard. Open the portal and paste. Takes 10 minutes.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'You click submit',
+    body: 'Your login credentials stay yours. AVA guides you through each step with every answer ready. You confirm and submit.',
+  },
+]
+
+const TRUST_CARDS = [
+  {
+    icon: Lock,
+    title: 'End-to-end encrypted',
+    body: 'Your documents are encrypted with AES-256 before they leave your device. The same standard used by banks and financial institutions worldwide.',
+  },
+  {
+    icon: EyeOff,
+    title: 'No human access',
+    body: 'No employee at Avasafe can see your documents. AI processes them. Humans never touch them. This is technically enforced, not just policy.',
+  },
+  {
+    icon: Trash2,
+    title: 'Delete anytime',
+    body: 'You own your data. Delete any document or your entire account at any time. Everything is gone permanently within 24 hours.',
+  },
+  {
+    icon: UserCheck,
+    title: 'Built by someone who went through this',
+    body: 'Built by a Spotify Engineering Manager who went through this exact process. We built what we wished existed.',
   },
 ]
 
 const PRICING = [
   {
+    name: 'Free',
+    price: '$0',
+    period: ' forever',
+    description: 'Start storing your documents today',
+    cta: 'Start free',
+    highlighted: false,
+    href: '/auth?mode=signup',
+    features: [
+      { text: 'Store up to 3 documents', included: true },
+      { text: 'AI extraction of every field', included: true },
+      { text: 'Basic document dashboard', included: true },
+      { text: 'Smart expiry alerts', included: false },
+      { text: 'Application preparation', included: false },
+      { text: 'Family profiles', included: false },
+    ],
+  },
+  {
     name: 'Locker',
     price: '$19',
     period: '/year',
     description: 'Secure document storage for life',
-    features: [
-      'Store all your identity documents',
-      'AI extraction of every field',
-      'Smart expiry alerts',
-      '2 family profiles',
-    ],
-    cta: 'Start free',
+    cta: 'Get started',
     highlighted: false,
+    href: '/auth?mode=signup',
+    features: [
+      { text: 'Store all your identity documents', included: true },
+      { text: 'AI extraction of every field', included: true },
+      { text: 'Smart expiry alerts', included: true },
+      { text: '2 family profiles', included: true },
+    ],
   },
   {
     name: 'Locker + Apply',
     price: '$49',
     period: '/year',
     description: 'Plus automated application prep',
-    features: [
-      'Everything in Locker',
-      'Automated OCI + passport renewal',
-      'Complete PDF mailing package',
-      '$29 per application',
-      '5 family profiles',
-      'Rejection guarantee',
-    ],
-    cta: 'Start free',
+    cta: 'Get started',
     highlighted: true,
+    href: '/auth?mode=signup',
+    features: [
+      { text: 'Everything in Locker', included: true },
+      { text: 'Automated OCI + passport renewal', included: true },
+      { text: 'Complete PDF mailing package', included: true },
+      { text: '$29 per application', included: true },
+      { text: '5 family profiles', included: true },
+      { text: 'Rejection guarantee', included: true },
+    ],
   },
   {
     name: 'Family',
     price: '$99',
     period: '/year',
     description: 'For the whole family',
-    features: [
-      'Everything in Locker + Apply',
-      'Unlimited family profiles',
-      'Shared family locker',
-      '$29 per application',
-      'Priority support',
-    ],
-    cta: 'Start free',
+    cta: 'Get started',
     highlighted: false,
-  },
-]
-
-const TRUST_SIGNALS = [
-  {
-    icon: Shield,
-    title: 'Your passport never leaves your locker',
-    body: 'No human at Avasafe ever sees your documents. Ever.',
-  },
-  {
-    icon: Star,
-    title: 'If we make a mistake, we fix it free',
-    body: 'Our validation catches rejections before they happen. If we miss one, your next application is on us.',
-  },
-  {
-    icon: Lock,
-    title: 'As secure as your bank',
-    body: 'AES-256 encryption. The same standard used by financial institutions worldwide.',
+    href: '/auth?mode=signup',
+    features: [
+      { text: 'Everything in Locker + Apply', included: true },
+      { text: 'Unlimited family profiles', included: true },
+      { text: 'Shared family locker', included: true },
+      { text: '$29 per application', included: true },
+      { text: 'Priority support', included: true },
+    ],
   },
 ]
 
 const FAQ = [
+  {
+    q: 'How is this different from services like human-powered application helpers?',
+    a: "Traditional services send your passport details to a human over WhatsApp who manually fills out forms on your behalf. With Avasafe, your documents never leave your encrypted locker. AVA — our AI — prepares everything automatically. No human at Avasafe ever sees your documents. It's faster, more private, and more reliable.",
+  },
   {
     q: 'Is it safe to upload my passport?',
     a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Raw images are deleted immediately after extraction; only structured data is stored.',
@@ -123,7 +179,7 @@ const FAQ = [
   },
   {
     q: 'What do I actually need to do myself?',
-    a: 'Two things only. Pay the government fee directly (one tap — AVA opens the pre-filled payment page). Drop an envelope at UPS. That\'s it. About 10 minutes total.',
+    a: "Two things only. Pay the government fee directly (one tap — AVA opens the pre-filled payment page). Drop an envelope at UPS. That's it. About 10 minutes total.",
   },
   {
     q: 'How is this different from human-powered services?',
@@ -131,7 +187,7 @@ const FAQ = [
   },
   {
     q: 'What if my application gets rejected?',
-    a: 'If the rejection is caused by an error in AVA\'s validation, we fix your application at no cost. Our validation checks every known rejection cause before you pay.',
+    a: "If the rejection is caused by an error in AVA's validation, we fix your application at no cost. Our validation checks every known rejection cause before you pay.",
   },
   {
     q: 'What about complex edge cases — name changes, previous rejections?',
@@ -140,7 +196,7 @@ const FAQ = [
 ]
 
 // ─── Hero word-by-word animation ────────────────────────────────────────────
-const HEADLINE = 'Government paperwork, handled.'
+const HEADLINE = 'Apply for your OCI card without getting rejected.'
 
 function AnimatedHeadline() {
   const words = HEADLINE.split(' ')
@@ -361,6 +417,9 @@ function Nav() {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function HomePage() {
+  const [hoveredPainCard, setHoveredPainCard] = useState<number | null>(null)
+  const [hoveredTrustCard, setHoveredTrustCard] = useState<number | null>(null)
+
   return (
     <main style={{ background: 'var(--off-white)', overflowX: 'hidden' }}>
       <Nav />
@@ -389,21 +448,55 @@ export default function HomePage() {
         >
           <AnimatedHeadline />
 
+          {/* Gold killer line */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: EASE, delay: 1.0 }}
+            transition={{ duration: 0.6, ease: EASE, delay: 0.9 }}
             style={{
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600,
               fontSize: 20,
+              color: 'var(--gold)',
+              textAlign: 'center',
+              marginBottom: 24,
+            }}
+          >
+            Your application is 90% ready the moment you upload your passport.
+          </motion.p>
+
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, ease: EASE, delay: 1.1 }}
+            style={{
+              fontSize: 18,
               fontFamily: 'var(--font-body)',
               color: 'var(--text-secondary)',
               lineHeight: 1.6,
-              maxWidth: 600,
-              marginBottom: 40,
+              maxWidth: 560,
+              marginBottom: 16,
+              textAlign: 'center',
             }}
           >
-            Upload your passport once. AVA fills every application, validates every field, and
-            prepares your complete mailing package. You drop an envelope at UPS. That&apos;s it.
+            AVA stores your documents securely and prepares your application correctly the first time. No confusion. No errors. No rejections.
+          </motion.p>
+
+          {/* Supporting line */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 1.2 }}
+            style={{
+              fontSize: 14,
+              color: 'var(--text-tertiary)',
+              fontFamily: 'var(--font-body)',
+              marginBottom: 40,
+              textAlign: 'center',
+            }}
+          >
+            Government paperwork, handled.
           </motion.p>
 
           {/* CTAs */}
@@ -414,7 +507,7 @@ export default function HomePage() {
             style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 }}
           >
             <Link href="/auth?mode=signup" className="btn-pill-navy">
-              Get started free
+              Start your OCI application
             </Link>
             <Link
               href="#how-it-works"
@@ -435,20 +528,11 @@ export default function HomePage() {
             </Link>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.4, ease: EASE, delay: 1.5 }}
-            style={{ fontSize: 13, color: 'var(--text-tertiary)', marginBottom: 48, fontFamily: 'var(--font-body)' }}
-          >
-            No credit card needed. Cancel anytime.
-          </motion.p>
-
           {/* Micro-trust badges */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: EASE, delay: 1.6 }}
+            transition={{ duration: 0.4, ease: EASE, delay: 1.5 }}
             style={{
               display: 'flex',
               flexWrap: 'wrap',
@@ -458,9 +542,9 @@ export default function HomePage() {
             }}
           >
             {[
-              { icon: Lock, label: '256-bit encrypted' },
-              { icon: Shield, label: 'No human access' },
-              { icon: Star, label: 'Free fix guarantee' },
+              { icon: Lock, label: 'End-to-end encrypted' },
+              { icon: Shield, label: 'No human sees your docs' },
+              { icon: Check, label: 'Fix rejections free' },
             ].map(({ icon: Icon, label }) => (
               <div
                 key={label}
@@ -486,6 +570,154 @@ export default function HomePage() {
 
           {/* Decorative doc card */}
           <DocumentCard />
+        </div>
+      </section>
+
+      {/* ── SOUND FAMILIAR ───────────────────────────────────────────────── */}
+      <section
+        id="sound-familiar"
+        style={{
+          background: '#0A1628',
+          padding: '100px 24px',
+        }}
+      >
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(28px, 4vw, 44px)',
+              color: 'white',
+              textAlign: 'center',
+              marginBottom: 16,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Sound familiar?
+          </motion.h2>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.08}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 18,
+              color: 'rgba(255,255,255,0.6)',
+              textAlign: 'center',
+              maxWidth: 560,
+              margin: '0 auto 60px',
+            }}
+          >
+            These are the most common reasons OCI applications get rejected.
+          </motion.p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 20,
+              maxWidth: 960,
+              margin: '0 auto 60px',
+            }}
+          >
+            {PAIN_POINTS.map((point, i) => (
+              <motion.div
+                key={point.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, ease: EASE, delay: i * 0.08 }}
+                onMouseEnter={() => setHoveredPainCard(i)}
+                onMouseLeave={() => setHoveredPainCard(null)}
+                style={{
+                  background: hoveredPainCard === i ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 12,
+                  padding: 20,
+                  transition: 'background 200ms ease',
+                  cursor: 'default',
+                }}
+              >
+                <X size={24} style={{ color: '#EF4444', marginBottom: 12 }} />
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600,
+                    fontSize: 16,
+                    color: 'white',
+                    marginBottom: 4,
+                    margin: '0 0 4px 0',
+                  }}
+                >
+                  {point.title}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 14,
+                    color: 'rgba(255,255,255,0.6)',
+                    lineHeight: 1.5,
+                    margin: 0,
+                  }}
+                >
+                  {point.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.3}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontWeight: 600,
+              fontSize: 18,
+              color: 'var(--gold)',
+              textAlign: 'center',
+              marginBottom: 28,
+            }}
+          >
+            AVA checks all of these before you submit.
+          </motion.p>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.4}
+            style={{ textAlign: 'center' }}
+          >
+            <Link
+              href="/auth?mode=signup"
+              style={{
+                display: 'inline-block',
+                padding: '12px 28px',
+                borderRadius: 100,
+                border: '1.5px solid var(--gold)',
+                color: 'var(--gold)',
+                fontFamily: 'var(--font-body)',
+                fontWeight: 600,
+                fontSize: 14,
+                textDecoration: 'none',
+                background: 'transparent',
+              }}
+            >
+              Start your OCI application
+            </Link>
+          </motion.div>
         </div>
       </section>
 
@@ -677,10 +909,10 @@ export default function HomePage() {
             style={{
               fontFamily: 'var(--font-display)',
               fontStyle: 'italic',
-              fontSize: 20,
-              color: 'var(--gold)',
+              fontSize: 18,
+              color: 'rgba(255,255,255,0.5)',
               textAlign: 'center',
-              marginTop: 56,
+              marginTop: 48,
               marginBottom: 0,
             }}
           >
@@ -689,102 +921,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── TRUST SIGNALS ────────────────────────────────────────────────── */}
-      <section style={{ background: 'var(--off-white)', padding: '100px 24px' }}>
-        <div style={{ maxWidth: 960, margin: '0 auto' }}>
-          <motion.p
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeIn}
-            custom={0}
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: 'var(--gold)',
-              textAlign: 'center',
-              marginBottom: 56,
-            }}
-          >
-            Why teams trust Avasafe
-          </motion.p>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-              gap: 24,
-            }}
-          >
-            {TRUST_SIGNALS.map(({ icon: Icon, title, body }, i) => (
-              <motion.div
-                key={title}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                custom={i * 0.08}
-                whileHover={{ y: -6, boxShadow: 'var(--shadow-lg)' }}
-                transition={{ type: 'spring', stiffness: 300, damping: 24 }}
-                style={{
-                  background: 'var(--white)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  boxShadow: 'var(--shadow-md)',
-                  padding: 32,
-                  cursor: 'default',
-                }}
-              >
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: '50%',
-                    background: 'rgba(201,136,42,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 20,
-                  }}
-                >
-                  <Icon size={22} style={{ color: 'var(--gold)' }} />
-                </div>
-                <h3
-                  style={{
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    fontSize: 18,
-                    color: 'var(--navy)',
-                    marginBottom: 10,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {title}
-                </h3>
-                <p
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontSize: 15,
-                    color: 'var(--text-secondary)',
-                    lineHeight: 1.65,
-                    margin: 0,
-                  }}
-                >
-                  {body}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── HOW IT WORKS ─────────────────────────────────────────────────── */}
       <section
         id="how-it-works"
-        style={{ background: 'var(--navy)', padding: '100px 24px', position: 'relative', overflow: 'hidden' }}
+        style={{ background: 'var(--off-white)', padding: '100px 24px', position: 'relative', overflow: 'hidden' }}
       >
         <div style={{ maxWidth: 640, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <motion.p
@@ -817,14 +957,14 @@ export default function HomePage() {
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
               fontSize: 'clamp(26px, 4vw, 38px)',
-              color: 'white',
+              color: 'var(--navy)',
               textAlign: 'center',
               marginBottom: 72,
               lineHeight: 1.25,
               letterSpacing: '-0.01em',
             }}
           >
-            Here&apos;s what happens after you sign up
+            Three steps. Nothing more.
           </motion.h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
@@ -874,7 +1014,7 @@ export default function HomePage() {
                       fontFamily: 'var(--font-display)',
                       fontWeight: 700,
                       fontSize: 22,
-                      color: 'white',
+                      color: 'var(--navy)',
                       marginBottom: 10,
                       lineHeight: 1.3,
                     }}
@@ -885,7 +1025,7 @@ export default function HomePage() {
                     style={{
                       fontFamily: 'var(--font-body)',
                       fontSize: 16,
-                      color: 'rgba(255,255,255,0.65)',
+                      color: 'var(--text-secondary)',
                       lineHeight: 1.65,
                       margin: 0,
                     }}
@@ -899,6 +1039,308 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── AVA FILLS THE PORTALS ─────────────────────────────────────────── */}
+      <section
+        id="ava-fills"
+        style={{
+          background: '#FAFAF8',
+          padding: '100px 24px',
+        }}
+      >
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(24px, 3vw, 36px)',
+              color: 'var(--navy)',
+              textAlign: 'center',
+              marginBottom: 16,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            AVA fills the portals. You stay in control.
+          </motion.h2>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.08}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 18,
+              color: 'var(--text-secondary)',
+              textAlign: 'center',
+              maxWidth: 520,
+              margin: '0 auto 64px',
+            }}
+          >
+            Your credentials never leave your hands. Your documents never leave your locker.
+          </motion.p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 40,
+              maxWidth: 860,
+              margin: '0 auto',
+            }}
+          >
+            {AVA_FILLS_COLUMNS.map((col, i) => (
+              <motion.div
+                key={col.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i * 0.1}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: 16,
+                }}
+              >
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: '50%',
+                    background: 'var(--gold)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <col.icon size={22} style={{ color: 'white' }} />
+                </div>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600,
+                    fontSize: 18,
+                    color: 'var(--navy)',
+                    margin: 0,
+                  }}
+                >
+                  {col.title}
+                </p>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 15,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {col.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TRUST SECTION ────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: 'white',
+          padding: '100px 24px',
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(24px, 3vw, 36px)',
+              color: 'var(--navy)',
+              textAlign: 'center',
+              marginBottom: 16,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Built to be trusted with your most important documents.
+          </motion.h2>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.08}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 18,
+              color: 'var(--text-secondary)',
+              textAlign: 'center',
+              maxWidth: 560,
+              margin: '0 auto 64px',
+            }}
+          >
+            We know what we&apos;re asking you to upload. Here&apos;s exactly how we protect it.
+          </motion.p>
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 24,
+              maxWidth: 760,
+              margin: '0 auto',
+            }}
+          >
+            {TRUST_CARDS.map((card, i) => (
+              <motion.div
+                key={card.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i * 0.1}
+                onMouseEnter={() => setHoveredTrustCard(i)}
+                onMouseLeave={() => setHoveredTrustCard(null)}
+                style={{
+                  background: 'white',
+                  boxShadow: hoveredTrustCard === i ? 'var(--shadow-lg)' : 'var(--shadow-md)',
+                  borderRadius: 16,
+                  padding: 28,
+                  cursor: 'default',
+                  transform: hoveredTrustCard === i ? 'translateY(-4px)' : 'translateY(0)',
+                  transition: 'transform 200ms ease, box-shadow 200ms ease',
+                }}
+              >
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'rgba(201,136,42,0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 16,
+                  }}
+                >
+                  <card.icon size={20} style={{ color: 'var(--gold)' }} />
+                </div>
+                <h3
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontWeight: 600,
+                    fontSize: 17,
+                    color: 'var(--navy)',
+                    marginBottom: 8,
+                    margin: '0 0 8px 0',
+                  }}
+                >
+                  {card.title}
+                </h3>
+                <p
+                  style={{
+                    fontFamily: 'var(--font-body)',
+                    fontSize: 14,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1.6,
+                    margin: 0,
+                  }}
+                >
+                  {card.body}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── GUARANTEE ────────────────────────────────────────────────────── */}
+      <section
+        style={{
+          background: '#C9882A',
+          padding: '100px 24px',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, ease: EASE }}
+            style={{ display: 'flex', justifyContent: 'center' }}
+          >
+            <ShieldCheck size={64} style={{ color: 'white' }} />
+          </motion.div>
+
+          <motion.h2
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={0.1}
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: 'clamp(28px, 4vw, 44px)',
+              color: 'white',
+              marginTop: 24,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            The Avasafe Guarantee
+          </motion.h2>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.2}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 18,
+              color: 'white',
+              lineHeight: 1.7,
+              marginTop: 16,
+            }}
+          >
+            We validate your application against every known rejection cause before you submit. If your application is rejected due to an error in our validation — we fix it free. No questions asked.
+          </motion.p>
+
+          <motion.p
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeIn}
+            custom={0.3}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: 14,
+              color: 'white',
+              opacity: 0.8,
+              marginTop: 12,
+            }}
+          >
+            Included on all Locker + Apply and Family plans.
+          </motion.p>
+        </div>
+      </section>
+
       {/* ── PRICING ──────────────────────────────────────────────────────── */}
       <section
         id="pricing"
@@ -908,7 +1350,7 @@ export default function HomePage() {
           borderTop: '1px solid var(--border)',
         }}
       >
-        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1040, margin: '0 auto' }}>
           <motion.h2
             initial="hidden"
             whileInView="visible"
@@ -948,7 +1390,7 @@ export default function HomePage() {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
               gap: 20,
               alignItems: 'start',
             }}
@@ -961,13 +1403,24 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 variants={fadeUp}
                 custom={i * 0.08}
-                whileHover={{ y: -4, boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-md)' }}
+                whileHover={{
+                  y: plan.highlighted ? -4 : -4,
+                  boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-md)',
+                }}
                 transition={{ type: 'spring', stiffness: 300, damping: 24 }}
                 style={{
                   background: plan.highlighted ? 'var(--white)' : 'var(--surface)',
-                  border: plan.highlighted ? '2px solid var(--gold)' : '1px solid var(--border)',
+                  border: plan.highlighted
+                    ? '2px solid var(--gold)'
+                    : plan.name === 'Free'
+                    ? '1.5px solid var(--border)'
+                    : '1px solid var(--border)',
                   borderRadius: 16,
-                  boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-sm)',
+                  boxShadow: plan.highlighted
+                    ? 'var(--shadow-gold)'
+                    : plan.name === 'Free'
+                    ? 'var(--shadow-sm)'
+                    : 'var(--shadow-sm)',
                   padding: 28,
                   display: 'flex',
                   flexDirection: 'column',
@@ -1041,17 +1494,62 @@ export default function HomePage() {
                   {plan.description}
                 </p>
 
-                <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 28, flex: 1, listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
-                  {plan.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 14, fontFamily: 'var(--font-body)' }}>
-                      <span style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }}>✓</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{f}</span>
+                <ul
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                    marginBottom: 28,
+                    flex: 1,
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: '0 0 28px 0',
+                  }}
+                >
+                  {plan.features.map((feature) => (
+                    <li
+                      key={feature.text}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 8,
+                        fontSize: 14,
+                        fontFamily: 'var(--font-body)',
+                      }}
+                    >
+                      {feature.included ? (
+                        <>
+                          <span style={{ color: 'var(--success)', flexShrink: 0, marginTop: 1 }}>✓</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>{feature.text}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ color: 'var(--text-tertiary)', flexShrink: 0, marginTop: 1 }}>✗</span>
+                          <span style={{ color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+                            {feature.text}
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                marginLeft: 8,
+                                padding: '2px 8px',
+                                borderRadius: 8,
+                                border: '1px solid var(--gold)',
+                                color: 'var(--gold)',
+                                fontSize: 11,
+                                fontFamily: 'var(--font-body)',
+                              }}
+                            >
+                              Upgrade
+                            </span>
+                          </span>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
 
                 <Link
-                  href="/auth?mode=signup"
+                  href={plan.href}
                   style={{
                     display: 'block',
                     textAlign: 'center',
@@ -1061,9 +1559,17 @@ export default function HomePage() {
                     fontWeight: 600,
                     fontFamily: 'var(--font-display)',
                     textDecoration: 'none',
-                    background: plan.highlighted ? 'var(--navy)' : 'transparent',
-                    color: plan.highlighted ? 'white' : 'var(--navy)',
-                    border: plan.highlighted ? 'none' : '1.5px solid var(--navy)',
+                    background: plan.highlighted
+                      ? 'var(--navy)'
+                      : plan.name === 'Free'
+                      ? 'white'
+                      : 'var(--navy)',
+                    color: plan.highlighted
+                      ? 'white'
+                      : plan.name === 'Free'
+                      ? 'var(--navy)'
+                      : 'white',
+                    border: plan.name === 'Free' ? '1.5px solid var(--navy)' : 'none',
                     transition: 'background 200ms ease, transform 150ms ease',
                   }}
                 >
@@ -1178,7 +1684,7 @@ export default function HomePage() {
           custom={0.2}
         >
           <Link href="/auth?mode=signup" className="btn-pill-white">
-            Get started free
+            Start your OCI application
           </Link>
         </motion.div>
       </section>
@@ -1197,15 +1703,40 @@ export default function HomePage() {
         }}
       >
         <Logo size="sm" />
-        <p
-          style={{
-            fontSize: 13,
-            fontFamily: 'var(--font-body)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          &copy; 2026 Avasafe AI
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <p
+            style={{
+              fontSize: 13,
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-tertiary)',
+              margin: 0,
+            }}
+          >
+            &copy; 2026 Avasafe AI
+          </p>
+          <Link
+            href="/privacy"
+            style={{
+              fontSize: 13,
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-tertiary)',
+              textDecoration: 'none',
+            }}
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/terms"
+            style={{
+              fontSize: 13,
+              fontFamily: 'var(--font-body)',
+              color: 'var(--text-tertiary)',
+              textDecoration: 'none',
+            }}
+          >
+            Terms
+          </Link>
+        </div>
       </footer>
     </main>
   )

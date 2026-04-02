@@ -4,23 +4,62 @@ import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
 import { Bell, AlertTriangle, CheckCircle } from 'lucide-react'
 import MarkReadButton from './MarkReadButton'
+import UpgradePrompt from '@/components/UpgradePrompt'
+import type { Plan } from '@/lib/plan-utils'
+import { PLAN_LIMITS } from '@/lib/plan-utils'
 
 export default async function AlertsPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const { data: alerts } = await supabase
-    .from('alerts')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
+  const [alertsRes, profileRes] = await Promise.all([
+    supabase.from('alerts').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+    supabase.from('profiles').select('plan').eq('id', user.id).single(),
+  ])
 
+  const plan = ((profileRes.data?.plan) ?? 'free') as Plan
+  const alertsEnabled = PLAN_LIMITS[plan].alertsEnabled
+
+  const alerts = alertsRes.data
   const unread = alerts?.filter(a => !a.read_at) ?? []
   const read = alerts?.filter(a => a.read_at) ?? []
 
   function fmtDate(d: string) {
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  if (!alertsEnabled) {
+    return (
+      <DashboardShell activePage="alerts" pageTitle="Alerts">
+        <div style={{ position: 'relative', maxWidth: 680 }}>
+          {/* Greyed-out preview cards */}
+          <div style={{ opacity: 0.3, pointerEvents: 'none', userSelect: 'none', marginBottom: 24 }}>
+            {[
+              'Your Indian passport expires in 8 months — start renewal soon.',
+              'Your OCI card expires in 3 months — apply for renewal.',
+            ].map((msg, i) => (
+              <div key={i} style={{
+                background: 'white', border: '1px solid var(--border)', borderLeft: '3px solid var(--warning)',
+                borderRadius: 12, padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: 14,
+                boxShadow: 'var(--shadow-sm)', marginBottom: 8,
+              }}>
+                <AlertTriangle size={18} color="var(--warning)" style={{ flexShrink: 0, marginTop: 2 }} />
+                <p style={{ fontSize: 15, color: 'var(--text-primary)', lineHeight: 1.5 }}>{msg}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Upgrade overlay */}
+          <UpgradePrompt
+            title="Upgrade to receive smart alerts before documents expire"
+            body="AVA monitors all your documents and notifies you months before expiry — so you never miss a renewal. Available on Locker and above."
+            buttonText="Upgrade to Locker"
+            targetPlan="locker"
+          />
+        </div>
+      </DashboardShell>
+    )
   }
 
   return (

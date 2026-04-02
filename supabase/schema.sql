@@ -7,7 +7,7 @@ create table if not exists public.profiles (
   id            uuid references auth.users on delete cascade primary key,
   full_name     text,
   phone         text,
-  plan          text not null default 'locker' check (plan in ('locker','apply','family')),
+  plan          text not null default 'free' check (plan in ('free','locker','apply','family')),
   plan_expires  timestamptz,
   created_at    timestamptz default now()
 );
