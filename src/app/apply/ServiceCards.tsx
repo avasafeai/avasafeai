@@ -15,8 +15,18 @@ interface Service {
 export default function ServiceCards({ services }: { services: Service[] }) {
   const router = useRouter()
 
-  function pick(id: string) {
+  async function pick(id: string) {
     sessionStorage.setItem('service_type', id)
+    // Create application record and store the ID so the form can use it
+    const res = await fetch('/api/create-application', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ service_type: id }),
+    })
+    if (res.ok) {
+      const { data } = await res.json() as { data: { id: string } }
+      sessionStorage.setItem('application_id', data.id)
+    }
     router.push('/apply/form')
   }
 

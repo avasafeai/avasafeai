@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
@@ -188,6 +188,13 @@ export default function FormPage() {
   const [form, setForm] = useState<FormData>(INITIAL)
   const [saving, setSaving] = useState(false)
   const [direction, setDirection] = useState<1 | -1>(1)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+
+  // Load application ID from sessionStorage on mount
+  useEffect(() => {
+    const id = sessionStorage.getItem('application_id')
+    setApplicationId(id)
+  }, [])
 
   function update(key: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -204,11 +211,12 @@ export default function FormPage() {
   }
 
   async function handleFinish() {
+    if (!applicationId) return
     setSaving(true)
     const res = await fetch('/api/validate-application', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ form_data: form }),
+      body: JSON.stringify({ form_data: form, application_id: applicationId }),
     })
     setSaving(false)
     if (res.ok) router.push('/apply/review')

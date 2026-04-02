@@ -41,6 +41,7 @@ export default function AddDocumentForm() {
   const [data, setData] = useState<ExtractedPassportData | null>(null)
   const [visibleFields, setVisibleFields] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [documentId, setDocumentId] = useState<string | null>(null)
 
   function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0] ?? null
@@ -66,8 +67,9 @@ export default function AddDocumentForm() {
       return
     }
 
-    const { data: extracted } = await res.json() as { data: ExtractedPassportData }
+    const { data: extracted, document_id } = await res.json() as { data: ExtractedPassportData; document_id: string | null }
     setData(extracted)
+    setDocumentId(document_id)
     setStage('confirm')
     for (let i = 1; i <= FIELD_LABELS.length; i++) {
       await new Promise(r => setTimeout(r, 80))
@@ -77,6 +79,14 @@ export default function AddDocumentForm() {
 
   async function handleConfirm() {
     setStage('saving')
+    // Persist any field edits the user made on the confirm screen
+    if (documentId && data) {
+      await fetch(`/api/update-document`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ document_id: documentId, extracted_data: data }),
+      })
+    }
     router.push('/dashboard/documents')
   }
 

@@ -98,13 +98,13 @@ export async function POST(req: NextRequest) {
     : null
 
   // Store document in locker (storage upload placeholder — delete raw after extraction in production)
-  await supabase.from('documents').insert({
+  const { data: inserted } = await supabase.from('documents').insert({
     user_id: user.id,
     doc_type: parsedDocType.data,
     storage_path: null, // raw image not retained after extraction
     extracted_data: extracted as unknown as Json,
     expires_at: expiresAt,
-  })
+  }).select('id').single()
 
-  return NextResponse.json({ data: extracted })
+  return NextResponse.json({ data: extracted, document_id: inserted?.id ?? null })
 }
