@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { LayoutDashboard, FileText, ClipboardList, Bell, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
+import SidebarSignOut from './SidebarSignOut'
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -111,21 +112,8 @@ export default async function DashboardShell({
           })}
         </nav>
 
-        {/* User email at bottom */}
-        {user?.email && (
-          <div style={{ padding: '20px 24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <p style={{
-              fontSize: 13,
-              color: 'rgba(255,255,255,0.4)',
-              fontFamily: 'var(--font-body)',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}>
-              {user.email}
-            </p>
-          </div>
-        )}
+        {/* User avatar + sign out */}
+        {user?.email && <SidebarSignOut email={user.email} />}
       </aside>
 
       {/* ── Main area ───────────────────────────────────────── */}
