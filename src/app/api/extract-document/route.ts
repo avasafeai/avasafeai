@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { ExtractedPassportData, Json } from '@/types/supabase'
 import { z } from 'zod'
 
@@ -37,9 +37,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
   }
 
-  // Read file bytes for Claude
+  // Read file bytes for Claude and storage upload
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
+
+  // Upload raw file to Supabase Storage using service role client (bypasses RLS on upload)
+  const serviceClient = createServiceClient()
+  const storagePath = `${user.id}/documents/${Date.now()}_${file.name}`
+  const { error: uploadError } = await serviceClient.storage
+    .from('documents')
+    .upload(storagePath, Buffer.from(bytes), { contentType: file.type, upsert: false })
+
+  if (uploadError) {
+    console.error('[extract-document] Storage upload error:', uploadError)
+    return NextResponse.json({ error: 'Upload failed. Please check your connection and try again.' }, { status: 500 })
+  }
 
   const isPdf = file.type === 'application/pdf'
 
@@ -83,6 +95,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[extract-document] Claude API error:', err)
+    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
@@ -99,6 +112,8 @@ export async function POST(req: NextRequest) {
     extracted = JSON.parse(jsonMatch[0]) as ExtractedPassportData
   } catch (err) {
     console.error('[extract-document] JSON parse error:', err, 'Raw response:', content.text)
+    // Clean up uploaded file since extraction failed
+    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
@@ -111,14 +126,22 @@ export async function POST(req: NextRequest) {
   const { data: inserted, error: insertError } = await supabase.from('documents').insert({
     user_id: user.id,
     doc_type: parsedDocType.data,
-    storage_path: null,
+    storage_path: storagePath,
     extracted_data: extracted as unknown as Json,
     expires_at: expiresAt,
   }).select('id').single()
 
   if (insertError || !inserted) {
     console.error('[extract-document] DB insert error:', insertError)
+    // Clean up uploaded file since DB insert failed
+    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: 'Upload failed. Please check your connection and try again.' }, { status: 500 })
+  }
+
+  // Delete raw file from storage — only structured data is retained (per privacy policy)
+  const { error: deleteError } = await serviceClient.storage.from('documents').remove([storagePath])
+  if (deleteError) {
+    console.error('[extract-document] Storage delete error (non-fatal):', deleteError)
   }
 
   return NextResponse.json({ data: extracted, document_id: inserted.id })
