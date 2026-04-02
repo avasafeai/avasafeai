@@ -12,7 +12,7 @@ export default async function AddDocumentPage() {
   if (!user) redirect('/auth')
 
   const [profileRes, countRes] = await Promise.all([
-    supabase.from('profiles').select('plan').eq('id', user.id).single(),
+    supabase.from('profiles').select('plan').eq('id', user.id).maybeSingle(),
     supabase.from('documents').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
   ])
 

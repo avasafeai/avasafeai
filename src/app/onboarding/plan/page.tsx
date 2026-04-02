@@ -110,7 +110,7 @@ export default function OnboardingPlanPage() {
           </div>
 
           <AvaMessage
-            message="Your passport is saved. Choose a plan to get the most out of your locker — or start free and upgrade any time."
+            message="Your passport is saved. Choose a plan to get the most out of your locker — or continue with the free tier and upgrade any time."
             className="mb-8"
           />
 
@@ -123,7 +123,13 @@ export default function OnboardingPlanPage() {
                 <motion.button
                   key={plan.id}
                   type="button"
-                  onClick={() => setSelected(plan.id)}
+                  onClick={() => {
+                    if (plan.id === 'free') {
+                      router.push('/dashboard')
+                    } else {
+                      setSelected(plan.id)
+                    }
+                  }}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.06 }}
@@ -203,6 +209,11 @@ export default function OnboardingPlanPage() {
                         ))}
                       </div>
                     </div>
+                    {plan.id === 'free' && !isSelected && (
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary, #9CA3AF)', flexShrink: 0, marginTop: 2 }}>
+                        Start free →
+                      </span>
+                    )}
                     {isSelected && (
                       <CheckCircle size={20} color="var(--gold, #C9882A)" style={{ flexShrink: 0, marginTop: 2 }} />
                     )}
