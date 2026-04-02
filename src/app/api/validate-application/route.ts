@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     .select('id')
     .eq('id', application_id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!app) return NextResponse.json({ error: 'Application not found' }, { status: 404 })
 
@@ -91,10 +91,13 @@ export async function GET(req: NextRequest) {
 
   const { data: app } = await supabase
     .from('applications')
-    .select('validation_errors')
+    .select('validation_errors, form_data')
     .eq('id', appId)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
-  return NextResponse.json({ data: app?.validation_errors ?? { blockers: [], warnings: [], passed_checks: [] } })
+  return NextResponse.json({
+    data: app?.validation_errors ?? { blockers: [], warnings: [], passed_checks: [] },
+    form_data: app?.form_data ?? {},
+  })
 }

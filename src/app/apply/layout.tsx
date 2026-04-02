@@ -14,7 +14,7 @@ export default async function ApplyLayout({ children }: { children: React.ReactN
     .from('profiles')
     .select('plan')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const plan = ((profile?.plan) ?? 'free') as Plan
 

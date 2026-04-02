@@ -29,7 +29,7 @@ export default async function StatusPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(1)
-    .single()
+    .maybeSingle()
 
   if (!app) redirect('/apply')
 

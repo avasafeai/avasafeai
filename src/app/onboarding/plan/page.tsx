@@ -68,6 +68,7 @@ export default function OnboardingPlanPage() {
     setLoading(true)
 
     if (selected === 'free') {
+      // No plan update needed — 'free' is the default
       router.push('/dashboard')
       return
     }
@@ -223,7 +224,7 @@ export default function OnboardingPlanPage() {
             {loading
               ? 'Redirecting…'
               : selected === 'free'
-                ? 'Go to my locker →'
+                ? 'Continue free →'
                 : `${PLANS.find(p => p.id === selected)?.cta ?? 'Continue'} →`}
           </motion.button>
 

@@ -213,6 +213,8 @@ export default function FormPage() {
   async function handleFinish() {
     if (!applicationId) return
     setSaving(true)
+    // Store form data for review page summary
+    sessionStorage.setItem('form_data', JSON.stringify(form))
     const res = await fetch('/api/validate-application', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -296,7 +298,7 @@ export default function FormPage() {
         }}
       >
         <div style={{ width: '100%', maxWidth: 560 }}>
-          <AnimatePresence mode="wait" custom={direction}>
+          <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={step}
               custom={direction}
@@ -306,14 +308,9 @@ export default function FormPage() {
               transition={{ duration: 0.2, ease: 'easeInOut' }}
             >
               {/* AVA message */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2, delay: 0.05 }}
-                style={{ marginBottom: 24 }}
-              >
+              <div style={{ marginBottom: 24 }}>
                 <AvaMessage message={current.ava} />
-              </motion.div>
+              </div>
 
               {/* Question card */}
               <div

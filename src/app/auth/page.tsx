@@ -519,6 +519,8 @@ function AuthForm() {
                 {generalError && (
                   <motion.div
                     key="general-error"
+                    role="alert"
+                    aria-live="polite"
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
@@ -565,7 +567,7 @@ function AuthForm() {
                     <p style={hintStyle}>We&apos;ll send a confirmation link to this address.</p>
                   )}
                   {emailError && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
+                    <div role="alert" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
                       <AlertCircle size={13} color="#B91C1C" style={{ flexShrink: 0 }} />
                       <span style={fieldErrorStyle}>{emailError}</span>
                       {mode === 'signup' && emailError.includes('already exists') && (
@@ -595,7 +597,7 @@ function AuthForm() {
                       style={passwordError ? { borderColor: '#B91C1C' } : undefined}
                     />
                     {passwordError && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                      <div role="alert" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
                         <AlertCircle size={13} color="#B91C1C" style={{ flexShrink: 0 }} />
                         <span style={fieldErrorStyle}>{passwordError}</span>
                       </div>
