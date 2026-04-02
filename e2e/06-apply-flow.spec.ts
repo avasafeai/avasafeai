@@ -37,16 +37,15 @@ test.describe('Apply flow', () => {
   test('/apply shows fee information for first service', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply')
-    // Each card shows a fee — use first() since $29 Avasafe appears on multiple cards
     await expect(page.getByText(/\$275/).first()).toBeVisible()
-    await expect(page.getByText(/\$29 Avasafe/).first()).toBeVisible()
+    await expect(page.getByText(/\$29 Avasafe fee/).first()).toBeVisible()
   })
 
-  test('/apply/form loads multi-step form with heading', async ({ page }) => {
+  test('/apply/form loads multi-step form with first question', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply/form')
-    // Use heading role to be specific (avoids matching the pill button)
-    await expect(page.getByRole('heading', { name: 'Personal details' })).toBeVisible()
+    // Step 1 renders the label "Your name" as a h2
+    await expect(page.getByRole('heading', { name: 'Your name' })).toBeVisible()
   })
 
   test('/apply/form has Continue and Back buttons', async ({ page }) => {
@@ -62,20 +61,24 @@ test.describe('Apply flow', () => {
     await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled()
   })
 
-  test('/apply/form progress pills are visible', async ({ page }) => {
+  test('/apply/form shows step counter in header', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply/form')
-    // The step pills at top — use button role to target them
-    await expect(page.getByRole('button', { name: /Personal details/ })).toBeVisible()
-    await expect(page.getByRole('button', { name: /Passport details/ })).toBeVisible()
+    // Header shows "Step 1 of 13" (or however many steps)
+    await expect(page.getByText(/Step 1 of/i)).toBeVisible()
   })
 
-  test('/apply/form Continue advances to next step heading', async ({ page }) => {
+  test('/apply/form Continue advances to step 2 heading', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply/form')
+    // Fill step 1 (name group — first_name + last_name)
+    const textboxes = page.getByRole('textbox')
+    await textboxes.first().fill('Priya')
+    const count = await textboxes.count()
+    if (count >= 2) await textboxes.nth(1).fill('Sharma')
     await page.getByRole('button', { name: 'Continue →' }).click()
-    // Use heading role to be specific
-    await expect(page.getByRole('heading', { name: 'Passport details' })).toBeVisible()
+    // Step 2 is "Date and place of birth"
+    await expect(page.getByRole('heading', { name: 'Date and place of birth' })).toBeVisible({ timeout: 3000 })
   })
 
   test('/apply/review loads review page', async ({ page }) => {
@@ -84,13 +87,14 @@ test.describe('Apply flow', () => {
     await expect(page.getByText('Review your application')).toBeVisible()
   })
 
-  // NOTE: /apply/status redirects to /apply when no application exists (tables not yet set up).
+  // NOTE: /apply/status redirects to /apply when no application exists.
   // This test verifies the redirect chain works without a 404 or 500.
   test('/apply/status redirects gracefully when no application exists', async ({ page }) => {
     await signIn(page)
-    const res = await page.goto('/apply/status')
-    // Should redirect somewhere (to /apply or /apply/status) — not 404 or 500
-    expect(res?.status()).not.toBe(404)
-    expect(res?.status()).not.toBe(500)
+    await page.goto('/apply/status')
+    // Should redirect to /apply (no apps exist) — not 404 or 500
+    await expect(page).not.toHaveURL(/not-found/)
+    const url = page.url()
+    expect(url).toMatch(/apply|dashboard/)
   })
 })

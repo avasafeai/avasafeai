@@ -28,13 +28,9 @@ test.describe('Dashboard', () => {
 
   test('shows welcome back message (name or fallback)', async ({ page }) => {
     await signIn(page)
-    // The dashboard shows either the first name from the profile or "there" as fallback
-    // when the profiles table doesn't yet have a row. Accept either.
+    // The dashboard shows "Welcome back, {firstName}." as a paragraph inside the content area
     const firstName = TEST_NAME.split(' ')[0]
-    const heading = page.locator('h1')
-    await expect(heading).toBeVisible()
-    const text = await heading.textContent()
-    expect(text).toMatch(new RegExp(`Welcome back|${firstName}`, 'i'))
+    await expect(page.getByText(new RegExp(`Welcome back`, 'i'))).toBeVisible()
   })
 
   test('empty locker state shows warm copy and CTA', async ({ page }) => {

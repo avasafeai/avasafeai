@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import DashboardShell from '@/components/DashboardShell'
 import DeleteAccountButton from './DeleteAccountButton'
+import PlanUpgradeButton from './PlanUpgradeButton'
 
 const PLAN_LABELS: Record<string, string> = {
   locker: 'Document Locker',
@@ -61,11 +62,8 @@ export default async function AccountPage() {
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 4 }}>Renews {planExpires}</p>
               )}
             </div>
-            {plan === 'locker' && (
-              <a href="/auth?mode=signup" style={{ textDecoration: 'none' }}>
-                <button className="btn-gold" style={{ height: 40, padding: '0 18px', fontSize: 14 }}>Upgrade</button>
-              </a>
-            )}
+            {plan === 'locker' && <PlanUpgradeButton targetPlan="apply" />}
+            {plan === 'apply' && <PlanUpgradeButton targetPlan="family" />}
           </div>
         </div>
 

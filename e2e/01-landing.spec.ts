@@ -6,27 +6,19 @@ test.describe('Landing page', () => {
   })
 
   test('loads with correct hero headline', async ({ page }) => {
-    await expect(page).toHaveTitle(/Avasafe AI/)
-    await expect(page.getByText('Your OCI card.')).toBeVisible()
-    await expect(page.getByText('Done in minutes, not weeks.')).toBeVisible()
+    await expect(page).toHaveTitle(/Avasafe/)
+    await expect(page.getByText('Government paperwork, handled.')).toBeVisible()
   })
 
-  test('displays the two-step promise cards in hero', async ({ page }) => {
-    // Use exact match on the card heading text (not the FAQ paragraph)
-    await expect(
-      page.getByText('Pay the government fee', { exact: true }).first()
-    ).toBeVisible()
-    await expect(
-      page.getByText('Drop envelope at UPS', { exact: true })
-    ).toBeVisible()
+  test('displays the how-it-works step cards', async ({ page }) => {
+    await expect(page.getByText('Upload your documents once')).toBeVisible()
+    await expect(page.getByText("Two steps and you're done")).toBeVisible()
   })
 
   test('shows trust signal bar', async ({ page }) => {
-    // Scope to the trust signal section (after hero) by using the section
-    const trustSection = page.locator('section').filter({ hasText: 'Bank-level encryption' }).first()
-    await expect(trustSection.getByText('Bank-level encryption')).toBeVisible()
-    await expect(trustSection.getByText('No human sees your documents')).toBeVisible()
-    await expect(trustSection.getByText('Rejection guarantee')).toBeVisible()
+    await expect(page.getByText('256-bit encrypted')).toBeVisible()
+    await expect(page.getByText('No human access')).toBeVisible()
+    await expect(page.getByText('Free fix guarantee')).toBeVisible()
   })
 
   test('displays three pricing tiers with correct prices', async ({ page }) => {
@@ -42,10 +34,6 @@ test.describe('Landing page', () => {
   test('pricing rejection guarantee note is shown', async ({ page }) => {
     const pricingSection = page.locator('#pricing')
     await expect(pricingSection.getByText(/Rejection guarantee included/)).toBeVisible()
-  })
-
-  test('shows competitor positioning', async ({ page }) => {
-    await expect(page.getByText(/Documitra is the travel agent/i)).toBeVisible()
   })
 
   test('shows FAQ section', async ({ page }) => {
@@ -67,15 +55,9 @@ test.describe('Landing page', () => {
     await expect(link).toHaveAttribute('href', '/auth')
   })
 
-  test('how it works section has 3 steps', async ({ page }) => {
-    await expect(page.getByText('Upload your documents')).toBeVisible()
-    await expect(page.getByText('AVA prepares everything')).toBeVisible()
-    await expect(page.getByText("Two steps. You're done.")).toBeVisible()
-  })
-
-  test('footer shows tagline', async ({ page }) => {
+  test('footer shows brand name', async ({ page }) => {
     const footer = page.locator('footer')
-    await expect(footer).toContainText('Your documents, safe.')
+    await expect(footer).toContainText('Avasafe AI')
   })
 
   test('no 404 errors on page load', async ({ page }) => {

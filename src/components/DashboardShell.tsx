@@ -53,7 +53,7 @@ export default async function DashboardShell({
       >
         {/* Wordmark */}
         <div style={{ padding: '28px 24px 24px' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
+          <Link href="/" aria-label="Avasafe AI" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
             <span style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
