@@ -25,24 +25,38 @@ function passwordValid(p: string) {
 
 // ─── Error translation ───────────────────────────────────────────────────────
 
-function translateError(raw: string): { field: 'email' | 'password' | 'general'; message: string } {
+function translateError(raw: string, mode?: 'login' | 'signup'): { field: 'email' | 'password' | 'general'; message: string } {
   const msg = raw.toLowerCase()
-  if (msg.includes('already registered') || msg.includes('already in use') || msg.includes('user already exists')) {
-    return { field: 'email', message: 'An account with this email already exists. Try signing in.' }
+  // Duplicate email — Supabase returns several variants
+  if (
+    msg.includes('already registered') ||
+    msg.includes('already in use') ||
+    msg.includes('user already exists') ||
+    msg.includes('already been registered') ||
+    msg.includes('email address is already')
+  ) {
+    return { field: 'email', message: 'An account with this email already exists.' }
   }
-  if (msg.includes('invalid email') || msg.includes('unable to validate email')) {
+  if (msg.includes('invalid email') || msg.includes('unable to validate email') || msg.includes('email address is invalid')) {
     return { field: 'email', message: 'Please enter a valid email address.' }
   }
-  if (msg.includes('password') && (msg.includes('weak') || msg.includes('short'))) {
-    return { field: 'password', message: "Password doesn't meet the requirements below." }
+  if (msg.includes('password') && (msg.includes('weak') || msg.includes('short') || msg.includes('least 6'))) {
+    return { field: 'password', message: "Password must be at least 8 characters." }
   }
-  if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('wrong password')) {
+  // Login-specific errors
+  if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
     return { field: 'general', message: 'Incorrect email or password. Please try again.' }
   }
-  if (msg.includes('email not confirmed')) {
-    return { field: 'general', message: 'Please confirm your email before signing in. Check your inbox.' }
+  if (msg.includes('wrong password')) {
+    return { field: 'general', message: 'Incorrect password. Try again or reset your password.' }
   }
-  if (msg.includes('too many requests') || msg.includes('rate limit')) {
+  if (msg.includes('user not found') || (mode === 'login' && msg.includes('no user found'))) {
+    return { field: 'email', message: 'No account found with this email.' }
+  }
+  if (msg.includes('email not confirmed') || msg.includes('email link is invalid or has expired')) {
+    return { field: 'general', message: 'Please confirm your email before signing in.' }
+  }
+  if (msg.includes('too many requests') || msg.includes('rate limit') || msg.includes('over_email_send_rate_limit')) {
     return { field: 'general', message: 'Too many attempts. Please wait a minute and try again.' }
   }
   return { field: 'general', message: 'Something went wrong. Please try again.' }
@@ -392,7 +406,7 @@ function AuthForm() {
     }
 
     if (mode === 'signup') {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -408,6 +422,12 @@ function AuthForm() {
         setLoading(false)
         return
       }
+      // Supabase silent duplicate: no error but user.identities is empty
+      if (!signUpData?.user || (signUpData.user.identities?.length ?? 0) === 0) {
+        setEmailError('An account with this email already exists.')
+        setLoading(false)
+        return
+      }
       setLoading(false)
       setView('confirmation')
       return
@@ -416,7 +436,7 @@ function AuthForm() {
     // Login
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) {
-      const t = translateError(error.message)
+      const t = translateError(error.message, 'login')
       if (t.field === 'email') setEmailError(t.message)
       else if (t.field === 'password') setPasswordError(t.message)
       else setGeneralError(t.message)
@@ -497,7 +517,7 @@ function AuthForm() {
               {/* General error */}
               <AnimatePresence>
                 {generalError && (
-                  <motion.p
+                  <motion.div
                     key="general-error"
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -507,10 +527,17 @@ function AuthForm() {
                       fontFamily: 'var(--font-body)', fontSize: 13,
                       border: '1px solid rgba(185,28,28,0.12)',
                       borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+                      display: 'flex', alignItems: 'flex-start', gap: 8,
                     }}
                   >
-                    {generalError}
-                  </motion.p>
+                    <AlertCircle size={14} color="#B91C1C" style={{ flexShrink: 0, marginTop: 1 }} />
+                    <span>
+                      {generalError}
+                      {generalError.includes('confirm your email') && (
+                        <> <button type="button" onClick={async () => { await supabase.auth.resend({ type: 'signup', email }); setGeneralError('Confirmation email resent — check your inbox.') }} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: '#B91C1C', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>Resend confirmation →</button></>
+                      )}
+                    </span>
+                  </motion.div>
                 )}
               </AnimatePresence>
 
@@ -537,7 +564,22 @@ function AuthForm() {
                   {mode === 'signup' && !emailError && (
                     <p style={hintStyle}>We&apos;ll send a confirmation link to this address.</p>
                   )}
-                  {emailError && <p style={fieldErrorStyle}>{emailError}</p>}
+                  {emailError && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4, flexWrap: 'wrap' }}>
+                      <AlertCircle size={13} color="#B91C1C" style={{ flexShrink: 0 }} />
+                      <span style={fieldErrorStyle}>{emailError}</span>
+                      {mode === 'signup' && emailError.includes('already exists') && (
+                        <button type="button" onClick={() => switchMode('login')} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--navy, #0A1628)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                          Sign in instead →
+                        </button>
+                      )}
+                      {mode === 'login' && emailError.includes('No account found') && (
+                        <button type="button" onClick={() => switchMode('signup')} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--navy, #0A1628)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>
+                          Create an account instead →
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Password */}
@@ -552,7 +594,12 @@ function AuthForm() {
                       placeholder="••••••••"
                       style={passwordError ? { borderColor: '#B91C1C' } : undefined}
                     />
-                    {passwordError && <p style={fieldErrorStyle}>{passwordError}</p>}
+                    {passwordError && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 4 }}>
+                        <AlertCircle size={13} color="#B91C1C" style={{ flexShrink: 0 }} />
+                        <span style={fieldErrorStyle}>{passwordError}</span>
+                      </div>
+                    )}
 
                     {/* Password rules — signup only, after first keystroke */}
                     <AnimatePresence>

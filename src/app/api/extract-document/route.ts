@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
 
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf']
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 const MAX_SIZE = 10 * 1024 * 1024
 
 const docTypeSchema = z.enum([
@@ -17,48 +17,52 @@ const docTypeSchema = z.enum([
 export async function POST(req: NextRequest) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return NextResponse.json({ error: 'Your session has expired. Please sign in again.' }, { status: 401 })
 
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   const docType = formData.get('doc_type') as string | null
 
-  if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+  if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
+
   if (!ALLOWED_TYPES.includes(file.type)) {
-    return NextResponse.json({ error: 'Upload a PDF, JPG, or PNG.' }, { status: 400 })
+    return NextResponse.json({ error: 'Please upload a JPG, PNG or PDF file.' }, { status: 400 })
   }
   if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'File too large. Max 10MB.' }, { status: 400 })
+    return NextResponse.json({ error: 'This file is too large. Please use a file under 10MB.' }, { status: 400 })
   }
 
   const parsedDocType = docTypeSchema.safeParse(docType)
   if (!parsedDocType.success) {
-    return NextResponse.json({ error: 'Invalid doc_type' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
   }
 
+  // Read file bytes for Claude
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
 
   const isPdf = file.type === 'application/pdf'
 
-  // Build the document source block — PDFs use the document API, images use the image API
   type ContentBlock =
     | { type: 'document'; source: { type: 'base64'; media_type: 'application/pdf'; data: string } }
-    | { type: 'image'; source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png'; data: string } }
+    | { type: 'image'; source: { type: 'base64'; media_type: 'image/jpeg' | 'image/png' | 'image/webp'; data: string } }
 
   const docBlock: ContentBlock = isPdf
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
-    : { type: 'image', source: { type: 'base64', media_type: file.type as 'image/jpeg' | 'image/png', data: base64 } }
+    : { type: 'image', source: { type: 'base64', media_type: file.type as 'image/jpeg' | 'image/png' | 'image/webp', data: base64 } }
 
-  const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6',
-    max_tokens: 1024,
-    system: 'You are a document extraction specialist. Extract all visible fields from this identity document with perfect accuracy. Return only valid JSON, no explanation, no markdown.',
-    messages: [{
-      role: 'user',
-      content: [
-        docBlock,
-        { type: 'text', text: `Extract all fields from this document:
+  // Call Claude to extract fields
+  let message
+  try {
+    message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system: 'You are a document extraction specialist. Extract all visible fields from this identity document with perfect accuracy. Return only valid JSON, no explanation, no markdown.',
+      messages: [{
+        role: 'user',
+        content: [
+          docBlock,
+          { type: 'text', text: `Extract all fields from this document:
 {
   "document_type": "us_passport | indian_passport | oci_card | other",
   "first_name": "",
@@ -74,22 +78,28 @@ export async function POST(req: NextRequest) {
   "gender": "M | F",
   "confidence_notes": "note any fields that were unclear or partially visible"
 }` },
-      ],
-    }],
-  })
+        ],
+      }],
+    })
+  } catch (err) {
+    console.error('[extract-document] Claude API error:', err)
+    return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
+  }
 
   const content = message.content[0]
   if (content.type !== 'text') {
-    return NextResponse.json({ error: 'Unexpected AI response' }, { status: 500 })
+    console.error('[extract-document] Unexpected Claude response type:', content.type)
+    return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
   let extracted: ExtractedPassportData
   try {
     const jsonMatch = content.text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) throw new Error('No JSON found')
+    if (!jsonMatch) throw new Error('No JSON in response')
     extracted = JSON.parse(jsonMatch[0]) as ExtractedPassportData
-  } catch {
-    return NextResponse.json({ error: 'Could not read document. Try a clearer image.' }, { status: 500 })
+  } catch (err) {
+    console.error('[extract-document] JSON parse error:', err, 'Raw response:', content.text)
+    return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
   // Derive expiry date for document record
@@ -97,14 +107,19 @@ export async function POST(req: NextRequest) {
     ? new Date(extracted.expiry_date).toISOString()
     : null
 
-  // Store document in locker (storage upload placeholder — delete raw after extraction in production)
-  const { data: inserted } = await supabase.from('documents').insert({
+  // Insert extracted data into documents table
+  const { data: inserted, error: insertError } = await supabase.from('documents').insert({
     user_id: user.id,
     doc_type: parsedDocType.data,
-    storage_path: null, // raw image not retained after extraction
+    storage_path: null,
     extracted_data: extracted as unknown as Json,
     expires_at: expiresAt,
   }).select('id').single()
 
-  return NextResponse.json({ data: extracted, document_id: inserted?.id ?? null })
+  if (insertError || !inserted) {
+    console.error('[extract-document] DB insert error:', insertError)
+    return NextResponse.json({ error: 'Upload failed. Please check your connection and try again.' }, { status: 500 })
+  }
+
+  return NextResponse.json({ data: extracted, document_id: inserted.id })
 }

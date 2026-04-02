@@ -56,7 +56,7 @@ export default function OnboardingPage() {
 
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('doc_type', 'passport')
+    formData.append('doc_type', 'us_passport')
 
     setState('extracting')
     const res = await fetch('/api/extract-document', { method: 'POST', body: formData })
