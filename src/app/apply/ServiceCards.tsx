@@ -1,23 +1,40 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronRight, LucideIcon } from 'lucide-react'
+import { ChevronRight, FileText, Award, ScrollText } from 'lucide-react'
 
-interface Service {
-  id: string
-  title: string
-  desc: string
-  fee: string
-  govFee: string
-  icon: LucideIcon
-}
+const SERVICES = [
+  {
+    id: 'oci_new',
+    title: 'OCI Card (New Application)',
+    desc: 'First-time OCI card for Indian-origin US citizens and residents.',
+    fee: '$29 Avasafe fee',
+    govFee: '$275 govt. fee',
+    Icon: Award,
+  },
+  {
+    id: 'oci_renewal',
+    title: 'OCI Card (Renewal)',
+    desc: 'Renew your OCI card after a new passport or name change.',
+    fee: '$29 Avasafe fee',
+    govFee: '$25 govt. fee',
+    Icon: FileText,
+  },
+  {
+    id: 'passport_renewal',
+    title: 'Indian Passport Renewal',
+    desc: 'Renew your Indian passport from the US.',
+    fee: '$29 Avasafe fee',
+    govFee: 'Govt. fee varies',
+    Icon: ScrollText,
+  },
+]
 
-export default function ServiceCards({ services }: { services: Service[] }) {
+export default function ServiceCards() {
   const router = useRouter()
 
   async function pick(id: string) {
     sessionStorage.setItem('service_type', id)
-    // Create application record and store the ID so the form can use it
     const res = await fetch('/api/create-application', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -32,8 +49,8 @@ export default function ServiceCards({ services }: { services: Service[] }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {services.map((s) => {
-        const Icon = s.icon
+      {SERVICES.map((s) => {
+        const { Icon } = s
         return (
           <button
             key={s.id}

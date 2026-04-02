@@ -2,35 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
-import { FileText, Award, ScrollText } from 'lucide-react'
 import ServiceCards from './ServiceCards'
-
-const SERVICES = [
-  {
-    id: 'oci_new',
-    title: 'OCI Card (New Application)',
-    desc: 'First-time OCI card for Indian-origin US citizens and residents.',
-    fee: '$29 Avasafe fee',
-    govFee: '$275 govt. fee',
-    icon: Award,
-  },
-  {
-    id: 'oci_renewal',
-    title: 'OCI Card (Renewal)',
-    desc: 'Renew your OCI card after a new passport or name change.',
-    fee: '$29 Avasafe fee',
-    govFee: '$25 govt. fee',
-    icon: FileText,
-  },
-  {
-    id: 'passport_renewal',
-    title: 'Indian Passport Renewal',
-    desc: 'Renew your Indian passport from the US.',
-    fee: '$29 Avasafe fee',
-    govFee: 'Govt. fee varies',
-    icon: ScrollText,
-  },
-]
 
 export default async function ApplyPage() {
   const supabase = createClient()
@@ -54,7 +26,7 @@ export default async function ApplyPage() {
           className="mb-8"
         />
 
-        <ServiceCards services={SERVICES} />
+        <ServiceCards />
 
         <p style={{ marginTop: 32, fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           Not sure which to choose?{' '}
