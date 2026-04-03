@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
 import DeleteDocumentButton from './DeleteDocumentButton'
-import { Globe, BookOpen, ShieldCheck, FileText, CreditCard, MapPin, Image, PenLine } from 'lucide-react'
+import { Globe, BookOpen, ShieldCheck, FileText, CreditCard, MapPin, Image, PenLine, ExternalLink } from 'lucide-react'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   us_passport: 'US Passport', indian_passport: 'Indian Passport', oci_card: 'OCI Card',
@@ -27,18 +27,35 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const { data: doc } = await supabase
+  // Use service client to read full record including storage_path
+  const serviceClient = createServiceClient()
+  const { data: doc } = await serviceClient
     .from('documents')
     .select('*')
     .eq('id', params.id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!doc) redirect('/dashboard/documents')
 
   const extracted = doc.extracted_data as Record<string, string> | null
   const Icon = DOC_ICONS[doc.doc_type] ?? FileText
   const status = expiryStatus(doc.expires_at)
+
+  // Generate signed URL server-side (never expose storage_path to client)
+  let signedUrl: string | null = null
+  const storagePath = (doc as Record<string, unknown>).storage_path as string | null
+  const fileType = (doc as Record<string, unknown>).file_type as string | null
+
+  if (storagePath) {
+    const { data: urlData } = await serviceClient.storage
+      .from('documents')
+      .createSignedUrl(storagePath, 3600)  // 1 hour
+    signedUrl = urlData?.signedUrl ?? null
+  }
+
+  const isImage = fileType?.startsWith('image/')
+  const isPdf = fileType === 'application/pdf'
 
   // Build ordered field list — filter out internal/null fields
   const SKIP_KEYS = new Set(['document_type', 'confidence_notes'])
@@ -88,6 +105,51 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
           )}
         </div>
 
+        {/* File preview */}
+        {signedUrl && isImage && (
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', marginBottom: 20 }}>
+            <div style={{ padding: '18px 28px', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', margin: 0 }}>Document preview</h2>
+            </div>
+            <div style={{ padding: 24, display: 'flex', justifyContent: 'center', background: 'var(--off-white)' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={signedUrl}
+                alt={DOC_TYPE_LABELS[doc.doc_type] ?? 'Document'}
+                style={{ maxHeight: 300, maxWidth: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {signedUrl && isPdf && (
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 28px', boxShadow: 'var(--shadow-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--error-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <FileText size={20} color="var(--error)" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: '0 0 2px' }}>Original document</p>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>PDF — link expires in 1 hour</p>
+            </div>
+            <a
+              href={signedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', borderRadius: 10, background: 'var(--navy)', color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}
+            >
+              View PDF <ExternalLink size={13} />
+            </a>
+          </div>
+        )}
+
+        {!storagePath && (
+          <div style={{ background: 'var(--off-white)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 20px', marginBottom: 20 }}>
+            <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>
+              Original file not available — only extracted data is stored for this document.
+            </p>
+          </div>
+        )}
+
         {/* Fields grid */}
         {fields.length > 0 && (
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', marginBottom: 20 }}>
@@ -117,7 +179,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
         <div style={{ border: '1px solid rgba(220,38,38,0.25)', borderRadius: 16, padding: 24 }}>
           <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--error)', marginBottom: 8 }}>Remove document</h3>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16 }}>
-            This permanently removes the document and all extracted data from your locker.
+            This permanently removes the document, all extracted data, and the stored file from your locker.
           </p>
           <DeleteDocumentButton documentId={doc.id} />
         </div>

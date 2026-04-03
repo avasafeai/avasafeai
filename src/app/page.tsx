@@ -171,7 +171,7 @@ const FAQ = [
   },
   {
     q: 'Is it safe to upload my passport?',
-    a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Raw images are deleted immediately after extraction; only structured data is stored.',
+    a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Your document files are stored encrypted in your private locker. They are used only to generate your application package. You can delete any document at any time from your locker.',
   },
   {
     q: 'What exactly does AVA do for my OCI application?',

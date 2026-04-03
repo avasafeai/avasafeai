@@ -37,21 +37,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid document type.' }, { status: 400 })
   }
 
-  // Read file bytes for Claude and storage upload
+  // Read file bytes once for both Claude and storage
   const bytes = await file.arrayBuffer()
   const base64 = Buffer.from(bytes).toString('base64')
-
-  // Upload raw file to Supabase Storage using service role client (bypasses RLS on upload)
-  const serviceClient = createServiceClient()
-  const storagePath = `${user.id}/documents/${Date.now()}_${file.name}`
-  const { error: uploadError } = await serviceClient.storage
-    .from('documents')
-    .upload(storagePath, Buffer.from(bytes), { contentType: file.type, upsert: false })
-
-  if (uploadError) {
-    console.error('[extract-document] Storage upload error:', uploadError)
-    return NextResponse.json({ error: 'Upload failed. Please check your connection and try again.' }, { status: 500 })
-  }
+  const fileBuffer = Buffer.from(bytes)
 
   const isPdf = file.type === 'application/pdf'
 
@@ -63,7 +52,7 @@ export async function POST(req: NextRequest) {
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } }
     : { type: 'image', source: { type: 'base64', media_type: file.type as 'image/jpeg' | 'image/png' | 'image/webp', data: base64 } }
 
-  // Call Claude to extract fields
+  // Step 1 — Call Claude to extract fields
   let message
   try {
     message = await anthropic.messages.create({
@@ -95,7 +84,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('[extract-document] Claude API error:', err)
-    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
@@ -112,36 +100,51 @@ export async function POST(req: NextRequest) {
     extracted = JSON.parse(jsonMatch[0]) as ExtractedPassportData
   } catch (err) {
     console.error('[extract-document] JSON parse error:', err, 'Raw response:', content.text)
-    // Clean up uploaded file since extraction failed
-    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
-  // Derive expiry date for document record
+  // Step 2 — Save extracted fields to database
   const expiresAt = extracted.expiry_date
     ? new Date(extracted.expiry_date).toISOString()
     : null
 
-  // Insert extracted data into documents table
   const { data: inserted, error: insertError } = await supabase.from('documents').insert({
     user_id: user.id,
     doc_type: parsedDocType.data,
-    storage_path: storagePath,
     extracted_data: extracted as unknown as Json,
     expires_at: expiresAt,
   }).select('id').single()
 
   if (insertError || !inserted) {
     console.error('[extract-document] DB insert error:', insertError)
-    // Clean up uploaded file since DB insert failed
-    await serviceClient.storage.from('documents').remove([storagePath])
     return NextResponse.json({ error: 'Upload failed. Please check your connection and try again.' }, { status: 500 })
   }
 
-  // Delete raw file from storage — only structured data is retained (per privacy policy)
-  const { error: deleteError } = await serviceClient.storage.from('documents').remove([storagePath])
-  if (deleteError) {
-    console.error('[extract-document] Storage delete error (non-fatal):', deleteError)
+  // Step 3 — Non-blocking storage upload. If this fails, extraction still succeeds.
+  const serviceClient = createServiceClient()
+  const fileExt = file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : 'jpg'
+  const storagePath = `${user.id}/documents/${inserted.id}.${fileExt}`
+
+  try {
+    const { error: storageError } = await serviceClient.storage
+      .from('documents')
+      .upload(storagePath, fileBuffer, { contentType: file.type, upsert: false })
+
+    if (storageError) {
+      console.error('[extract-document] Storage upload failed (non-fatal):', storageError.message)
+    } else {
+      // Update document record with storage metadata
+      await serviceClient.from('documents').update({
+        storage_path: storagePath,
+        file_type: file.type,
+        file_size_bytes: file.size,
+        original_filename: file.name,
+      }).eq('id', inserted.id)
+      console.log('[extract-document] File stored at:', storagePath)
+    }
+  } catch (storageErr) {
+    // Never let storage errors break the extraction response
+    console.error('[extract-document] Storage error (non-fatal):', storageErr)
   }
 
   return NextResponse.json({ data: extracted, document_id: inserted.id })
