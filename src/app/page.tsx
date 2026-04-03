@@ -171,7 +171,7 @@ const FAQ = [
   },
   {
     q: 'Is it safe to upload my passport?',
-    a: 'Your documents are encrypted at rest and in transit using AES-256. No human ever sees them — AI processes everything automatically. Your document files are stored encrypted in your private locker. They are used only to generate your application package. You can delete any document at any time from your locker.',
+    a: 'Your documents are encrypted with AES-256-GCM and stored in your private locker. Encryption keys are managed by Google Cloud KMS — even we cannot read your files directly. No human ever sees them. You can delete any document at any time.',
   },
   {
     q: 'What exactly does AVA do for my OCI application?',

@@ -48,6 +48,9 @@ export interface Database {
           user_id: string
           doc_type: string
           storage_path: string | null
+          file_type: string | null
+          file_size_bytes: number | null
+          original_filename: string | null
           extracted_data: Json | null
           expires_at: string | null
           created_at: string
@@ -57,6 +60,9 @@ export interface Database {
           user_id: string
           doc_type: string
           storage_path?: string | null
+          file_type?: string | null
+          file_size_bytes?: number | null
+          original_filename?: string | null
           extracted_data?: Json | null
           expires_at?: string | null
           created_at?: string
@@ -66,6 +72,9 @@ export interface Database {
           user_id?: string
           doc_type?: string
           storage_path?: string | null
+          file_type?: string | null
+          file_size_bytes?: number | null
+          original_filename?: string | null
           extracted_data?: Json | null
           expires_at?: string | null
           created_at?: string

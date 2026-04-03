@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { ExtractedPassportData, Json } from '@/types/supabase'
+import { encryptFile } from '@/lib/document-encryption'
 import { z } from 'zod'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -126,9 +127,15 @@ export async function POST(req: NextRequest) {
   const storagePath = `${user.id}/documents/${inserted.id}.${fileExt}`
 
   try {
+    // Encrypt with AES-256-GCM + GCP KMS envelope encryption before storing
+    const encryptedBuffer = await encryptFile(fileBuffer)
+
     const { error: storageError } = await serviceClient.storage
       .from('documents')
-      .upload(storagePath, fileBuffer, { contentType: file.type, upsert: false })
+      .upload(storagePath, encryptedBuffer, {
+        contentType: 'application/octet-stream',  // encrypted blob — not the original MIME type
+        upsert: false,
+      })
 
     if (storageError) {
       console.error('[extract-document] Storage upload failed (non-fatal):', storageError.message)
@@ -136,15 +143,15 @@ export async function POST(req: NextRequest) {
       // Update document record with storage metadata
       await serviceClient.from('documents').update({
         storage_path: storagePath,
-        file_type: file.type,
+        file_type: file.type,          // original MIME type — needed for decrypted preview
         file_size_bytes: file.size,
         original_filename: file.name,
       }).eq('id', inserted.id)
-      console.log('[extract-document] File stored at:', storagePath)
+      console.log('[extract-document] Encrypted file stored at:', storagePath)
     }
   } catch (storageErr) {
-    // Never let storage errors break the extraction response
-    console.error('[extract-document] Storage error (non-fatal):', storageErr)
+    // Never let storage/encryption errors break the extraction response
+    console.error('[extract-document] Storage/encryption error (non-fatal):', storageErr)
   }
 
   return NextResponse.json({ data: extracted, document_id: inserted.id })
