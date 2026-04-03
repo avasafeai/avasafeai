@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FileText, Globe, BookOpen, ShieldCheck, CreditCard, MapPin, Image, PenLine, Trash2 } from 'lucide-react'
 
@@ -36,7 +35,6 @@ function monthsUntil(e: string) { return Math.floor((new Date(e).getTime() - Dat
 function fmtDate(e: string) { return new Date(e).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) }
 
 export default function DocumentCardList({ docs }: { docs: Doc[] }) {
-  const router = useRouter()
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
