@@ -51,9 +51,8 @@ export default async function DocumentsPage() {
           {/* Add card — separate from the interactive list */}
           <div style={{ marginTop: 16 }}>
             <Link href="/dashboard/documents/add"
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'transparent', border: '2px dashed var(--border)', borderRadius: 16, padding: 24, minHeight: 148, textDecoration: 'none', transition: 'border-color 200ms ease', maxWidth: 240 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--gold)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)' }}
+              className="hover:border-[var(--gold)] transition-colors duration-200"
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'transparent', border: '2px dashed var(--border)', borderRadius: 16, padding: 24, minHeight: 148, textDecoration: 'none', maxWidth: 240 }}
             >
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Plus size={18} color="var(--text-tertiary)" />

@@ -113,7 +113,7 @@ function DocumentCard({ doc }: { doc: {
   return (
     <Link
       href={`/dashboard/documents/${doc.id}`}
-      className="block"
+      className="block hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
       style={{
         background: 'white',
         border: '1px solid var(--border)',
@@ -121,15 +121,6 @@ function DocumentCard({ doc }: { doc: {
         padding: 24,
         boxShadow: 'var(--shadow-sm)',
         textDecoration: 'none',
-        transition: 'box-shadow 200ms ease, transform 200ms ease',
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)'
-        ;(e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)'
-        ;(e.currentTarget as HTMLElement).style.transform = 'translateY(0)'
       }}
     >
       {/* Icon */}
@@ -180,6 +171,7 @@ function AddDocumentCard() {
   return (
     <Link
       href="/dashboard/documents/add"
+      className="hover:border-[var(--gold)] transition-colors duration-200"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -192,13 +184,6 @@ function AddDocumentCard() {
         padding: 24,
         minHeight: 148,
         textDecoration: 'none',
-        transition: 'border-color 200ms ease',
-      }}
-      onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--gold)'
-      }}
-      onMouseLeave={(e) => {
-        ;(e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'
       }}
     >
       <div style={{

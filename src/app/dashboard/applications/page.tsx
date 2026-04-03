@@ -57,14 +57,13 @@ export default async function ApplicationsPage() {
             const s = STATUS_MAP[app.status] ?? { label: app.status, bg: 'var(--surface)', color: 'var(--text-tertiary)' }
             return (
               <Link key={app.id} href={`/apply/status`} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: 'white', border: '1px solid var(--border)', borderRadius: 14,
-                  padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16,
-                  boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
-                  transition: 'background 200ms ease, box-shadow 200ms ease',
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--off-white)'; (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-md)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'white'; (e.currentTarget as HTMLElement).style.boxShadow = 'var(--shadow-sm)' }}
+                <div
+                  className="hover:bg-[var(--off-white)] hover:shadow-md transition-all duration-200"
+                  style={{
+                    background: 'white', border: '1px solid var(--border)', borderRadius: 14,
+                    padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16,
+                    boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
+                  }}
                 >
                   <div style={{ flex: 1 }}>
                     <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', marginBottom: 3 }}>
