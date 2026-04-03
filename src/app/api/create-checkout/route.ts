@@ -3,6 +3,13 @@ import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 
+console.log('STRIPE DEBUG', {
+  keyExists: !!process.env.STRIPE_SECRET_KEY,
+  keyLength: process.env.STRIPE_SECRET_KEY?.length,
+  keyStart: process.env.STRIPE_SECRET_KEY?.substring(0, 10),
+  keyEnd: process.env.STRIPE_SECRET_KEY?.slice(-4),
+})
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 
 // Subscription plan price IDs (set in Vercel env vars)
