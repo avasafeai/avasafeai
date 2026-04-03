@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { ExtractedPassportData, Json } from '@/types/supabase'
 import { encryptFile } from '@/lib/document-encryption'
+import { encryptSensitiveFields } from '@/lib/field-encryption'
 import { z } from 'zod'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -104,15 +105,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "We couldn't read this document. Please try a clearer photo with good lighting." }, { status: 500 })
   }
 
-  // Step 2 — Save extracted fields to database
+  // Step 2 — Encrypt sensitive fields before saving to database
   const expiresAt = extracted.expiry_date
     ? new Date(extracted.expiry_date).toISOString()
     : null
 
+  let extractedForStorage: Record<string, string>
+  try {
+    extractedForStorage = await encryptSensitiveFields(extracted as unknown as Record<string, string>)
+  } catch (encErr) {
+    console.error('[extract-document] Field encryption error (non-fatal, storing plaintext):', encErr)
+    extractedForStorage = extracted as unknown as Record<string, string>
+  }
+
   const { data: inserted, error: insertError } = await supabase.from('documents').insert({
     user_id: user.id,
     doc_type: parsedDocType.data,
-    extracted_data: extracted as unknown as Json,
+    extracted_data: extractedForStorage as unknown as Json,
     expires_at: expiresAt,
   }).select('id').single()
 

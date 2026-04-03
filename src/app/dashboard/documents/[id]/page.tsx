@@ -3,7 +3,10 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
 import DeleteDocumentButton from './DeleteDocumentButton'
-import { Globe, BookOpen, ShieldCheck, FileText, CreditCard, MapPin, Image, PenLine, ExternalLink } from 'lucide-react'
+import DocumentFields from './DocumentFields'
+import DownloadButton from './DownloadButton'
+import { Globe, BookOpen, ShieldCheck, FileText, CreditCard, MapPin, Image, PenLine } from 'lucide-react'
+import { decryptSensitiveFields } from '@/lib/field-encryption'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   us_passport: 'US Passport', indian_passport: 'Indian Passport', oci_card: 'OCI Card',
@@ -21,6 +24,11 @@ function expiryStatus(e: string | null) {
   const d = (new Date(e).getTime() - Date.now()) / 86400000
   return d < 90 ? 'critical' : d < 180 ? 'warning' : 'ok'
 }
+function fmtBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 export default async function DocumentDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -37,7 +45,18 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
 
   if (!doc) redirect('/dashboard/documents')
 
-  const extracted = doc.extracted_data as Record<string, string> | null
+  const rawExtracted = doc.extracted_data as Record<string, string> | null
+
+  // Decrypt sensitive fields server-side before rendering
+  let extracted: Record<string, string> | null = null
+  if (rawExtracted) {
+    try {
+      extracted = await decryptSensitiveFields(rawExtracted)
+    } catch {
+      extracted = rawExtracted
+    }
+  }
+
   const Icon = DOC_ICONS[doc.doc_type] ?? FileText
   const status = expiryStatus(doc.expires_at)
 
@@ -47,25 +66,13 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
   const isPdf = fileType === 'application/pdf'
 
   // Files are encrypted in storage — serve through /api/document-preview/[id]
-  // which authenticates the user, downloads, decrypts, and streams the original bytes.
-  // The raw storage path is never exposed to the client.
   const previewUrl = storagePath ? `/api/document-preview/${doc.id}` : null
 
-  // Build ordered field list
+  // Build ordered field list — skip meta fields
   const SKIP_KEYS = new Set(['document_type', 'confidence_notes'])
-  const fields = extracted
-    ? Object.entries(extracted).filter(([k, v]) => !SKIP_KEYS.has(k) && v)
+  const fields: [string, string][] = extracted
+    ? Object.entries(extracted).filter(([k, v]) => !SKIP_KEYS.has(k) && v) as [string, string][]
     : []
-
-  const LABELS: Record<string, string> = {
-    full_name: 'Full name', first_name: 'First name', last_name: 'Last name',
-    date_of_birth: 'Date of birth', place_of_birth: 'Place of birth',
-    passport_number: 'Document number', nationality: 'Nationality',
-    issue_date: 'Issue date', expiry_date: 'Expiry date',
-    issuing_country: 'Issuing country', gender: 'Gender',
-    oci_number: 'OCI number', certificate_number: 'Certificate number',
-    issuing_authority: 'Issuing authority',
-  }
 
   return (
     <DashboardShell activePage="documents" pageTitle={DOC_TYPE_LABELS[doc.doc_type] ?? doc.doc_type}>
@@ -102,8 +109,9 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
         {/* File preview — served via decrypt API, never via signed URL */}
         {previewUrl && isImage && (
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', marginBottom: 20 }}>
-            <div style={{ padding: '18px 28px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ padding: '18px 28px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', margin: 0 }}>Document preview</h2>
+              <DownloadButton documentId={doc.id} />
             </div>
             <div style={{ padding: 24, display: 'flex', justifyContent: 'center', background: 'var(--off-white)' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -113,6 +121,16 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
                 style={{ maxHeight: 300, maxWidth: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}
               />
             </div>
+            {(doc.file_size_bytes || doc.original_filename) && (
+              <div style={{ padding: '12px 28px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20 }}>
+                {doc.original_filename && (
+                  <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>{doc.original_filename}</span>
+                )}
+                {doc.file_size_bytes && (
+                  <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>{fmtBytes(doc.file_size_bytes)}</span>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -123,16 +141,22 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: '0 0 2px' }}>Original document</p>
-              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>Decrypted on demand — never cached</p>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+                Decrypted on demand — never cached
+                {doc.file_size_bytes ? ` · ${fmtBytes(doc.file_size_bytes)}` : ''}
+              </p>
             </div>
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', borderRadius: 10, background: 'var(--navy)', color: 'white', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}
-            >
-              View PDF <ExternalLink size={13} />
-            </a>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <a
+                href={previewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 38, padding: '0 16px', borderRadius: 10, border: '1px solid var(--border)', background: 'white', color: 'var(--navy)', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}
+              >
+                View PDF
+              </a>
+              <DownloadButton documentId={doc.id} />
+            </div>
           </div>
         )}
 
@@ -144,29 +168,9 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
           </div>
         )}
 
-        {/* Fields grid */}
+        {/* Fields grid — client component handles masking */}
         {fields.length > 0 && (
-          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', marginBottom: 20 }}>
-            <div style={{ padding: '18px 28px', borderBottom: '1px solid var(--border)' }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', margin: 0 }}>Extracted fields</h2>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0 }}>
-              {fields.map(([key, value], i) => (
-                <div key={key} style={{
-                  padding: '16px 28px',
-                  background: i % 2 === 0 ? 'white' : 'var(--off-white)',
-                  borderBottom: i < fields.length - 2 ? '1px solid var(--border)' : 'none',
-                }}>
-                  <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>
-                    {LABELS[key] ?? key.replace(/_/g, ' ')}
-                  </p>
-                  <p style={{ fontSize: 15, color: 'var(--text-primary)', fontFamily: key.includes('number') || key.includes('oci') ? 'var(--font-mono)' : 'var(--font-body)' }}>
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <DocumentFields fields={fields} />
         )}
 
         {/* Danger zone */}

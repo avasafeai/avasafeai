@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getDocumentFile } from '@/lib/storage-helpers'
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   // Authenticate the requesting user
@@ -11,11 +11,13 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return new NextResponse('Unauthorized', { status: 401 })
 
+  const isDownload = req.nextUrl.searchParams.get('download') === 'true'
+
   // Fetch document — scoped to owner so users cannot preview each other's files
   const serviceClient = createServiceClient()
   const { data: document } = await serviceClient
     .from('documents')
-    .select('storage_path, file_type, user_id')
+    .select('storage_path, file_type, original_filename, user_id')
     .eq('id', params.id)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -30,11 +32,17 @@ export async function GET(
     return new NextResponse('File unavailable', { status: 404 })
   }
 
+  const mimeType = document.file_type ?? 'application/octet-stream'
+  const filename = document.original_filename ?? `document-${params.id}`
+  const disposition = isDownload
+    ? `attachment; filename="${filename}"`
+    : 'inline'
+
   return new NextResponse(new Uint8Array(fileBuffer), {
     headers: {
-      'Content-Type': document.file_type ?? 'application/octet-stream',
+      'Content-Type': mimeType,
       'Cache-Control': 'private, no-store',   // never cache decrypted files
-      'Content-Disposition': 'inline',
+      'Content-Disposition': disposition,
     },
   })
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@/lib/supabase/server'
 import { Json, ValidationResult } from '@/types/supabase'
+import { decryptSensitiveFields } from '@/lib/field-encryption'
 import { z } from 'zod'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! })
@@ -22,6 +23,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
   const { form_data, application_id } = parsed.data
+
+  // Decrypt any field-encrypted values before sending to Claude
+  let decryptedFormData: Record<string, unknown>
+  try {
+    decryptedFormData = await decryptSensitiveFields(form_data as Record<string, string>)
+  } catch {
+    decryptedFormData = form_data
+  }
 
   // Verify application belongs to user
   const { data: app } = await supabase
@@ -50,7 +59,7 @@ Blocker = will likely cause rejection. Warning = should fix but can proceed.
 
 Check for: name mismatches across documents, photo specification violations, wrong jurisdiction, passport validity under 6 months, missing required documents, address proof older than 3 months, apostille requirements, name change affidavits.
 
-Application: ${JSON.stringify(form_data)}
+Application: ${JSON.stringify(decryptedFormData)}
 
 Return JSON only.`,
     }],
