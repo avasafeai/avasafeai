@@ -14,9 +14,10 @@ const RESEND_COOLDOWN = 60 // seconds
 // ─── Password rules ──────────────────────────────────────────────────────────
 
 const PASSWORD_RULES = [
-  { id: 'length', label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-  { id: 'number', label: 'At least one number', test: (p: string) => /\d/.test(p) },
-  { id: 'letter', label: 'At least one letter', test: (p: string) => /[a-zA-Z]/.test(p) },
+  { id: 'length',  label: 'At least 8 characters',                   test: (p: string) => p.length >= 8 },
+  { id: 'number',  label: 'At least one number',                      test: (p: string) => /\d/.test(p) },
+  { id: 'letter',  label: 'At least one letter',                      test: (p: string) => /[a-zA-Z]/.test(p) },
+  { id: 'special', label: 'At least one special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(p) },
 ]
 
 function passwordValid(p: string) {
@@ -41,7 +42,7 @@ function translateError(raw: string, mode?: 'login' | 'signup'): { field: 'email
     return { field: 'email', message: 'Please enter a valid email address.' }
   }
   if (msg.includes('password') && (msg.includes('weak') || msg.includes('short') || msg.includes('least 6'))) {
-    return { field: 'password', message: "Password must be at least 8 characters." }
+    return { field: 'password', message: 'Password must be at least 8 characters with a number, letter and special character (!@#$%^&*)' }
   }
   // Login-specific errors
   if (msg.includes('invalid login credentials') || msg.includes('invalid credentials')) {
@@ -513,6 +514,25 @@ function AuthForm() {
                   {mode === 'signup' ? 'Start securing your documents today.' : mode === 'magic' ? "We'll email you a secure sign-in link." : 'Sign in to access your document locker.'}
                 </p>
               </div>
+
+              {/* Session timeout banner */}
+              {params.get('reason') === 'timeout' && (
+                <div style={{
+                  background: 'rgba(201,136,42,0.1)',
+                  border: '1px solid rgba(201,136,42,0.3)',
+                  borderRadius: 8,
+                  padding: '12px 16px',
+                  marginBottom: 20,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}>
+                  <span>🔒</span>
+                  <p style={{ fontSize: 13, color: '#C9882A', margin: 0 }}>
+                    Your session expired for security. Please sign in again.
+                  </p>
+                </div>
+              )}
 
               {/* General error */}
               <AnimatePresence>

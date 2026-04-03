@@ -4,6 +4,7 @@ import { canApply } from '@/lib/plan-utils'
 import type { Plan } from '@/lib/plan-utils'
 import DashboardShell from '@/components/DashboardShell'
 import UpgradePrompt from '@/components/UpgradePrompt'
+import { SessionTimeout } from '@/components/SessionTimeout'
 
 export default async function ApplyLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -31,5 +32,10 @@ export default async function ApplyLayout({ children }: { children: React.ReactN
     )
   }
 
-  return <>{children}</>
+  return (
+    <>
+      {children}
+      <SessionTimeout />
+    </>
+  )
 }

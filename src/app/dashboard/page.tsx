@@ -393,7 +393,7 @@ export default async function DashboardPage() {
                 AVA has everything she needs from your locker.
               </p>
             </div>
-            <Link href="/apply/oci_new" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px', flexShrink: 0 }}>
+            <Link href="/apply" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px', flexShrink: 0 }}>
               Start now →
             </Link>
           </div>
@@ -402,7 +402,7 @@ export default async function DashboardPage() {
             {apps.slice(0, 5).map((app) => (
               <Link
                 key={app.id}
-                href={`/apply/${app.service_type}/status`}
+                href={`/apply/status?id=${app.id}`}
                 style={{
                   background: 'white',
                   border: '1px solid var(--border)',

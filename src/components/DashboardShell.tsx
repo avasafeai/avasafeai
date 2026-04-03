@@ -54,7 +54,7 @@ export default async function DashboardShell({
       >
         {/* Wordmark */}
         <div style={{ padding: '28px 24px 24px' }}>
-          <Link href="/" aria-label="Avasafe AI" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
+          <Link href="/dashboard" aria-label="Avasafe AI" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
             <span style={{
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
@@ -131,7 +131,7 @@ export default async function DashboardShell({
             zIndex: 30,
           }}
         >
-          <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
+          <Link href="/dashboard" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'white' }}>ava</span>
             <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--gold)' }}>safe</span>
           </Link>

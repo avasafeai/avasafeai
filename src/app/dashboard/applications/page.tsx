@@ -56,7 +56,7 @@ export default async function ApplicationsPage() {
           {apps.map(app => {
             const s = STATUS_MAP[app.status] ?? { label: app.status, bg: 'var(--surface)', color: 'var(--text-tertiary)' }
             return (
-              <Link key={app.id} href={`/apply/status`} style={{ textDecoration: 'none' }}>
+              <Link key={app.id} href={`/apply/status?id=${app.id}`} style={{ textDecoration: 'none' }}>
                 <div
                   className="hover:bg-[var(--off-white)] hover:shadow-md transition-all duration-200"
                   style={{
