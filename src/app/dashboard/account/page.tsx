@@ -6,9 +6,10 @@ import PlanUpgradeButton from './PlanUpgradeButton'
 import SignOutButton from './SignOutButton'
 
 const PLAN_LABELS: Record<string, string> = {
-  locker: 'Document Locker',
-  apply: 'Locker + Apply',
-  family: 'Family',
+  free:           'Free',
+  locker:         'Locker',
+  guided:         'Guided',
+  human_assisted: 'Human Assisted',
 }
 
 export default async function AccountPage() {
@@ -63,8 +64,7 @@ export default async function AccountPage() {
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 4 }}>Renews {planExpires}</p>
               )}
             </div>
-            {plan === 'locker' && <PlanUpgradeButton targetPlan="apply" />}
-            {plan === 'apply' && <PlanUpgradeButton targetPlan="family" />}
+            {(plan === 'free' || plan === 'locker') && <PlanUpgradeButton targetPlan="locker" currentPlan={plan} />}
           </div>
         </div>
 

@@ -3,11 +3,20 @@ import { createClient } from '@/lib/supabase/server'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
 import ServiceCards from './ServiceCards'
+import type { Plan } from '@/lib/plan-utils'
 
 export default async function ApplyPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('plan')
+    .eq('id', user.id)
+    .single()
+
+  const userPlan = (profile?.plan ?? 'free') as Plan
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
@@ -26,7 +35,7 @@ export default async function ApplyPage() {
           className="mb-8"
         />
 
-        <ServiceCards />
+        <ServiceCards userPlan={userPlan} />
 
         <p style={{ marginTop: 32, fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           Not sure which to choose?{' '}

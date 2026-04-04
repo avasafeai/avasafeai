@@ -101,9 +101,10 @@ const PRICING = [
     name: 'Free',
     price: '$0',
     period: ' forever',
-    description: 'Start storing your documents today',
+    description: 'Start protecting your documents today',
     cta: 'Start free',
     highlighted: false,
+    badge: null as string | null,
     href: '/auth?mode=signup',
     features: [
       { text: 'Store up to 3 documents', included: true },
@@ -111,55 +112,59 @@ const PRICING = [
       { text: 'Basic document dashboard', included: true },
       { text: 'Smart expiry alerts', included: false },
       { text: 'Application preparation', included: false },
-      { text: 'Family profiles', included: false },
     ],
   },
   {
     name: 'Locker',
     price: '$19',
     period: '/year',
-    description: 'Secure document storage for life',
-    cta: 'Get started',
+    description: 'Keep your documents safe and up to date',
+    cta: 'Get Locker',
     highlighted: false,
+    badge: null as string | null,
     href: '/auth?mode=signup',
     features: [
-      { text: 'Store all your identity documents', included: true },
+      { text: 'Unlimited document storage', included: true },
       { text: 'AI extraction of every field', included: true },
       { text: 'Smart expiry alerts', included: true },
-      { text: '2 family profiles', included: true },
+      { text: 'Encrypted document download', included: true },
+      { text: 'Application preparation', included: false },
     ],
   },
   {
-    name: 'Locker + Apply',
-    price: '$49',
-    period: '/year',
-    description: 'Plus automated application prep',
-    cta: 'Get started',
+    name: 'Guided',
+    price: '$29',
+    period: '/application',
+    description: "Let AVA prepare your application and guide you through the portal",
+    cta: 'Start application',
     highlighted: true,
+    badge: 'Most popular' as string | null,
     href: '/auth?mode=signup',
     features: [
       { text: 'Everything in Locker', included: true },
-      { text: 'Automated OCI + passport renewal', included: true },
-      { text: 'Complete PDF mailing package', included: true },
-      { text: '$29 per application', included: true },
-      { text: '5 family profiles', included: true },
+      { text: 'AVA pre-fills your application', included: true },
+      { text: 'Validation against 10 rejection causes', included: true },
+      { text: 'Companion mode for portal', included: true },
+      { text: 'PDF mailing package', included: true },
       { text: 'Rejection guarantee', included: true },
     ],
   },
   {
-    name: 'Family',
-    price: '$99',
-    period: '/year',
-    description: 'For the whole family',
-    cta: 'Get started',
+    name: 'Human Assisted',
+    price: '$79',
+    period: '/application',
+    description: 'An Avasafe expert guides you through every step on a live screen share',
+    cta: 'Book expert session',
     highlighted: false,
+    badge: 'Best results' as string | null,
     href: '/auth?mode=signup',
     features: [
-      { text: 'Everything in Locker + Apply', included: true },
-      { text: 'Unlimited family profiles', included: true },
-      { text: 'Shared family locker', included: true },
-      { text: '$29 per application', included: true },
-      { text: 'Priority support', included: true },
+      { text: 'Everything in Guided', included: true },
+      { text: '45-minute 1-on-1 Zoom session', included: true },
+      { text: 'Expert guides portal submission', included: true },
+      { text: 'You handle passwords only', included: true },
+      { text: 'Priority 48-hour booking', included: true },
+      { text: 'Support until card arrives', included: true },
     ],
   },
 ]
@@ -174,6 +179,10 @@ const FAQ = [
     a: 'Your documents are encrypted with AES-256-GCM and stored in your private locker. Encryption keys are managed by Google Cloud KMS — even we cannot read your files directly. No human ever sees them. You can delete any document at any time.',
   },
   {
+    q: 'How does per-application pricing work?',
+    a: "You only pay when you need to apply. Guided ($29) and Human Assisted ($79) are one-time payments per application — not subscriptions. Locker ($19/year) is the only recurring charge and keeps your documents safe between applications. You can store documents and monitor expiry dates without ever paying for an application.",
+  },
+  {
     q: 'What exactly does AVA do for my OCI application?',
     a: 'AVA fills both the Indian government portal and the VFS Global portal automatically — every field, every document upload. She captures your ARN, generates a pre-addressed shipping label, and assembles a complete PDF package ready to mail.',
   },
@@ -182,16 +191,12 @@ const FAQ = [
     a: "Two things only. Pay the government fee directly (one tap — AVA opens the pre-filled payment page). Drop an envelope at UPS. That's it. About 10 minutes total.",
   },
   {
-    q: 'How is this different from human-powered services?',
-    a: 'Traditional services require you to send your passport details to a human via WhatsApp or email. Avasafe is fully automated — no human ever touches your documents. Your data never leaves our encrypted system.',
-  },
-  {
     q: 'What if my application gets rejected?',
     a: "If the rejection is caused by an error in AVA's validation, we fix your application at no cost. Our validation checks every known rejection cause before you pay.",
   },
   {
     q: 'What about complex edge cases — name changes, previous rejections?',
-    a: 'AVA handles most cases automatically. For genuine edge cases, human support is available for Locker + Apply and Family plan members.',
+    a: 'AVA handles most cases automatically. For genuine edge cases, choose Human Assisted ($79) and an Avasafe expert will guide you through every step on a live Zoom session.',
   },
 ]
 
@@ -1412,30 +1417,28 @@ export default function HomePage() {
                   background: plan.highlighted ? 'var(--white)' : 'var(--surface)',
                   border: plan.highlighted
                     ? '2px solid var(--gold)'
+                    : plan.name === 'Human Assisted'
+                    ? '1.5px solid var(--navy)'
                     : plan.name === 'Free'
                     ? '1.5px solid var(--border)'
                     : '1px solid var(--border)',
                   borderRadius: 16,
-                  boxShadow: plan.highlighted
-                    ? 'var(--shadow-gold)'
-                    : plan.name === 'Free'
-                    ? 'var(--shadow-sm)'
-                    : 'var(--shadow-sm)',
+                  boxShadow: plan.highlighted ? 'var(--shadow-gold)' : 'var(--shadow-sm)',
                   padding: 28,
                   display: 'flex',
                   flexDirection: 'column',
-                  transform: plan.highlighted ? 'scale(1.04)' : 'scale(1)',
+                  transform: plan.highlighted ? 'scale(1.03)' : 'scale(1)',
                   position: 'relative',
                 }}
               >
-                {plan.highlighted && (
+                {plan.badge && (
                   <div
                     style={{
                       position: 'absolute',
                       top: -13,
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      background: 'var(--gold)',
+                      background: plan.highlighted ? 'var(--gold)' : 'var(--navy)',
                       color: 'white',
                       fontSize: 11,
                       fontWeight: 600,
@@ -1447,7 +1450,7 @@ export default function HomePage() {
                       whiteSpace: 'nowrap',
                     }}
                   >
-                    Most popular
+                    {plan.badge}
                   </div>
                 )}
 
@@ -1560,15 +1563,11 @@ export default function HomePage() {
                     fontFamily: 'var(--font-display)',
                     textDecoration: 'none',
                     background: plan.highlighted
-                      ? 'var(--navy)'
+                      ? 'var(--gold)'
                       : plan.name === 'Free'
                       ? 'white'
                       : 'var(--navy)',
-                    color: plan.highlighted
-                      ? 'white'
-                      : plan.name === 'Free'
-                      ? 'var(--navy)'
-                      : 'white',
+                    color: plan.name === 'Free' ? 'var(--navy)' : 'white',
                     border: plan.name === 'Free' ? '1.5px solid var(--navy)' : 'none',
                     transition: 'background 200ms ease, transform 150ms ease',
                   }}
@@ -1588,13 +1587,13 @@ export default function HomePage() {
             style={{
               textAlign: 'center',
               marginTop: 40,
-              fontSize: 14,
+              fontSize: 13,
               fontFamily: 'var(--font-body)',
               color: 'var(--text-secondary)',
             }}
           >
-            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Rejection guarantee included</span>{' '}
-            on all Locker + Apply and Family applications.
+            No subscriptions for applications. Pay only when you apply.{' '}
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Locker is the only recurring charge.</span>
           </motion.p>
         </div>
       </section>

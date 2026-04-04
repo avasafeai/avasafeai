@@ -14,11 +14,20 @@ export default function PaymentPage() {
   const [serviceType, setServiceType] = useState('oci_new')
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
+  const [tier, setTier] = useState<'guided' | 'human_assisted'>('guided')
 
   useEffect(() => {
     setServiceType(sessionStorage.getItem('service_type') ?? 'oci_new')
-    setApplicationId(sessionStorage.getItem('application_id'))
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlId = urlParams.get('applicationId')
+    setApplicationId(urlId ?? sessionStorage.getItem('application_id'))
+    // Detect tier from a /api call or sessionStorage if needed — default guided
+    const storedPlan = sessionStorage.getItem('user_plan') ?? 'guided'
+    setTier(storedPlan === 'human_assisted' ? 'human_assisted' : 'guided')
   }, [])
+
+  const price = tier === 'human_assisted' ? '$79' : '$29'
+  const tierLabel = tier === 'human_assisted' ? 'Human Assisted' : 'Guided'
 
   async function handlePay() {
     setPaying(true)
@@ -61,16 +70,18 @@ export default function PaymentPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>
-                  {SERVICE_LABELS[serviceType] ?? serviceType}
+                  {SERVICE_LABELS[serviceType] ?? serviceType} — {tierLabel}
                 </p>
-                <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Automated application preparation</p>
+                <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
+                  {tier === 'human_assisted' ? '45-min expert Zoom session + full application package' : 'AI-validated application + full mailing package'}
+                </p>
               </div>
-              <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color: 'var(--navy)' }}>$29</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 18, color: 'var(--navy)' }}>{price}</p>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>Total today</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 20, color: 'var(--navy)' }}>$29</p>
+              <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 20, color: 'var(--navy)' }}>{price}</p>
             </div>
           </div>
 
@@ -120,7 +131,7 @@ export default function PaymentPage() {
                   Redirecting...
                 </>
               ) : (
-                <>Pay $29 securely <ArrowRight size={16} /></>
+                <>Pay {price} securely <ArrowRight size={16} /></>
               )}
             </button>
 

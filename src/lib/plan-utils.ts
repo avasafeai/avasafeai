@@ -1,4 +1,4 @@
-export type Plan = 'free' | 'locker' | 'apply' | 'family'
+export type Plan = 'free' | 'locker' | 'guided' | 'human_assisted'
 
 export const PLAN_LIMITS = {
   free: {
@@ -6,31 +6,63 @@ export const PLAN_LIMITS = {
     canApply: false,
     alertsEnabled: false,
     maxProfiles: 1,
+    humanAssistance: false,
+    label: 'Free',
+    price: '$0',
+    period: 'forever',
   },
   locker: {
     maxDocuments: Infinity,
     canApply: false,
     alertsEnabled: true,
-    maxProfiles: 2,
+    maxProfiles: 1,
+    humanAssistance: false,
+    label: 'Locker',
+    price: '$19',
+    period: 'per year',
   },
-  apply: {
+  guided: {
     maxDocuments: Infinity,
     canApply: true,
     alertsEnabled: true,
-    maxProfiles: 5,
+    maxProfiles: 1,
+    humanAssistance: false,
+    label: 'Guided',
+    price: '$29',
+    period: 'per application',
   },
-  family: {
+  human_assisted: {
     maxDocuments: Infinity,
     canApply: true,
     alertsEnabled: true,
-    maxProfiles: Infinity,
+    maxProfiles: 1,
+    humanAssistance: true,
+    label: 'Human Assisted',
+    price: '$79',
+    period: 'per application',
   },
-} satisfies Record<Plan, { maxDocuments: number; canApply: boolean; alertsEnabled: boolean; maxProfiles: number }>
+} satisfies Record<Plan, {
+  maxDocuments: number
+  canApply: boolean
+  alertsEnabled: boolean
+  maxProfiles: number
+  humanAssistance: boolean
+  label: string
+  price: string
+  period: string
+}>
 
 export function canAddDocument(plan: Plan, currentCount: number): boolean {
   return currentCount < PLAN_LIMITS[plan].maxDocuments
 }
 
-export function canApply(plan: Plan): boolean {
+export function canUserApply(plan: Plan): boolean {
   return PLAN_LIMITS[plan].canApply
 }
+
+export function hasHumanAssistance(plan: Plan): boolean {
+  return PLAN_LIMITS[plan].humanAssistance
+}
+
+// Legacy alias — keep so existing imports don't break
+export const canApply = canUserApply

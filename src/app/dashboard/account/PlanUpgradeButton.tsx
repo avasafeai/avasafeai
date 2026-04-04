@@ -2,13 +2,18 @@
 
 import { useState } from 'react'
 
-const PLAN_LABELS: Record<string, string> = {
-  apply:  'Locker + Apply — $49/year',
-  family: 'Family — $99/year',
+interface Props {
+  targetPlan?: 'locker'
+  currentPlan?: string
 }
 
-export default function PlanUpgradeButton({ targetPlan = 'apply' }: { targetPlan?: 'apply' | 'family' }) {
+export default function PlanUpgradeButton({ targetPlan = 'locker', currentPlan }: Props) {
   const [loading, setLoading] = useState(false)
+
+  // If already on locker or above, no upgrade to show
+  if (currentPlan === 'locker' || currentPlan === 'guided' || currentPlan === 'human_assisted') {
+    return null
+  }
 
   async function handleUpgrade() {
     setLoading(true)
@@ -32,7 +37,7 @@ export default function PlanUpgradeButton({ targetPlan = 'apply' }: { targetPlan
       className="btn-gold"
       style={{ height: 40, padding: '0 18px', fontSize: 14, opacity: loading ? 0.7 : 1 }}
     >
-      {loading ? 'Redirecting...' : `Upgrade to ${PLAN_LABELS[targetPlan] ?? targetPlan}`}
+      {loading ? 'Redirecting...' : 'Upgrade to Locker — $19/year'}
     </button>
   )
 }
