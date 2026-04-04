@@ -25,7 +25,8 @@ create table if not exists public.documents (
   user_id         uuid references public.profiles(id) on delete cascade,
   doc_type        text not null check (doc_type in (
                     'us_passport','indian_passport','oci_card',
-                    'renunciation','pan_card','address_proof','photo','signature'
+                    'renunciation','pan_card','address_proof','photo','signature',
+                    'marriage_certificate','birth_certificate','indian_visa'
                   )),
   storage_path    text,   -- null after image is deleted post-extraction
   extracted_data  jsonb,
