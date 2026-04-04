@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
-import Link from 'next/link'
+
 import { CheckCircle } from 'lucide-react'
 
 const VFS_CENTERS: Record<string, string> = {
@@ -272,9 +272,7 @@ export default function FormPage() {
           flexShrink: 0,
         }}
       >
-        <Link href="/apply" style={{ textDecoration: 'none' }}>
-          <Logo size="md" />
-        </Link>
+        <Logo size="md" href="/dashboard" />
         <span
           style={{
             fontFamily: 'var(--font-mono)',
@@ -463,6 +461,7 @@ export default function FormPage() {
 
           {/* Navigation */}
           <div
+            className="form-sticky-cta"
             style={{
               display: 'flex',
               alignItems: 'center',

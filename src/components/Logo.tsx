@@ -3,6 +3,7 @@ import Link from 'next/link'
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  href?: string
 }
 
 const sizes = {
@@ -11,11 +12,11 @@ const sizes = {
   lg: '32px',
 }
 
-export default function Logo({ size = 'md', className = '' }: LogoProps) {
+export default function Logo({ size = 'md', className = '', href = '/' }: LogoProps) {
   const fontSize = sizes[size]
 
   return (
-    <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} className={className}>
+    <Link href={href} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} className={className}>
       <span
         style={{
           fontFamily: 'var(--font-display)',

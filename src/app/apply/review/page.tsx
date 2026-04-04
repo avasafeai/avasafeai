@@ -150,7 +150,7 @@ export default function ReviewPage() {
 
       {/* Header */}
       <header style={{ position: 'sticky', top: 0, background: 'rgba(250,250,248,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px', zIndex: 40 }}>
-        <Logo size="sm" />
+        <Logo size="sm" href="/dashboard" />
         <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-tertiary)', letterSpacing: '0.05em' }}>STEP 4 OF 5</span>
       </header>
 
@@ -313,7 +313,7 @@ export default function ReviewPage() {
             </div>
 
             {/* ── CTA ── */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            <div className="review-cta" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
               <button onClick={() => router.back()} style={{ flex: 1, height: 52, borderRadius: 12, border: '1.5px solid var(--border)', background: 'white', fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Edit application
               </button>

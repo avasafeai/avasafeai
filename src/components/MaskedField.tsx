@@ -56,13 +56,17 @@ export default function MaskedField({ value, revealAll = false, isMonospace = fa
   }
 
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'flex-start', gap: 6, flexWrap: 'wrap', maxWidth: '100%' }}>
       <span
         style={{
           fontFamily: isMonospace ? 'var(--font-mono)' : 'var(--font-body)',
-          fontSize: 15,
+          fontSize: isMonospace ? 13 : 14,
           color: 'var(--text-primary)',
-          letterSpacing: isVisible ? 'normal' : '0.08em',
+          letterSpacing: isVisible ? (isMonospace ? '0.05em' : 'normal') : '0.12em',
+          wordBreak: 'break-all',
+          overflowWrap: 'break-word',
+          whiteSpace: 'normal',
+          minWidth: 0,
         }}
       >
         {isVisible ? value : maskValue(value)}

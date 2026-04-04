@@ -20,17 +20,20 @@ CREATE INDEX IF NOT EXISTS idx_applications_service_type
   ON public.applications (service_type);
 
 -- ── requirements_cache ────────────────────────────────────────────────────────
+-- Drop and recreate: it is a cache table with no user data.
+-- Safe to re-run at any time.
 
-CREATE TABLE IF NOT EXISTS public.requirements_cache (
+DROP TABLE IF EXISTS public.requirements_cache;
+
+CREATE TABLE public.requirements_cache (
   id          uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
   service_id  text        NOT NULL,
   fetched_at  timestamptz NOT NULL DEFAULT now(),
   result      jsonb       NOT NULL
 );
 
--- No RLS needed — this is public read-only data; write via service role only.
--- Restrict to service role by not enabling RLS (default: no RLS = service role only when called server-side).
+-- No RLS needed — public read-only data; writes go via service role only.
 
 -- Index for fast cache lookup
-CREATE INDEX IF NOT EXISTS idx_requirements_cache_service_id
+CREATE INDEX idx_requirements_cache_service_id
   ON public.requirements_cache (service_id, fetched_at DESC);

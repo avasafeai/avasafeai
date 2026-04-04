@@ -116,7 +116,7 @@ export default function SubmitVFSPage() {
       </div>
 
       <header style={{ height: 64, background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
-        <Logo size="sm" />
+        <Logo size="sm" href="/dashboard" />
         <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>VFS Registration</span>
         <div style={{ width: 80 }} />
       </header>

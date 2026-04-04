@@ -221,7 +221,7 @@ export default function SubmitPage() {
 
       {/* Header */}
       <header style={{ height: 64, background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
-        <Logo size="sm" />
+        <Logo size="sm" href="/dashboard" />
         <div style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center' }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>{currentSection.name}</span>
           <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>Section {sectionIdx + 1} of {SECTIONS.length}</span>

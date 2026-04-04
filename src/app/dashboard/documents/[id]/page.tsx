@@ -83,7 +83,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
         </Link>
 
         {/* Header card */}
-        <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 32px', boxShadow: 'var(--shadow-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div className="doc-detail-header" style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '28px 32px', boxShadow: 'var(--shadow-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon size={24} color="white" />
           </div>
@@ -118,11 +118,11 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
               <img
                 src={previewUrl}
                 alt={DOC_TYPE_LABELS[doc.doc_type] ?? 'Document'}
-                style={{ maxHeight: 300, maxWidth: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}
+                style={{ maxHeight: 250, maxWidth: '100%', width: '100%', objectFit: 'contain', borderRadius: 8, boxShadow: 'var(--shadow-sm)' }}
               />
             </div>
             {(doc.file_size_bytes || doc.original_filename) && (
-              <div style={{ padding: '12px 28px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20 }}>
+              <div className="doc-file-metadata" style={{ padding: '12px 28px', borderTop: '1px solid var(--border)', display: 'flex', gap: 20 }}>
                 {doc.original_filename && (
                   <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>{doc.original_filename}</span>
                 )}

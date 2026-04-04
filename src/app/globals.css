@@ -320,3 +320,102 @@ body {
   50%  { transform: translateX(80%);  width: 60%; }
   100% { transform: translateX(200%); width: 60%; }
 }
+
+/* ── Responsive utilities ──────────────────────────────────────────────────── */
+
+/* Document fields: 2-col desktop → 1-col mobile */
+.doc-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+@media (max-width: 639px) {
+  .doc-fields-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Every cell gets a bottom border on mobile since alternating row logic breaks */
+  .doc-fields-grid > div {
+    border-bottom: 1px solid var(--border) !important;
+    background: white !important;
+  }
+  .doc-fields-grid > div:last-child {
+    border-bottom: none !important;
+  }
+}
+
+/* Field values: always wrap, never clip */
+.field-value {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  overflow: visible;
+}
+.field-value-mono {
+  font-family: var(--font-mono);
+  font-size: 13px !important;
+  word-break: break-all;
+  letter-spacing: 0.05em;
+  overflow-wrap: break-word;
+}
+
+/* Auth page: hide left panel on mobile */
+@media (max-width: 767px) {
+  .auth-left-panel { display: none !important; }
+  .auth-right-panel { width: 100% !important; max-width: 100% !important; flex: 1 !important; }
+}
+
+/* Apply form: sticky continue button on mobile */
+@media (max-width: 639px) {
+  .form-sticky-cta {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid var(--border);
+    padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+    margin-top: 8px;
+    z-index: 10;
+  }
+}
+
+/* Review CTA: stack on mobile */
+@media (max-width: 479px) {
+  .review-cta {
+    flex-direction: column !important;
+  }
+  .review-cta > button {
+    flex: unset !important;
+    width: 100% !important;
+  }
+}
+
+/* Document detail header: wrap on mobile */
+@media (max-width: 639px) {
+  .doc-detail-header {
+    flex-wrap: wrap;
+    padding: 20px !important;
+  }
+  .doc-detail-header .badge {
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
+  }
+  .doc-file-metadata {
+    flex-wrap: wrap;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+  }
+}
+
+/* Landing page grid: 2-col on tablet → 1-col on mobile */
+@media (max-width: 767px) {
+  .landing-grid-2 { grid-template-columns: 1fr !important; }
+  .pricing-grid   { grid-template-columns: 1fr !important; }
+  .trust-grid     { grid-template-columns: 1fr !important; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .pricing-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* Prevent any page from causing horizontal scroll */
+body { overflow-x: hidden; }
+* { max-width: 100%; box-sizing: border-box; }
