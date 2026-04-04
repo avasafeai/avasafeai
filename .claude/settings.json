@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e \"require\\(''pdf-lib''\\); console.log\\(''pdf-lib ok''\\)\")"
+      "Bash(node -e \"require\\(''pdf-lib''\\); console.log\\(''pdf-lib ok''\\)\")",
+      "Bash(node -e \"const a = require\\(''''@anthropic-ai/sdk''''\\); console.log\\(a.version ?? ''''no version''''\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare"
     ]
   }
 }
