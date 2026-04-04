@@ -89,10 +89,17 @@ export interface Database {
           status: string
           form_data: Json | null
           validation_errors: Json | null
+          validation_results: Json | null
           stripe_payment_id: string | null
           arn: string | null
           vfs_reference: string | null
           package_url: string | null
+          registration_number: string | null
+          vfs_submitted_at: string | null
+          package_downloaded_at: string | null
+          tracking_number: string | null
+          portal_progress: Json | null
+          readiness_score: number | null
           created_at: string
           updated_at: string
         }
@@ -103,10 +110,17 @@ export interface Database {
           status?: string
           form_data?: Json | null
           validation_errors?: Json | null
+          validation_results?: Json | null
           stripe_payment_id?: string | null
           arn?: string | null
           vfs_reference?: string | null
           package_url?: string | null
+          registration_number?: string | null
+          vfs_submitted_at?: string | null
+          package_downloaded_at?: string | null
+          tracking_number?: string | null
+          portal_progress?: Json | null
+          readiness_score?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -117,10 +131,17 @@ export interface Database {
           status?: string
           form_data?: Json | null
           validation_errors?: Json | null
+          validation_results?: Json | null
           stripe_payment_id?: string | null
           arn?: string | null
           vfs_reference?: string | null
           package_url?: string | null
+          registration_number?: string | null
+          vfs_submitted_at?: string | null
+          package_downloaded_at?: string | null
+          tracking_number?: string | null
+          portal_progress?: Json | null
+          readiness_score?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -193,4 +214,25 @@ export interface ValidationResult {
   blockers: ValidationError[]
   warnings: ValidationError[]
   passed_checks: string[]
+}
+
+export interface ReadinessCheck {
+  id: string
+  title: string
+  status: 'passed' | 'failed' | 'warning'
+  severity: 'blocker' | 'warning' | 'medium' | 'suggestion' | null
+  message: string
+  fix: string | null
+  field: string | null
+  correct_value: string | null
+}
+
+export interface ReadinessResult {
+  score: number
+  status: 'ready' | 'almost_ready' | 'needs_attention'
+  checks_passed: number
+  issues_total: number
+  blockers: number
+  warnings: number
+  checks: ReadinessCheck[]
 }

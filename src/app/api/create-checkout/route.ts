@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
       },
     ],
     mode: 'payment',
-    success_url: `${appUrl}/apply/package`,
+    success_url: `${appUrl}/apply/complete`,
     cancel_url: `${appUrl}/apply/review`,
     metadata: { application_id, user_id: user.id },
     customer_email: user.email,

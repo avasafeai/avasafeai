@@ -5,13 +5,73 @@ import DashboardShell from '@/components/DashboardShell'
 import { CheckCircle, Circle, Clock, ClipboardList, Plus } from 'lucide-react'
 
 const STATUS_TIMELINE = [
-  { key: 'paid',              label: 'Payment received',    desc: 'Your application fee has been received.' },
-  { key: 'package_generated', label: 'Package prepared',    desc: 'AVA has prepared your complete application package.' },
-  { key: 'submitted',         label: 'Submitted to VFS',    desc: 'Your physical package has been received at VFS.' },
-  { key: 'approved',          label: 'Approved',            desc: 'Your application has been approved.' },
+  {
+    key: 'validated',
+    label: 'Application prepared',
+    desc: 'AVA validated your application against 10 rejection rules.',
+    statusKeys: ['validated', 'paid', 'package_generated', 'submitted', 'approved'],
+  },
+  {
+    key: 'paid',
+    label: 'Validated by AVA',
+    desc: 'Payment received and application confirmed.',
+    statusKeys: ['paid', 'package_generated', 'submitted', 'approved'],
+  },
+  {
+    key: 'package_generated',
+    label: 'Government portal submitted',
+    desc: 'AVA completed your government portal application.',
+    statusKeys: ['package_generated', 'submitted', 'approved'],
+  },
+  {
+    key: 'submitted',
+    label: 'VFS portal submitted',
+    desc: 'AVA registered your application on VFS and generated your shipping label.',
+    statusKeys: ['submitted', 'approved'],
+  },
+  {
+    key: 'mailed',
+    label: 'Package mailed',
+    desc: 'Your physical package is on its way to VFS.',
+    statusKeys: ['approved'],
+    extraField: 'tracking_number',
+  },
+  {
+    key: 'processing',
+    label: 'Processing at VFS',
+    desc: 'VFS is reviewing your submitted documents.',
+    statusKeys: [],
+  },
+  {
+    key: 'consulate',
+    label: 'Forwarded to consulate',
+    desc: 'Your application has been forwarded to the Indian consulate for review.',
+    statusKeys: [],
+  },
+  {
+    key: 'approved',
+    label: 'OCI card issued',
+    desc: 'Your OCI card has been issued and dispatched.',
+    statusKeys: ['approved'],
+  },
 ]
 
-const STATUS_ORDER = ['draft', 'locker_ready', 'form_complete', 'validated', 'paid', 'package_generated', 'submitted', 'approved']
+// Status order for index comparison
+const STATUS_ORDER = [
+  'draft', 'locker_ready', 'form_complete', 'validated', 'paid',
+  'package_generated', 'submitted', 'approved',
+]
+
+const STAGE_STATUS_MAP: Record<string, string> = {
+  validated:        'validated',
+  paid:             'paid',
+  package_generated:'package_generated',
+  submitted:        'submitted',
+  mailed:           'submitted',  // mailed is inferred from tracking_number
+  processing:       'submitted',
+  consulate:        'submitted',
+  approved:         'approved',
+}
 
 const SERVICE_LABELS: Record<string, string> = {
   oci_new:          'OCI Card — New Application',
@@ -28,8 +88,7 @@ export default async function StatusPage({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  // If a specific id is provided, load that application
-  let app = null
+  let app: Record<string, unknown> | null = null
   if (searchParams.id) {
     const { data } = await supabase
       .from('applications')
@@ -39,7 +98,6 @@ export default async function StatusPage({
       .maybeSingle()
     app = data
   } else {
-    // Fall back to the most recent application
     const { data } = await supabase
       .from('applications')
       .select('*')
@@ -50,7 +108,6 @@ export default async function StatusPage({
     app = data
   }
 
-  // Empty state — no application found
   if (!app) {
     return (
       <DashboardShell activePage="applications" pageTitle="Application Status">
@@ -72,7 +129,30 @@ export default async function StatusPage({
     )
   }
 
-  const currentIndex = STATUS_ORDER.indexOf(app.status)
+  const currentIndex = STATUS_ORDER.indexOf(app.status as string)
+  const hasMailed = !!(app as Record<string, unknown>).tracking_number
+
+  function isStageComplete(stageKey: string): boolean {
+    if (stageKey === 'mailed') return hasMailed
+    if (stageKey === 'processing') return false // always future unless explicitly set
+    if (stageKey === 'consulate') return false
+    const mappedStatus = STAGE_STATUS_MAP[stageKey]
+    if (!mappedStatus) return false
+    const mappedIndex = STATUS_ORDER.indexOf(mappedStatus)
+    return currentIndex > mappedIndex
+  }
+
+  function isStageCurrent(stageKey: string): boolean {
+    if (stageKey === 'mailed') return app!.status === 'submitted' && !hasMailed
+    if (stageKey === 'processing') return app!.status === 'submitted' && hasMailed
+    if (stageKey === 'consulate') return false
+    const mappedStatus = STAGE_STATUS_MAP[stageKey]
+    if (!mappedStatus) return false
+    const mappedIndex = STATUS_ORDER.indexOf(mappedStatus)
+    return currentIndex === mappedIndex
+  }
+
+  const a = app as Record<string, string>
 
   return (
     <DashboardShell activePage="applications" pageTitle="Application Status">
@@ -82,22 +162,35 @@ export default async function StatusPage({
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, marginBottom: 24, boxShadow: 'var(--shadow-sm)' }}>
           <p style={{ fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 6 }}>Service</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, color: 'var(--navy)', marginBottom: 16 }}>
-            {SERVICE_LABELS[app.service_type] ?? app.service_type}
+            {SERVICE_LABELS[a.service_type] ?? a.service_type}
           </p>
 
-          {app.vfs_reference && (
-            <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', display: 'inline-block' }}>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>VFS Reference</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>{app.vfs_reference}</p>
-            </div>
-          )}
-
-          {app.arn && (
-            <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px', display: 'inline-block', marginLeft: app.vfs_reference ? 12 : 0 }}>
-              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>Application Reference (ARN)</p>
-              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--navy)' }}>{app.arn}</p>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {a.vfs_reference && (
+              <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>VFS Reference</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{a.vfs_reference}</p>
+              </div>
+            )}
+            {a.arn && (
+              <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>Application Reference (ARN)</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{a.arn}</p>
+              </div>
+            )}
+            {a.registration_number && (
+              <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>Registration Number</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{a.registration_number}</p>
+              </div>
+            )}
+            {a.tracking_number && (
+              <div style={{ background: 'var(--surface)', borderRadius: 10, padding: '12px 16px' }}>
+                <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 4 }}>UPS Tracking</p>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700, color: 'var(--navy)' }}>{a.tracking_number}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Timeline */}
@@ -105,27 +198,29 @@ export default async function StatusPage({
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 24 }}>Progress</h2>
           <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
             {STATUS_TIMELINE.map((s, i) => {
-              const statusIdx = STATUS_ORDER.indexOf(s.key)
-              const done = currentIndex >= statusIdx
-              const active = currentIndex === statusIdx
+              const done = isStageComplete(s.key)
+              const active = isStageCurrent(s.key)
               const isLast = i === STATUS_TIMELINE.length - 1
 
               return (
                 <li key={s.key} style={{ display: 'flex', gap: 16, position: 'relative' }}>
-                  {/* Line */}
+                  {/* Connector line */}
                   {!isLast && (
                     <div style={{
                       position: 'absolute', left: 15, top: 32, bottom: 0, width: 2,
-                      background: done && !active ? 'var(--success)' : 'var(--border)',
+                      background: done ? 'var(--success)' : 'var(--border)',
                     }} />
                   )}
 
                   {/* Icon */}
-                  <div style={{ flexShrink: 0, width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', zIndex: 1,
-                    background: done ? (active ? 'var(--navy)' : 'var(--success)') : 'var(--surface)',
-                    border: active ? '2px solid var(--navy)' : done ? 'none' : '2px solid var(--border)',
+                  <div style={{
+                    flexShrink: 0, width: 32, height: 32, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    position: 'relative', zIndex: 1,
+                    background: done ? 'var(--success)' : active ? 'var(--navy)' : 'var(--surface)',
+                    border: active ? 'none' : done ? 'none' : '2px solid var(--border)',
                   }}>
-                    {done && !active
+                    {done
                       ? <CheckCircle size={16} color="white" />
                       : active
                       ? <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'white', animation: 'pulse 2s ease-in-out infinite' }} />
@@ -135,13 +230,13 @@ export default async function StatusPage({
 
                   {/* Content */}
                   <div style={{ flex: 1, paddingBottom: isLast ? 0 : 28 }}>
-                    <p style={{ fontSize: 15, fontWeight: done ? 600 : 400, color: done ? 'var(--text-primary)' : 'var(--text-tertiary)', marginBottom: 3 }}>
+                    <p style={{ fontSize: 15, fontWeight: done || active ? 600 : 400, color: done || active ? 'var(--text-primary)' : 'var(--text-tertiary)', marginBottom: 3 }}>
                       {s.label}
                     </p>
                     {active && (
-                      <p style={{ fontSize: 13, color: 'var(--navy)', fontWeight: 500 }}>In progress...</p>
+                      <p style={{ fontSize: 13, color: 'var(--navy)', fontWeight: 500 }}>In progress…</p>
                     )}
-                    {done && !active && (
+                    {done && (
                       <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{s.desc}</p>
                     )}
                   </div>

@@ -7,7 +7,7 @@ const SERVICES = [
   {
     id: 'oci_new',
     title: 'OCI Card (New Application)',
-    desc: 'First-time OCI card for Indian-origin US citizens and residents.',
+    desc: 'AVA validates against 10 common rejection causes before submission.',
     fee: '$29 Avasafe fee',
     govFee: '$275 govt. fee',
     Icon: Award,
@@ -15,7 +15,7 @@ const SERVICES = [
   {
     id: 'oci_renewal',
     title: 'OCI Card (Renewal)',
-    desc: 'Renew your OCI card after a new passport or name change.',
+    desc: 'AVA validates against 10 common rejection causes before submission.',
     fee: '$29 Avasafe fee',
     govFee: '$25 govt. fee',
     Icon: FileText,
@@ -23,7 +23,7 @@ const SERVICES = [
   {
     id: 'passport_renewal',
     title: 'Indian Passport Renewal',
-    desc: 'Renew your Indian passport from the US.',
+    desc: 'AVA validates against common rejection causes before submission.',
     fee: '$29 Avasafe fee',
     govFee: 'Govt. fee varies',
     Icon: ScrollText,
