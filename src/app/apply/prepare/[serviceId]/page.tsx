@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getService } from '@/lib/services/registry'
@@ -16,8 +16,8 @@ interface LockerStatus {
   present: boolean
 }
 
-export default function PreparePage({ params }: { params: Promise<{ serviceId: string }> }) {
-  const { serviceId } = use(params)
+export default function PreparePage({ params }: { params: { serviceId: string } }) {
+  const { serviceId } = params
   const router = useRouter()
   const service = getService(serviceId)
 
