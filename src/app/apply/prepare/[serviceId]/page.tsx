@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getService } from '@/lib/services/registry'
@@ -8,24 +8,65 @@ import type { DocumentRequirement } from '@/lib/services/registry'
 import type { RequirementsResult } from '@/lib/requirements-engine'
 import Logo from '@/components/Logo'
 import AvaMessage from '@/components/AvaMessage'
-import { CheckCircle, Circle, AlertCircle, ChevronRight, Upload } from 'lucide-react'
+import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
-interface LockerStatus {
-  doc_type: string
-  present: boolean
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type UploadState = 'idle' | 'uploading' | 'success' | 'error'
+
+interface DocUploadStatus {
+  presentInLocker: boolean
+  uploadState: UploadState
+  errorMsg: string | null
+  summary: string | null   // key field extracted, e.g. "John Smith"
 }
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getExtractedSummary(docType: string, data: Record<string, string>): string {
+  if (['us_passport', 'indian_passport', 'oci_card'].includes(docType)) {
+    const name = data.full_name || `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim()
+    if (name) return name
+  }
+  if (docType === 'photo') return 'Photo ready'
+  if (docType === 'signature') return 'Signature ready'
+  const count = Object.values(data).filter(v => v && v !== 'null' && v !== '').length
+  return `${count} fields extracted`
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function PreparePage({ params }: { params: { serviceId: string } }) {
   const { serviceId } = params
   const router = useRouter()
   const service = getService(serviceId)
 
-  const [lockerStatus, setLockerStatus] = useState<LockerStatus[]>([])
+  const [docStatuses, setDocStatuses] = useState<Record<string, DocUploadStatus>>({})
   const [coverage, setCoverage] = useState<number | null>(null)
   const [requirements, setRequirements] = useState<RequirementsResult | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [optionalExpanded, setOptionalExpanded] = useState(false)
+
+  // Compute coverage whenever docStatuses changes
+  const computeCoverage = useCallback((statuses: Record<string, DocUploadStatus>) => {
+    if (!service) return
+    const presentTypes = new Set(
+      Object.entries(statuses)
+        .filter(([, s]) => s.presentInLocker || s.uploadState === 'success')
+        .map(([docType]) => docType)
+    )
+    const total = service.prefill_map.filter(m => !m.transform?.startsWith('hardcode:')).length
+    const resolved = service.prefill_map.filter(m => {
+      if (m.transform?.startsWith('hardcode:')) return false
+      return presentTypes.has(m.source_doc)
+    }).length
+    const hardcoded = service.prefill_map.filter(m => m.transform?.startsWith('hardcode:')).length
+    const fullTotal = total + hardcoded
+    const fullResolved = resolved + hardcoded
+    setCoverage(fullTotal > 0 ? Math.round((fullResolved / fullTotal) * 100) : 0)
+  }, [service])
 
   useEffect(() => {
     if (!service) return
@@ -36,35 +77,24 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   async function loadData() {
     setLoading(true)
     const supabase = createClient()
-
-    // 1. Fetch locker documents
-    const { data: docs } = await supabase
-      .from('documents')
-      .select('doc_type')
-
+    const { data: docs } = await supabase.from('documents').select('doc_type')
     const presentTypes = new Set((docs ?? []).map(d => d.doc_type as string))
 
     if (service) {
-      const allRequired = [...service.required_documents, ...service.optional_documents]
-      const statuses: LockerStatus[] = allRequired.map(d => ({
-        doc_type: d.doc_type,
-        present: presentTypes.has(d.doc_type),
-      }))
-      setLockerStatus(statuses)
-
-      // Coverage estimate: how many prefill fields can be resolved
-      const total = service.prefill_map.filter(m => !m.transform?.startsWith('hardcode:')).length
-      const resolved = service.prefill_map.filter(m => {
-        if (m.transform?.startsWith('hardcode:')) return false
-        return presentTypes.has(m.source_doc)
-      }).length
-      const hardcoded = service.prefill_map.filter(m => m.transform?.startsWith('hardcode:')).length
-      const fullTotal = total + hardcoded
-      const fullResolved = resolved + hardcoded
-      setCoverage(fullTotal > 0 ? Math.round((fullResolved / fullTotal) * 100) : 0)
+      const allDocs = [...service.required_documents, ...service.optional_documents]
+      const statuses: Record<string, DocUploadStatus> = {}
+      for (const doc of allDocs) {
+        statuses[doc.doc_type] = {
+          presentInLocker: presentTypes.has(doc.doc_type),
+          uploadState: 'idle',
+          errorMsg: null,
+          summary: null,
+        }
+      }
+      setDocStatuses(statuses)
+      computeCoverage(statuses)
     }
 
-    // 2. Fetch requirements (non-blocking)
     try {
       const res = await fetch(`/api/requirements?serviceId=${serviceId}`)
       if (res.ok) {
@@ -76,44 +106,91 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     setLoading(false)
   }
 
+  function onDocUploaded(docType: string, extractedData: Record<string, string>) {
+    setDocStatuses(prev => {
+      const next = {
+        ...prev,
+        [docType]: {
+          ...prev[docType],
+          uploadState: 'success' as UploadState,
+          summary: getExtractedSummary(docType, extractedData),
+          errorMsg: null,
+        },
+      }
+      computeCoverage(next)
+      return next
+    })
+  }
+
+  function onDocUploadError(docType: string, msg: string) {
+    setDocStatuses(prev => ({
+      ...prev,
+      [docType]: { ...prev[docType], uploadState: 'error', errorMsg: msg },
+    }))
+  }
+
+  function onDocUploading(docType: string) {
+    setDocStatuses(prev => ({
+      ...prev,
+      [docType]: { ...prev[docType], uploadState: 'uploading', errorMsg: null },
+    }))
+  }
+
+  function onDocReset(docType: string) {
+    setDocStatuses(prev => {
+      const next = {
+        ...prev,
+        [docType]: { ...prev[docType], uploadState: 'idle' as UploadState, errorMsg: null, summary: null },
+      }
+      computeCoverage(next)
+      return next
+    })
+  }
+
   async function startApplication() {
     if (!service) return
     setStarting(true)
-
     const res = await fetch('/api/create-application', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ service_type: service.id }),
     })
-
     if (res.ok) {
       const { data } = await res.json() as { data: { id: string } }
       sessionStorage.setItem('application_id', data.id)
       sessionStorage.setItem('service_type', service.id)
     }
-
     router.push('/apply/form')
   }
 
   if (!service) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Service not found. <Link href="/apply" style={{ color: 'var(--gold)' }}>Go back</Link></p>
+        <p style={{ color: 'var(--text-secondary)' }}>
+          Service not found. <Link href="/apply" style={{ color: 'var(--gold)' }}>Go back</Link>
+        </p>
       </div>
     )
   }
 
   const requiredDocs = service.required_documents
   const optionalDocs = service.optional_documents
+
   const missingRequired = requiredDocs.filter(d => {
-    const s = lockerStatus.find(ls => ls.doc_type === d.doc_type)
-    return s ? !s.present : true
+    const s = docStatuses[d.doc_type]
+    return s ? (!s.presentInLocker && s.uploadState !== 'success') : true
   })
-  const canProceed = missingRequired.length === 0
+  const allRequiredPresent = missingRequired.length === 0
+  const nonePresent = requiredDocs.every(d => {
+    const s = docStatuses[d.doc_type]
+    return s ? (!s.presentInLocker && s.uploadState !== 'success') : true
+  })
+
+  // Celebration: all required docs now present (and at least one was just uploaded)
+  const justCompleted = allRequiredPresent && Object.values(docStatuses).some(s => s.uploadState === 'success')
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column' }}>
-      {/* Progress bar */}
       <div style={{ height: 4, background: 'var(--border)' }}>
         <div style={{ height: '100%', width: '10%', background: 'var(--navy)', transition: 'width 500ms ease' }} />
       </div>
@@ -125,46 +202,54 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
       </header>
 
       <main style={{ maxWidth: 640, margin: '0 auto', width: '100%', padding: '32px 24px 80px' }}>
+
         <AvaMessage
-          message={canProceed
-            ? `I already have everything I need. Let me show you what I&apos;ll pre-fill — then we can start.`
-            : `I need a couple more documents before I can fully prepare your ${service.short_name} application.`}
+          message={
+            justCompleted
+              ? 'All required documents found. I can now pre-fill everything — ready to start.'
+              : allRequiredPresent
+              ? `I already have everything I need. Let me show you what I'll pre-fill — then we can start.`
+              : `I need a few documents to prepare your ${service.short_name} application. Upload them below — I'll read them instantly.`
+          }
           className="mb-6"
         />
 
-        {/* Pre-fill coverage card */}
+        {/* Pre-fill coverage */}
         {coverage !== null && (
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>Pre-fill coverage</p>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700, color: coverage >= 80 ? 'var(--success)' : 'var(--gold)' }}>{coverage}%</span>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700,
+                color: coverage >= 90 ? 'var(--success)' : coverage >= 50 ? 'var(--gold)' : 'var(--text-tertiary)',
+                transition: 'color 600ms ease',
+              }}>
+                {coverage}%
+              </span>
             </div>
             <div style={{ height: 8, background: 'var(--surface)', borderRadius: 4, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${coverage}%`, background: coverage >= 80 ? 'var(--success)' : 'var(--gold)', borderRadius: 4, transition: 'width 800ms ease' }} />
+              <div style={{
+                height: '100%', width: `${coverage}%`,
+                background: coverage >= 90 ? 'var(--success)' : 'var(--gold)',
+                borderRadius: 4, transition: 'width 600ms ease-out, background 600ms ease',
+              }} />
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 8 }}>
-              {coverage >= 80
-                ? `AVA can pre-fill ${coverage}% of your application from your locker. You&apos;ll only need to confirm a few details.`
-                : `Add the missing documents below to increase pre-fill coverage to 100%.`}
+              {coverage >= 90
+                ? `AVA will pre-fill ${coverage}% of your application automatically.`
+                : `Upload the missing documents below to increase coverage to 100%.`}
             </p>
           </div>
         )}
 
-        {/* Required documents checklist */}
-        <DocChecklist
-          title="Required documents"
-          docs={requiredDocs}
-          lockerStatus={lockerStatus}
-          loading={loading}
-        />
-
-        {optionalDocs.length > 0 && (
-          <DocChecklist
-            title="Optional documents (recommended)"
-            docs={optionalDocs}
-            lockerStatus={lockerStatus}
-            loading={loading}
-          />
+        {/* Celebration banner */}
+        {justCompleted && (
+          <div style={{ background: 'var(--success-bg)', border: '1px solid var(--success)', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'center' }}>
+            <CheckCircle size={18} color="var(--success)" style={{ flexShrink: 0 }} />
+            <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--success)' }}>
+              All required documents found! AVA can now pre-fill everything.
+            </p>
+          </div>
         )}
 
         {/* Requirements change notice */}
@@ -178,97 +263,317 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
           </div>
         )}
 
+        {/* Required documents */}
+        <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
+          <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', marginBottom: 16 }}>Required documents</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {requiredDocs.map(doc => (
+              <DocCard
+                key={doc.id}
+                doc={doc}
+                status={docStatuses[doc.doc_type]}
+
+                onUploading={() => onDocUploading(doc.doc_type)}
+                onUploaded={(data) => onDocUploaded(doc.doc_type, data)}
+                onError={(msg) => onDocUploadError(doc.doc_type, msg)}
+                onReset={() => onDocReset(doc.doc_type)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Optional documents — collapsible */}
+        {optionalDocs.length > 0 && (
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, marginBottom: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <button
+              onClick={() => setOptionalExpanded(e => !e)}
+              style={{ width: '100%', padding: '20px 24px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+            >
+              <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>
+                Optional documents <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>(recommended)</span>
+              </p>
+              <ChevronDown
+                size={18}
+                color="var(--text-tertiary)"
+                style={{ flexShrink: 0, transition: 'transform 200ms ease', transform: optionalExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
+            </button>
+            {optionalExpanded && (
+              <div style={{ padding: '0 24px 24px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 16 }}>
+                  {optionalDocs.map(doc => (
+                    <DocCard
+                      key={doc.id}
+                      doc={doc}
+                      status={docStatuses[doc.doc_type]}
+      
+                      onUploading={() => onDocUploading(doc.doc_type)}
+                      onUploaded={(data) => onDocUploaded(doc.doc_type, data)}
+                      onError={(msg) => onDocUploadError(doc.doc_type, msg)}
+                      onReset={() => onDocReset(doc.doc_type)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Processing time */}
         {requirements?.processing_time && (
-          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 18px', marginBottom: 20 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--navy)' }}>Processing time: </strong>
-              {requirements.processing_time}
+              {requirements.processing_time.includes('week') ? requirements.processing_time : `${requirements.processing_time} weeks`}
             </p>
           </div>
         )}
 
-        {/* Add missing documents CTA */}
-        {missingRequired.length > 0 && (
-          <Link href="/dashboard/documents/add" style={{ display: 'block', background: 'var(--navy)', color: 'white', borderRadius: 12, padding: '14px 20px', textAlign: 'center', textDecoration: 'none', fontWeight: 600, fontSize: 15, marginBottom: 16 }}>
-            <Upload size={16} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-            Add missing documents to locker
-          </Link>
-        )}
-
         {/* Continue button */}
-        <button
+        <ContinueButton
+          allPresent={allRequiredPresent}
+          nonePresent={nonePresent}
+          missingCount={missingRequired.length}
+          starting={starting}
           onClick={startApplication}
-          disabled={starting || !canProceed}
-          style={{
-            width: '100%', height: 56, borderRadius: 14,
-            background: canProceed ? 'var(--gold)' : 'var(--surface)',
-            color: canProceed ? 'white' : 'var(--text-tertiary)',
-            border: 'none', cursor: canProceed ? 'pointer' : 'default',
-            fontWeight: 700, fontSize: 16, display: 'flex', alignItems: 'center',
-            justifyContent: 'center', gap: 8, transition: 'opacity 200ms ease',
-            opacity: starting ? 0.6 : 1,
-          }}
-        >
-          {starting ? 'Starting…' : canProceed ? 'Start application →' : 'Add required documents first'}
-          {canProceed && !starting && <ChevronRight size={18} />}
-        </button>
-
-        {canProceed && (
-          <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--text-tertiary)', marginTop: 10 }}>
-            AVA will pre-fill everything it can from your locker.
-          </p>
-        )}
+        />
       </main>
     </div>
   )
 }
 
-function DocChecklist({
-  title, docs, lockerStatus, loading,
-}: {
-  title: string
-  docs: DocumentRequirement[]
-  lockerStatus: LockerStatus[]
-  loading: boolean
-}) {
-  return (
-    <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
-      <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', marginBottom: 16 }}>{title}</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {docs.map(doc => {
-          const status = lockerStatus.find(ls => ls.doc_type === doc.doc_type)
-          const present = status?.present ?? false
+// ── DocCard ───────────────────────────────────────────────────────────────────
 
-          return (
-            <div key={doc.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-              {loading ? (
-                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--surface)', flexShrink: 0, marginTop: 1 }} />
-              ) : present ? (
-                <CheckCircle size={22} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
-              ) : (
-                <Circle size={22} color="var(--border)" style={{ flexShrink: 0, marginTop: 1 }} />
-              )}
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 14, fontWeight: present ? 500 : 400, color: present ? 'var(--text-primary)' : 'var(--text-secondary)', marginBottom: 2 }}>
-                  {doc.name}
-                  {!present && doc.mandatory && (
-                    <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 600, color: '#B91C1C', background: '#FEF2F2', borderRadius: 4, padding: '1px 6px' }}>Required</span>
-                  )}
-                </p>
-                {doc.notes && (
-                  <p style={{ fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>{doc.notes}</p>
-                )}
-              </div>
-              {!loading && present && (
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'var(--success-bg)', borderRadius: 6, padding: '2px 8px', flexShrink: 0, marginTop: 2 }}>
-                  In locker
-                </span>
-              )}
-            </div>
-          )
-        })}
+function DocCard({
+  doc, status,
+  onUploading, onUploaded, onError, onReset,
+}: {
+  doc: DocumentRequirement
+  status: DocUploadStatus | undefined
+  onUploading: () => void
+  onUploaded: (data: Record<string, string>) => void
+  onError: (msg: string) => void
+  onReset: () => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const presentInLocker = status?.presentInLocker ?? false
+  const uploadState = status?.uploadState ?? 'idle'
+
+  async function handleFile(file: File) {
+    onUploading()
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('doc_type', doc.doc_type)
+    try {
+      const res = await fetch('/api/extract-document', { method: 'POST', body: fd })
+      const json = await res.json() as { data?: Record<string, string>; error?: string }
+      if (!res.ok || json.error) {
+        onError(json.error ?? "We couldn't read this document. Try a clearer photo or different file.")
+      } else {
+        onUploaded(json.data ?? {})
+      }
+    } catch {
+      onError("Upload failed. Please check your connection and try again.")
+    }
+  }
+
+  function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) handleFile(file)
+    e.target.value = ''
+  }
+
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }
+
+  // ── Already in locker ──────────────────────────────────────────────────────
+  if (presentInLocker) {
+    return (
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <CheckCircle size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{doc.name}</p>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'var(--success-bg)', borderRadius: 5, padding: '1px 7px' }}>In locker</span>
+          </div>
+          {doc.notes && <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>{doc.notes}</p>}
+        </div>
       </div>
+    )
+  }
+
+  // ── Uploading ──────────────────────────────────────────────────────────────
+  if (uploadState === 'uploading') {
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{doc.name}</p>
+          {doc.mandatory && <span style={{ fontSize: 11, fontWeight: 600, color: '#B91C1C', background: '#FEF2F2', borderRadius: 4, padding: '1px 6px' }}>Required</span>}
+        </div>
+        <div style={{ border: '1px solid var(--border)', borderRadius: 10, padding: '16px 20px', background: 'var(--surface)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+            <div style={{ width: 20, height: 20, border: '2px solid var(--navy)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--navy)' }}>Reading…</p>
+          </div>
+          <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: '70%', background: 'var(--navy)', borderRadius: 2, animation: 'indeterminate 1.4s ease-in-out infinite' }} />
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>AVA is extracting fields from your document</p>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Success ────────────────────────────────────────────────────────────────
+  if (uploadState === 'success') {
+    return (
+      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <CheckCircle size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 2 }} />
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 2 }}>{doc.name}</p>
+          {status?.summary && (
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 3 }}>{status.summary}</p>
+          )}
+          <button
+            onClick={onReset}
+            style={{ fontSize: 12, color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+          >
+            Replace
+          </button>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'var(--success-bg)', borderRadius: 5, padding: '1px 7px', flexShrink: 0, marginTop: 2 }}>
+          Uploaded
+        </span>
+      </div>
+    )
+  }
+
+  // ── Error ──────────────────────────────────────────────────────────────────
+  if (uploadState === 'error') {
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+          <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{doc.name}</p>
+          {doc.mandatory && <span style={{ fontSize: 11, fontWeight: 600, color: '#B91C1C', background: '#FEF2F2', borderRadius: 4, padding: '1px 6px' }}>Required</span>}
+        </div>
+        <div style={{ border: '1px solid #FECACA', borderRadius: 10, padding: '14px 16px', background: '#FEF2F2' }}>
+          <p style={{ fontSize: 13, color: '#B91C1C', marginBottom: 10 }}>
+            {status?.errorMsg ?? "We couldn't read this document. Try a clearer photo or different file."}
+          </p>
+          <button
+            onClick={onReset}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#B91C1C', background: 'white', border: '1px solid #FECACA', borderRadius: 7, padding: '6px 12px', cursor: 'pointer' }}
+          >
+            <RefreshCw size={13} /> Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Idle — upload zone ─────────────────────────────────────────────────────
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
+        <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>{doc.name}</p>
+        {doc.mandatory && <span style={{ fontSize: 11, fontWeight: 600, color: '#B91C1C', background: '#FEF2F2', borderRadius: 4, padding: '1px 6px' }}>Required</span>}
+      </div>
+      {doc.notes && <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 8, lineHeight: 1.5 }}>{doc.notes}</p>}
+
+      <div
+        onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={onDrop}
+        style={{
+          border: `2px dashed ${isDragOver ? 'var(--navy)' : 'var(--border)'}`,
+          borderRadius: 10,
+          padding: '18px 16px',
+          background: isDragOver ? 'rgba(15,45,82,0.04)' : 'var(--surface)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'pointer',
+          transition: 'border-color 150ms ease, background 150ms ease',
+        }}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <UploadCloud size={22} color={isDragOver ? 'var(--navy)' : 'var(--text-tertiary)'} />
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center' }}>
+          Drop file here or{' '}
+          <span style={{ color: 'var(--navy)', fontWeight: 600, textDecoration: 'underline' }}>choose file</span>
+        </p>
+        <p style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>JPG, PNG or PDF · max 10MB</p>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,application/pdf"
+        style={{ display: 'none' }}
+        onChange={onInputChange}
+      />
+    </div>
+  )
+}
+
+// ── ContinueButton ────────────────────────────────────────────────────────────
+
+function ContinueButton({
+  allPresent, nonePresent, missingCount, starting, onClick,
+}: {
+  allPresent: boolean
+  nonePresent: boolean
+  missingCount: number
+  starting: boolean
+  onClick: () => void
+}) {
+  let bg = 'var(--gold)'
+  let color = 'white'
+  let border = 'none'
+  let label = starting ? 'Starting…' : 'Continue — AVA will pre-fill everything →'
+
+  if (!allPresent && !nonePresent) {
+    bg = 'transparent'
+    color = 'var(--navy)'
+    border = '2px solid var(--navy)'
+    label = starting ? 'Starting…' : `Continue with ${missingCount} missing document${missingCount > 1 ? 's' : ''}`
+  } else if (nonePresent) {
+    bg = 'var(--surface)'
+    color = 'var(--text-tertiary)'
+    border = '1px solid var(--border)'
+    label = starting ? 'Starting…' : 'Upload documents to continue'
+  }
+
+  return (
+    <div>
+      <button
+        onClick={onClick}
+        disabled={starting}
+        style={{
+          width: '100%', height: 56, borderRadius: 14,
+          background: bg, color, border,
+          cursor: starting ? 'default' : 'pointer',
+          fontWeight: 700, fontSize: 16,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transition: 'opacity 200ms ease',
+          opacity: starting ? 0.6 : 1,
+        }}
+      >
+        {label}
+        {allPresent && !starting && <ChevronRight size={18} />}
+      </button>
+      {!allPresent && missingCount > 0 && (
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 10 }}>
+          You can proceed without all documents — AVA will flag what&apos;s missing during review.
+        </p>
+      )}
     </div>
   )
 }
