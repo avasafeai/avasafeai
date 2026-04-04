@@ -131,7 +131,7 @@ export const OCI_NEW: ServiceConfig = {
       id: 'passport_photo',
       name: 'Passport photo',
       description: 'Square photo with white background',
-      doc_type: 'passport_photo',
+      doc_type: 'photo',
       mandatory: true,
       notes: 'Minimum 51x51mm, white background, 80% face coverage, JPEG format, max 200kb',
       which_pages: null,

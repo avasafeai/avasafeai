@@ -14,16 +14,27 @@ const MAX_SIZE = 10 * 1024 * 1024
 const docTypeSchema = z.enum([
   'us_passport', 'indian_passport', 'oci_card',
   'renunciation', 'pan_card', 'address_proof', 'photo', 'signature',
+  'marriage_certificate', 'birth_certificate', 'indian_visa',
 ])
 
 export async function POST(req: NextRequest) {
+  console.log('=== extract-document hit ===')
+  console.log('method:', req.method)
+  console.log('url:', req.url)
+  console.log('content-type:', req.headers.get('content-type'))
+
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Your session has expired. Please sign in again.' }, { status: 401 })
+  if (!user) {
+    console.log('extract-document: unauthenticated')
+    return NextResponse.json({ error: 'Your session has expired. Please sign in again.' }, { status: 401 })
+  }
 
   const formData = await req.formData()
   const file = formData.get('file') as File | null
   const docType = formData.get('doc_type') as string | null
+
+  console.log('extract-document: file=', file?.name, 'type=', file?.type, 'size=', file?.size, 'docType=', docType)
 
   if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
 
