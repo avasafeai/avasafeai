@@ -6,9 +6,10 @@ import { createClient } from '@/lib/supabase/client'
 import { getService } from '@/lib/services/registry'
 import type { DocumentRequirement } from '@/lib/services/registry'
 import type { RequirementsResult } from '@/lib/requirements-engine'
+import { isMinor } from '@/lib/prefill-engine'
 import Logo from '@/components/Logo'
 import AvaMessage from '@/components/AvaMessage'
-import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw } from 'lucide-react'
+import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw, Baby } from 'lucide-react'
 import Link from 'next/link'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -48,6 +49,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   const [, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [optionalExpanded, setOptionalExpanded] = useState(false)
+  const [isMinorApplication, setIsMinorApplication] = useState<boolean | null>(null)
 
   // Compute coverage whenever docStatuses changes
   const computeCoverage = useCallback((statuses: Record<string, DocUploadStatus>) => {
@@ -77,8 +79,20 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   async function loadData() {
     setLoading(true)
     const supabase = createClient()
-    const { data: docs } = await supabase.from('documents').select('doc_type')
+    const { data: docs } = await supabase.from('documents').select('doc_type, extracted_data')
     const presentTypes = new Set((docs ?? []).map(d => d.doc_type as string))
+
+    // Detect minor from existing locker docs
+    const passportDoc = (docs ?? []).find(d => d.doc_type === 'us_passport' || d.doc_type === 'child_passport')
+    if (passportDoc?.extracted_data) {
+      const pData = passportDoc.extracted_data as Record<string, string>
+      const dob = pData.date_of_birth
+      if (dob) {
+        const minor = isMinor(dob)
+        setIsMinorApplication(minor)
+        if (minor) setOptionalExpanded(true)
+      }
+    }
 
     if (service) {
       const allDocs = [...service.required_documents, ...service.optional_documents]
@@ -107,6 +121,24 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   }
 
   function onDocUploaded(docType: string, extractedData: Record<string, string>) {
+    // Minor detection: if user uploads applicant's passport, check DOB
+    if (docType === 'us_passport' || docType === 'child_passport') {
+      const dob = extractedData.date_of_birth
+      if (dob) {
+        const minor = isMinor(dob)
+        setIsMinorApplication(minor)
+        // Ensure parent passport slots exist in docStatuses
+        if (minor) {
+          setOptionalExpanded(true)
+          setDocStatuses(prev => {
+            const next = { ...prev }
+            if (!next['father_passport']) next['father_passport'] = { presentInLocker: false, uploadState: 'idle', errorMsg: null, summary: null }
+            if (!next['mother_passport']) next['mother_passport'] = { presentInLocker: false, uploadState: 'idle', errorMsg: null, summary: null }
+            return next
+          })
+        }
+      }
+    }
     setDocStatuses(prev => {
       const next = {
         ...prev,
@@ -188,7 +220,11 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   }
 
   const requiredDocs = service.required_documents
-  const optionalDocs = service.optional_documents
+  // Show conditional docs only when condition is met
+  const optionalDocs = service.optional_documents.filter(doc => {
+    if (doc.condition === 'minor_application') return isMinorApplication === true
+    return true
+  })
 
   const missingRequired = requiredDocs.filter(d => {
     const s = docStatuses[d.doc_type]
@@ -263,6 +299,19 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
             <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--success)' }}>
               All required documents found! AVA can now pre-fill everything.
             </p>
+          </div>
+        )}
+
+        {/* Minor application banner */}
+        {isMinorApplication === true && (
+          <div style={{ background: '#EFF6FF', border: '1px solid #93C5FD', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <Baby size={18} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ fontWeight: 600, fontSize: 14, color: '#1D4ED8', marginBottom: 2 }}>Minor application detected</p>
+              <p style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.5 }}>
+                Both parents&apos; passports are needed to pre-fill family details. They&apos;ll appear in the Optional documents section below.
+              </p>
+            </div>
           </div>
         )}
 

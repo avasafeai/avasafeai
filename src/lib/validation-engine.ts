@@ -4,6 +4,7 @@
 
 import type { ReadinessCheck } from '@/types/supabase'
 import type { ServiceConfig, ValidationRule } from './services/registry'
+import { isMinor } from './prefill-engine'
 
 export interface ValidationContext {
   formData: Record<string, string>
@@ -83,6 +84,43 @@ export function evaluateRule(
       const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email ?? '')
       if (!emailValid) return { id: rule.id, title: rule.title, status: 'warning', severity: 'suggestion', message: rule.error_message, fix: null, field: 'email', correct_value: null }
       return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: `Email: ${f.email}`, fix: null, field: null, correct_value: null }
+    }
+
+    case 'place_of_birth': {
+      const pob = (f.place_of_birth ?? '').toUpperCase().trim()
+      if (!pob) return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'No place of birth entered.', fix: null, field: null, correct_value: null }
+
+      // US locations are always correct — never flag
+      const isUSLocation =
+        pob.includes('U.S.A') || pob.includes('UNITED STATES') ||
+        pob.includes(' USA') || pob.includes(',USA') || pob.includes(', USA')
+      if (isUSLocation) {
+        return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: `Place of birth: ${f.place_of_birth}`, fix: null, field: null, correct_value: null }
+      }
+
+      // Flag only Indian locations where extra city/state detail was added
+      // e.g. "HYDERABAD, INDIA" — the portal wants exactly what's on the passport
+      const hasIndiaWithCity = pob.includes('INDIA') && pob.split(',').length > 1
+      if (hasIndiaWithCity) {
+        return { id: rule.id, title: rule.title, status: 'failed', severity: rule.severity, message: rule.error_message, fix: rule.fix_message, field: null, correct_value: null }
+      }
+
+      return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: `Place of birth: ${f.place_of_birth}`, fix: null, field: null, correct_value: null }
+    }
+
+    case 'parent_docs_for_minor': {
+      const dob = f.date_of_birth
+      if (!dob || !isMinor(dob)) {
+        return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'Adult application — no parent documents required.', fix: null, field: null, correct_value: null }
+      }
+      const hasParentDoc =
+        locker.includes('father_passport') ||
+        locker.includes('mother_passport') ||
+        locker.includes('indian_passport')
+      if (!hasParentDoc) {
+        return { id: rule.id, title: rule.title, status: 'failed', severity: rule.severity, message: rule.error_message, fix: rule.fix_message, field: null, correct_value: null }
+      }
+      return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'Parent documents present for minor application.', fix: null, field: null, correct_value: null }
     }
 
     // Required document presence checks — dynamic based on rule ID pattern

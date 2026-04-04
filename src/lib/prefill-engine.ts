@@ -12,6 +12,34 @@ export interface PrefillResult {
   missing_sources: string[]          // doc_types not in locker
 }
 
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+export function isMinor(dateOfBirth: string): boolean {
+  if (!dateOfBirth) return false
+  try {
+    const dob = new Date(dateOfBirth)
+    if (isNaN(dob.getTime())) return false
+    const today = new Date()
+    let age = today.getFullYear() - dob.getFullYear()
+    const m = today.getMonth() - dob.getMonth()
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
+    return age < 18
+  } catch {
+    return false
+  }
+}
+
+export function getFieldValue(
+  doc: Record<string, unknown>,
+  ...fieldNames: string[]
+): string | null {
+  for (const name of fieldNames) {
+    const val = doc[name]
+    if (val && typeof val === 'string' && val.trim()) return val.trim()
+  }
+  return null
+}
+
 // ── Transform functions ────────────────────────────────────────────────────────
 
 function applyTransform(value: string | null, transform: string | null): string {
@@ -63,6 +91,20 @@ function applyTransform(value: string | null, transform: string | null): string 
   return value
 }
 
+// ── Address field fallbacks ────────────────────────────────────────────────────
+// Claude extracts different field names from address proof documents.
+// Try multiple variants so we don't miss a match.
+
+function getAddressFallbacks(fieldId: string): string[] {
+  const fallbacks: Record<string, string[]> = {
+    address_line1: ['address', 'street_address', 'street', 'full_address', 'address1'],
+    city: ['town', 'locality', 'municipality'],
+    state: ['state_code', 'province', 'region', 'state_province'],
+    zip: ['zip_code', 'postal_code', 'postcode', 'post_code'],
+  }
+  return fallbacks[fieldId] ?? []
+}
+
 // ── buildPrefillMap ────────────────────────────────────────────────────────────
 
 export async function buildPrefillMap(
@@ -81,14 +123,22 @@ export async function buildPrefillMap(
   }
 
   // Index by doc_type for fast lookup (keep the latest upload per type)
-  const docMap: Record<string, Record<string, string>> = {}
+  const docMap: Record<string, Record<string, unknown>> = {}
   for (const doc of docs) {
     if (doc.extracted_data && typeof doc.extracted_data === 'object') {
-      docMap[doc.doc_type as string] = doc.extracted_data as Record<string, string>
+      docMap[doc.doc_type as string] = doc.extracted_data as Record<string, unknown>
     }
   }
 
-  // 2. Walk the prefill_map and resolve each field
+  // 2. Detect minor application
+  const applicantDoc = docMap['us_passport'] ?? docMap['child_passport']
+  const applicantDOB = getFieldValue(
+    applicantDoc ?? {},
+    'date_of_birth', 'dob',
+  )
+  const applicationIsForMinor = applicantDOB ? isMinor(applicantDOB) : false
+
+  // 3. Walk the prefill_map and resolve each field
   const prefilled: Record<string, string> = {}
   const sources: Record<string, string> = {}
   let mappableCount = 0
@@ -97,13 +147,9 @@ export async function buildPrefillMap(
   const missingSourceSet = new Set<string>()
 
   for (const mapping of service.prefill_map) {
-    // Hardcode transforms need no source document
+    // Hardcode transforms need no source document — process last to prevent overwrite
     if (mapping.transform?.startsWith('hardcode:')) {
-      prefilled[mapping.field_id] = applyTransform(null, mapping.transform)
-      sources[mapping.field_id] = 'hardcode'
-      mappableCount++
-      resolvedCount++
-      continue
+      continue  // handled in second pass below
     }
 
     mappableCount++
@@ -114,7 +160,15 @@ export async function buildPrefillMap(
       continue
     }
 
-    const rawValue = mapping.source_field ? sourceDoc[mapping.source_field] : null
+    // Try source_field first, then address-specific fallbacks
+    const rawValue = mapping.source_field
+      ? getFieldValue(
+          sourceDoc as Record<string, unknown>,
+          mapping.source_field,
+          ...getAddressFallbacks(mapping.field_id),
+        )
+      : null
+
     if (!rawValue) continue
 
     const transformed = applyTransform(rawValue, mapping.transform)
@@ -122,6 +176,42 @@ export async function buildPrefillMap(
       prefilled[mapping.field_id] = transformed
       sources[mapping.field_id] = mapping.source_doc
       resolvedCount++
+    }
+  }
+
+  // Second pass: apply hardcodes (these always win — cannot be overwritten by doc data)
+  for (const mapping of service.prefill_map) {
+    if (!mapping.transform?.startsWith('hardcode:')) continue
+    mappableCount++
+    prefilled[mapping.field_id] = applyTransform(null, mapping.transform)
+    sources[mapping.field_id] = 'hardcode'
+    resolvedCount++
+  }
+
+  // 4. Minor-specific overrides: parent names from parent passports
+  if (applicationIsForMinor) {
+    const fatherDoc = docMap['father_passport'] ?? docMap['indian_passport']
+    const motherDoc = docMap['mother_passport']
+
+    if (fatherDoc) {
+      const firstName = getFieldValue(fatherDoc as Record<string, unknown>, 'first_name', 'given_name') ?? ''
+      const lastName = getFieldValue(fatherDoc as Record<string, unknown>, 'last_name', 'surname') ?? ''
+      const fatherName = `${firstName} ${lastName}`.trim()
+      if (fatherName) {
+        prefilled['father_name'] = fatherName
+        sources['father_name'] = docMap['father_passport'] ? 'father_passport' : 'indian_passport'
+        if (!prefilled['father_name']) resolvedCount++  // only increment if new
+      }
+    }
+
+    if (motherDoc) {
+      const firstName = getFieldValue(motherDoc as Record<string, unknown>, 'first_name', 'given_name') ?? ''
+      const lastName = getFieldValue(motherDoc as Record<string, unknown>, 'last_name', 'surname') ?? ''
+      const motherName = `${firstName} ${lastName}`.trim()
+      if (motherName) {
+        prefilled['mother_name'] = motherName
+        sources['mother_name'] = 'mother_passport'
+      }
     }
   }
 

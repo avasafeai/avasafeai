@@ -9,6 +9,7 @@ export interface DocumentRequirement {
   mandatory: boolean
   notes: string | null
   which_pages: string | null
+  condition?: 'minor_application' | 'married' | null
 }
 
 export interface FieldMapping {
@@ -139,6 +140,26 @@ export const OCI_NEW: ServiceConfig = {
   ],
 
   optional_documents: [
+    {
+      id: 'father_passport',
+      name: "Father's passport",
+      description: "Father's current valid passport — bio data page",
+      doc_type: 'father_passport',
+      mandatory: false,
+      notes: "Required for minor child applications — bio data page only",
+      which_pages: 'Bio data page',
+      condition: 'minor_application',
+    },
+    {
+      id: 'mother_passport',
+      name: "Mother's passport",
+      description: "Mother's current valid passport — bio data page",
+      doc_type: 'mother_passport',
+      mandatory: false,
+      notes: "Required for minor child applications — bio data page only",
+      which_pages: 'Bio data page',
+      condition: 'minor_application',
+    },
     {
       id: 'marriage_certificate',
       name: 'Marriage certificate',
@@ -782,6 +803,17 @@ export const OCI_NEW: ServiceConfig = {
       check: 'email_valid',
       error_message: 'Add a valid email address for application updates.',
       fix_message: null,
+      fix_field: null,
+      fix_value: null,
+    },
+    {
+      id: 'parent_docs_for_minor',
+      title: 'Parent documents for minor',
+      severity: 'warning',
+      score_deduction: 8,
+      check: 'parent_docs_present_if_minor',
+      error_message: "For minor applications, upload both parents' passports so AVA can pre-fill family details automatically.",
+      fix_message: 'Upload parent passports to your locker on the prepare screen',
       fix_field: null,
       fix_value: null,
     },

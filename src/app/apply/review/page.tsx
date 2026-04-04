@@ -62,9 +62,8 @@ export default function ReviewPage() {
   const [result, setResult] = useState<ReadinessResult | null>(null)
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
-  const [paying, setPaying] = useState(false)
+  const [continuing, setContinuing] = useState(false)
   const [applicationId, setApplicationId] = useState<string | null>(null)
-  const [serviceType, setServiceType] = useState('oci_new')
   const [applyingFix, setApplyingFix] = useState<string | null>(null)
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
@@ -86,10 +85,8 @@ export default function ReviewPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const urlId = urlParams.get('applicationId')
     const id = urlId ?? sessionStorage.getItem('application_id')
-    const svc = sessionStorage.getItem('service_type') ?? 'oci_new'
     const stored = sessionStorage.getItem('form_data')
     setApplicationId(id)
-    setServiceType(svc)
     if (id) sessionStorage.setItem('application_id', id)
     let fd: Record<string, string> = {}
     if (stored) {
@@ -121,17 +118,10 @@ export default function ReviewPage() {
     }
   }
 
-  async function handlePay() {
+  function handleContinue() {
     if (!applicationId) return
-    setPaying(true)
-    const res = await fetch('/api/create-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ application_id: applicationId, service_type: serviceType }),
-    })
-    const { data } = (await res.json()) as { data: { url: string } }
-    if (data?.url) window.location.href = data.url
-    else setPaying(false)
+    setContinuing(true)
+    router.push(`/apply/complete?applicationId=${applicationId}`)
   }
 
   const score = result?.score ?? 0
@@ -325,19 +315,19 @@ export default function ReviewPage() {
                   Fix {blockers} blocker{blockers !== 1 ? 's' : ''} to continue
                 </button>
               ) : warnings > 0 ? (
-                <button onClick={handlePay} disabled={paying} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: paying ? 0.6 : 1 }}>
-                  {paying ? 'Redirecting...' : 'Continue with warnings →'}
+                <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>
+                  {continuing ? 'One moment…' : 'Continue with warnings →'}
                 </button>
               ) : (
-                <button onClick={handlePay} disabled={paying} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: paying ? 0.6 : 1 }}>
-                  {paying ? 'Redirecting...' : 'Application ready — continue →'}
+                <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>
+                  {continuing ? 'One moment…' : 'Application ready — continue →'}
                 </button>
               )}
             </div>
 
             {blockers > 0 && (
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                Fix all blockers above to enable payment.
+                Fix all blockers above to continue.
               </p>
             )}
           </div>

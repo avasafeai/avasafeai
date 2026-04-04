@@ -188,7 +188,7 @@ const PREFILL_TO_FORM: Array<{
   { prefillId: 'passport_number', formKey: 'passport_number' },
   { prefillId: 'date_of_issue', formKey: 'passport_issue_date', transform: ddmmToISO },
   { prefillId: 'date_of_expiry', formKey: 'passport_expiry_date', transform: ddmmToISO },
-  { prefillId: 'nationality', formKey: 'passport_issued_by' },
+  { prefillId: 'place_of_issue', formKey: 'passport_issued_by' },
   { prefillId: 'sex', formKey: 'gender', transform: normGender },
   { prefillId: 'father_name', formKey: 'father_name' },
   { prefillId: 'mother_name', formKey: 'mother_name' },
