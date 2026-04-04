@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
+import { createClient } from '@/lib/supabase/client'
 
 import { CheckCircle } from 'lucide-react'
 
@@ -173,6 +174,52 @@ const STEPS: Step[] = [
   },
 ]
 
+// ── Prefill mapping ─────────────────────────────────────────────────────────────
+
+const PREFILL_TO_FORM: Array<{
+  prefillId: string
+  formKey: keyof FormData
+  transform?: (v: string) => string
+}> = [
+  { prefillId: 'surname', formKey: 'last_name' },
+  { prefillId: 'given_name', formKey: 'first_name' },
+  { prefillId: 'date_of_birth', formKey: 'date_of_birth', transform: ddmmToISO },
+  { prefillId: 'place_of_birth', formKey: 'place_of_birth' },
+  { prefillId: 'passport_number', formKey: 'passport_number' },
+  { prefillId: 'date_of_issue', formKey: 'passport_issue_date', transform: ddmmToISO },
+  { prefillId: 'date_of_expiry', formKey: 'passport_expiry_date', transform: ddmmToISO },
+  { prefillId: 'nationality', formKey: 'passport_issued_by' },
+  { prefillId: 'sex', formKey: 'gender', transform: normGender },
+  { prefillId: 'father_name', formKey: 'father_name' },
+  { prefillId: 'mother_name', formKey: 'mother_name' },
+  { prefillId: 'address_line1', formKey: 'address_line1' },
+  { prefillId: 'city', formKey: 'address_city' },
+  { prefillId: 'state', formKey: 'address_state' },
+  { prefillId: 'zip', formKey: 'address_zip' },
+]
+
+const SOURCE_LABELS: Record<string, string> = {
+  us_passport: 'US passport',
+  indian_passport: 'Indian passport',
+  address_proof: 'address proof',
+  hardcode: 'AVA',
+  avasafe: 'AVA',
+}
+
+function ddmmToISO(v: string): string {
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : v
+}
+
+function normGender(v: string): string {
+  const u = v.toUpperCase()
+  if (u === 'M' || u === 'MALE') return 'Male'
+  if (u === 'F' || u === 'FEMALE') return 'Female'
+  return v
+}
+
+// ── Step helpers ───────────────────────────────────────────────────────────────
+
 function stepIsComplete(step: Step, form: FormData): boolean {
   if (step.optional) return true
   if (step.group) {
@@ -182,6 +229,21 @@ function stepIsComplete(step: Step, form: FormData): boolean {
   return true
 }
 
+function getAvaMessage(
+  step: Step,
+  prefillSources: Partial<Record<keyof FormData, string>>,
+): string {
+  const fields = step.group ? step.group.map(g => g.field) : step.field ? [step.field] : []
+  const prefilledField = fields.find(f => prefillSources[f])
+  if (prefilledField) {
+    const src = prefillSources[prefilledField]!
+    return `I found this in your ${SOURCE_LABELS[src] ?? 'documents'}. Confirm it looks correct — you can edit if needed.`
+  }
+  return step.ava
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function FormPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
@@ -189,15 +251,63 @@ export default function FormPage() {
   const [saving, setSaving] = useState(false)
   const [direction, setDirection] = useState<1 | -1>(1)
   const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [prefillSources, setPrefillSources] = useState<Partial<Record<keyof FormData, string>>>({})
+  const [editedFields, setEditedFields] = useState<Set<keyof FormData>>(new Set())
 
-  // Load application ID from sessionStorage on mount
+  // Load applicationId from URL params or sessionStorage, then load prefill data
   useEffect(() => {
-    const id = sessionStorage.getItem('application_id')
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlId = urlParams.get('applicationId')
+    const id = urlId ?? sessionStorage.getItem('application_id')
     setApplicationId(id)
+    if (id) {
+      sessionStorage.setItem('application_id', id)
+      loadPrefill(id).catch(() => { /* non-fatal */ })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function loadPrefill(appId: string) {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('applications')
+      .select('form_data, prefill_sources')
+      .eq('id', appId)
+      .single()
+
+    if (!data?.form_data) return
+
+    const prefillData = data.form_data as Record<string, string>
+    const srcData = (data.prefill_sources as Record<string, string>) ?? {}
+
+    const mapped: Partial<FormData> = {}
+    const src: Partial<Record<keyof FormData, string>> = {}
+
+    for (const m of PREFILL_TO_FORM) {
+      const val = prefillData[m.prefillId]
+      if (val) {
+        const transformed = m.transform ? m.transform(val) : val
+        if (transformed) {
+          mapped[m.formKey] = transformed
+          src[m.formKey] = srcData[m.prefillId] ?? 'avasafe'
+        }
+      }
+    }
+
+    setForm(prev => ({ ...prev, ...mapped }))
+    setPrefillSources(src)
+  }
 
   function update(key: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
+    // Track edits to pre-filled fields
+    if (prefillSources[key]) {
+      setEditedFields(prev => {
+        const next = new Set(Array.from(prev))
+        next.add(key)
+        return next
+      })
+    }
   }
 
   function goNext() {
@@ -213,7 +323,6 @@ export default function FormPage() {
   async function handleFinish() {
     if (!applicationId) return
     setSaving(true)
-    // Store form data for review page summary
     sessionStorage.setItem('form_data', JSON.stringify(form))
     const res = await fetch('/api/validate-application', {
       method: 'POST',
@@ -221,7 +330,7 @@ export default function FormPage() {
       body: JSON.stringify({ form_data: form, application_id: applicationId }),
     })
     setSaving(false)
-    if (res.ok) router.push('/apply/review')
+    if (res.ok) router.push(`/apply/review?applicationId=${applicationId}`)
   }
 
   const current = STEPS[step]
@@ -229,72 +338,68 @@ export default function FormPage() {
   const progressPct = ((step + 1) / totalSteps) * 100
   const canContinue = stepIsComplete(current, form)
   const vfsCenter = form.address_state ? VFS_CENTERS[form.address_state] : null
+  const avaMessage = getAvaMessage(current, prefillSources)
 
-  const inputStyle: React.CSSProperties = {
+  const baseInputStyle: React.CSSProperties = {
     width: '100%',
     height: 56,
     borderRadius: 10,
-    border: '1.5px solid var(--border)',
     padding: '0 16px',
     fontSize: 16,
     fontFamily: 'var(--font-body)',
     color: 'var(--text-primary)',
-    background: 'white',
     outline: 'none',
-    transition: 'border-color 150ms ease',
+    transition: 'border-color 150ms ease, background 150ms ease',
     boxSizing: 'border-box',
+  }
+
+  function inputStyle(fieldKey: keyof FormData): React.CSSProperties {
+    const isPrefilled = !!prefillSources[fieldKey]
+    const isEdited = editedFields.has(fieldKey)
+    if (isPrefilled && !isEdited) {
+      return { ...baseInputStyle, border: '1.5px solid var(--gold)', background: '#FDF6EC' }
+    }
+    if (isPrefilled && isEdited) {
+      return { ...baseInputStyle, border: '1.5px solid #F59E0B', background: '#FFFBEB' }
+    }
+    return { ...baseInputStyle, border: '1.5px solid var(--border)', background: 'white' }
+  }
+
+  function PrefillBadge({ fieldKey }: { fieldKey: keyof FormData }) {
+    const src = prefillSources[fieldKey]
+    if (!src) return null
+    const isEdited = editedFields.has(fieldKey)
+    return (
+      <span style={{
+        position: 'absolute', top: -10, right: 8,
+        background: isEdited ? '#F59E0B' : 'var(--gold)',
+        color: 'white', fontSize: 10, fontWeight: 600,
+        padding: '2px 8px', borderRadius: 100,
+        pointerEvents: 'none', zIndex: 1,
+        whiteSpace: 'nowrap',
+      }}>
+        {isEdited ? 'Edited' : `From your ${SOURCE_LABELS[src] ?? 'documents'}`}
+      </span>
+    )
   }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column' }}>
-      {/* Progress bar — 2px at very top */}
+      {/* Progress bar */}
       <div style={{ height: 2, background: 'var(--border)', width: '100%' }}>
-        <div
-          style={{
-            height: '100%',
-            width: `${progressPct}%`,
-            background: 'var(--navy)',
-            transition: 'width 400ms ease',
-          }}
-        />
+        <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--navy)', transition: 'width 400ms ease' }} />
       </div>
 
       {/* Header */}
-      <header
-        style={{
-          height: 64,
-          background: 'white',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0 24px',
-          flexShrink: 0,
-        }}
-      >
+      <header style={{ height: 64, background: 'white', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <Logo size="md" href="/dashboard" />
-        <span
-          style={{
-            fontFamily: 'var(--font-mono)',
-            fontSize: 12,
-            color: 'var(--text-tertiary)',
-          }}
-        >
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>
           Step {step + 1} of {totalSteps}
         </span>
       </header>
 
       {/* Content */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '40px 24px 24px',
-        }}
-      >
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
@@ -307,53 +412,28 @@ export default function FormPage() {
             >
               {/* AVA message */}
               <div style={{ marginBottom: 24 }}>
-                <AvaMessage message={current.ava} />
+                <AvaMessage message={avaMessage} />
               </div>
 
               {/* Question card */}
-              <div
-                style={{
-                  background: 'white',
-                  borderRadius: 16,
-                  padding: 28,
-                  boxShadow: 'var(--shadow-sm)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                {/* Big question label */}
-                <h2
-                  style={{
-                    fontFamily: 'var(--font-body)',
-                    fontWeight: 600,
-                    fontSize: 28,
-                    color: 'var(--navy)',
-                    marginBottom: 24,
-                    lineHeight: 1.25,
-                  }}
-                >
+              <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                <h2 style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 28, color: 'var(--navy)', marginBottom: 24, lineHeight: 1.25 }}>
                   {current.label}
                 </h2>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   {current.group ? (
                     current.group.map((g) => (
-                      <div key={g.field}>
-                        <label
-                          style={{
-                            display: 'block',
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: 'var(--text-primary)',
-                            marginBottom: 8,
-                          }}
-                        >
+                      <div key={g.field} style={{ position: 'relative' }}>
+                        <PrefillBadge fieldKey={g.field} />
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8 }}>
                           {g.label}
                         </label>
                         {g.options ? (
                           <select
                             value={form[g.field]}
                             onChange={(e) => update(g.field, e.target.value)}
-                            style={{ ...inputStyle }}
+                            style={inputStyle(g.field)}
                           >
                             <option value="">Select…</option>
                             {g.options.map((o) => (
@@ -366,9 +446,13 @@ export default function FormPage() {
                             value={form[g.field]}
                             onChange={(e) => update(g.field, e.target.value)}
                             placeholder={g.placeholder}
-                            style={inputStyle}
-                            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
-                            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                            style={inputStyle(g.field)}
+                            onFocus={(e) => {
+                              if (!prefillSources[g.field]) e.currentTarget.style.borderColor = 'var(--gold)'
+                            }}
+                            onBlur={(e) => {
+                              if (!prefillSources[g.field]) e.currentTarget.style.borderColor = 'var(--border)'
+                            }}
                           />
                         )}
                       </div>
@@ -383,29 +467,18 @@ export default function FormPage() {
                             type="button"
                             onClick={() => update(current.field!, o)}
                             style={{
-                              width: '100%',
-                              minHeight: 64,
-                              textAlign: 'left',
-                              padding: '16px 20px',
-                              borderRadius: 16,
+                              width: '100%', minHeight: 64, textAlign: 'left',
+                              padding: '16px 20px', borderRadius: 16,
                               border: selected ? '2px solid var(--gold)' : '1.5px solid var(--border)',
                               background: selected ? 'var(--gold-subtle)' : 'white',
-                              color: 'var(--text-primary)',
-                              fontSize: 15,
-                              fontWeight: selected ? 500 : 400,
-                              fontFamily: 'var(--font-body)',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
+                              color: 'var(--text-primary)', fontSize: 15,
+                              fontWeight: selected ? 500 : 400, fontFamily: 'var(--font-body)',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center',
                               justifyContent: 'space-between',
                               transition: 'border-color 150ms ease, background 150ms ease',
                             }}
-                            onMouseEnter={(e) => {
-                              if (!selected) e.currentTarget.style.borderColor = 'var(--navy-light)'
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!selected) e.currentTarget.style.borderColor = 'var(--border)'
-                            }}
+                            onMouseEnter={(e) => { if (!selected) e.currentTarget.style.borderColor = 'var(--navy-light)' }}
+                            onMouseLeave={(e) => { if (!selected) e.currentTarget.style.borderColor = 'var(--border)' }}
                           >
                             <span>{o}</span>
                             {selected && <CheckCircle size={18} color="var(--gold)" />}
@@ -414,16 +487,9 @@ export default function FormPage() {
                       })}
                     </div>
                   ) : (
-                    <div>
-                      <label
-                        style={{
-                          display: 'block',
-                          fontSize: 13,
-                          fontWeight: 500,
-                          color: 'var(--text-primary)',
-                          marginBottom: 8,
-                        }}
-                      >
+                    <div style={{ position: 'relative' }}>
+                      <PrefillBadge fieldKey={current.field!} />
+                      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 8 }}>
                         {current.label}
                       </label>
                       <input
@@ -431,25 +497,20 @@ export default function FormPage() {
                         value={form[current.field!]}
                         onChange={(e) => update(current.field!, e.target.value)}
                         placeholder={current.placeholder}
-                        style={inputStyle}
-                        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--gold)' }}
-                        onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)' }}
+                        style={inputStyle(current.field!)}
+                        onFocus={(e) => {
+                          if (!prefillSources[current.field!]) e.currentTarget.style.borderColor = 'var(--gold)'
+                        }}
+                        onBlur={(e) => {
+                          if (!prefillSources[current.field!]) e.currentTarget.style.borderColor = 'var(--border)'
+                        }}
                       />
                     </div>
                   )}
 
                   {/* VFS center auto-detection */}
                   {current.id === 'address' && vfsCenter && (
-                    <div
-                      style={{
-                        borderRadius: 10,
-                        padding: '12px 16px',
-                        background: 'var(--gold-subtle)',
-                        border: '1px solid var(--gold)',
-                        fontSize: 14,
-                        color: 'var(--navy)',
-                      }}
-                    >
+                    <div style={{ borderRadius: 10, padding: '12px 16px', background: 'var(--gold-subtle)', border: '1px solid var(--gold)', fontSize: 14, color: 'var(--navy)' }}>
                       <span style={{ fontWeight: 600 }}>Your VFS centre: </span>
                       <span>{vfsCenter}</span>
                     </div>
@@ -462,23 +523,14 @@ export default function FormPage() {
           {/* Navigation */}
           <div
             className="form-sticky-cta"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 24,
-              gap: 12,
-            }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, gap: 12 }}
           >
             <button
               type="button"
               onClick={goBack}
               disabled={step === 0}
               className="btn-ghost"
-              style={{
-                opacity: step === 0 ? 0.3 : 1,
-                cursor: step === 0 ? 'not-allowed' : 'pointer',
-              }}
+              style={{ opacity: step === 0 ? 0.3 : 1, cursor: step === 0 ? 'not-allowed' : 'pointer' }}
             >
               Back
             </button>
@@ -507,28 +559,15 @@ export default function FormPage() {
           </div>
 
           {/* Step dots */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 6,
-              marginTop: 32,
-            }}
-          >
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 32 }}>
             {STEPS.map((_, i) => (
               <div
                 key={i}
                 style={{
-                  borderRadius: 999,
-                  height: 6,
+                  borderRadius: 999, height: 6,
                   width: i === step ? 20 : 6,
-                  background: i === step
-                    ? 'var(--navy)'
-                    : i < step
-                    ? 'var(--gold)'
-                    : 'var(--border)',
-                  transition: 'all 300ms ease',
-                  flexShrink: 0,
+                  background: i === step ? 'var(--navy)' : i < step ? 'var(--gold)' : 'var(--border)',
+                  transition: 'all 300ms ease', flexShrink: 0,
                 }}
               />
             ))}

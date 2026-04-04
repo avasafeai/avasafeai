@@ -155,12 +155,26 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ service_type: service.id }),
     })
-    if (res.ok) {
-      const { data } = await res.json() as { data: { id: string } }
-      sessionStorage.setItem('application_id', data.id)
-      sessionStorage.setItem('service_type', service.id)
+    if (!res.ok) { setStarting(false); return }
+
+    const { data } = await res.json() as { data: { id: string } }
+    const appId = data.id
+    // Keep sessionStorage for compat with downstream pages
+    sessionStorage.setItem('application_id', appId)
+    sessionStorage.setItem('service_type', service.id)
+
+    // Run prefill server-side (non-blocking if it fails)
+    try {
+      await fetch('/api/prefill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId: appId, serviceId: service.id }),
+      })
+    } catch {
+      // Non-fatal — form still works, just won't be pre-filled
     }
-    router.push('/apply/form')
+
+    router.push(`/apply/form?applicationId=${appId}`)
   }
 
   if (!service) {
@@ -324,7 +338,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 18px', marginBottom: 20 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--navy)' }}>Processing time: </strong>
-              {requirements.processing_time.includes('week') ? requirements.processing_time : `${requirements.processing_time} weeks`}
+              {`Typically ${requirements.processing_time.includes('week') ? requirements.processing_time : `${requirements.processing_time} weeks`} after VFS receives your application`}
             </p>
           </div>
         )}
@@ -537,18 +551,18 @@ function ContinueButton({
   let bg = 'var(--gold)'
   let color = 'white'
   let border = 'none'
-  let label = starting ? 'Starting…' : 'Continue — AVA will pre-fill everything →'
+  let label = starting ? 'Preparing your application…' : 'Continue — AVA will pre-fill everything →'
 
   if (!allPresent && !nonePresent) {
     bg = 'transparent'
     color = 'var(--navy)'
     border = '2px solid var(--navy)'
-    label = starting ? 'Starting…' : `Continue with ${missingCount} missing document${missingCount > 1 ? 's' : ''}`
+    label = starting ? 'Preparing your application…' : `Continue with ${missingCount} missing document${missingCount > 1 ? 's' : ''}`
   } else if (nonePresent) {
     bg = 'var(--surface)'
     color = 'var(--text-tertiary)'
     border = '1px solid var(--border)'
-    label = starting ? 'Starting…' : 'Upload documents to continue'
+    label = starting ? 'Preparing your application…' : 'Upload documents to continue'
   }
 
   return (

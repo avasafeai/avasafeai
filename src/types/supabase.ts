@@ -99,6 +99,8 @@ export interface Database {
           package_downloaded_at: string | null
           tracking_number: string | null
           portal_progress: Json | null
+          prefill_sources: Json | null
+          prefill_coverage: number | null
           readiness_score: number | null
           created_at: string
           updated_at: string
@@ -120,6 +122,8 @@ export interface Database {
           package_downloaded_at?: string | null
           tracking_number?: string | null
           portal_progress?: Json | null
+          prefill_sources?: Json | null
+          prefill_coverage?: number | null
           readiness_score?: number | null
           created_at?: string
           updated_at?: string
@@ -141,6 +145,8 @@ export interface Database {
           package_downloaded_at?: string | null
           tracking_number?: string | null
           portal_progress?: Json | null
+          prefill_sources?: Json | null
+          prefill_coverage?: number | null
           readiness_score?: number | null
           created_at?: string
           updated_at?: string

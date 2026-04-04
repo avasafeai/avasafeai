@@ -29,7 +29,9 @@ export default function PackagePage() {
   const [trackingSaved, setTrackingSaved] = useState(false)
 
   useEffect(() => {
-    const id = sessionStorage.getItem('application_id')
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlId = urlParams.get('applicationId')
+    const id = urlId ?? sessionStorage.getItem('application_id')
     setAppId(id)
     const stored = sessionStorage.getItem('form_data')
     if (stored) {

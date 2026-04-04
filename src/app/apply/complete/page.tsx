@@ -46,6 +46,8 @@ export default function CompletePage() {
   }
 
   function openPortalAndGoToCompanion() {
+    const urlParams = new URLSearchParams(window.location.search)
+    const appId = urlParams.get('applicationId') ?? sessionStorage.getItem('application_id') ?? ''
     const w = window.screen.availWidth
     const h = window.screen.availHeight
     window.open(
@@ -57,13 +59,13 @@ export default function CompletePage() {
       window.moveTo(0, 0)
       window.resizeTo(Math.floor(w / 2), h)
     } catch { /* browser may block */ }
-    router.push('/apply/submit')
+    router.push(appId ? `/apply/submit?applicationId=${appId}` : '/apply/submit')
   }
 
   function handleSplitDone() {
     localStorage.setItem(SPLIT_SCREEN_KEY, '1')
     setShowModal(false)
-    router.push('/apply/submit')
+    openPortalAndGoToCompanion()
   }
 
   const circumference = 2 * Math.PI * 36 // radius 36

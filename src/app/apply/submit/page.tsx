@@ -200,7 +200,8 @@ export default function SubmitPage() {
 
   async function handleUsanSubmit() {
     if (!usanNumber.trim()) return
-    const appId = sessionStorage.getItem('application_id')
+    const urlParams = new URLSearchParams(window.location.search)
+    const appId = urlParams.get('applicationId') ?? sessionStorage.getItem('application_id')
     if (!appId) return
     setSavingUsan(true)
     await fetch('/api/update-application', {
@@ -209,7 +210,7 @@ export default function SubmitPage() {
       body: JSON.stringify({ application_id: appId, registration_number: usanNumber }),
     }).catch(() => {})
     setSavingUsan(false)
-    router.push('/apply/submit-vfs')
+    router.push(`/apply/submit-vfs?applicationId=${appId}`)
   }
 
   return (

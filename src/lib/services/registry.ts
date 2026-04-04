@@ -213,7 +213,7 @@ export const OCI_NEW: ServiceConfig = {
     {
       field_id: 'passport_number',
       source_doc: 'us_passport',
-      source_field: 'document_number',
+      source_field: 'passport_number',
       portal_label: 'Passport No.',
       format: null,
       transform: 'uppercase',
@@ -229,7 +229,7 @@ export const OCI_NEW: ServiceConfig = {
     {
       field_id: 'date_of_issue',
       source_doc: 'us_passport',
-      source_field: 'date_of_issue',
+      source_field: 'issue_date',
       portal_label: 'Date of Issue (DD/MM/YYYY)',
       format: 'DD/MM/YYYY',
       transform: 'reformat_date',
@@ -237,7 +237,7 @@ export const OCI_NEW: ServiceConfig = {
     {
       field_id: 'date_of_expiry',
       source_doc: 'us_passport',
-      source_field: 'date_of_expiry',
+      source_field: 'expiry_date',
       portal_label: 'Date of Expiry (DD/MM/YYYY)',
       format: 'DD/MM/YYYY',
       transform: 'reformat_date',
@@ -793,7 +793,7 @@ export const OCI_NEW: ServiceConfig = {
     icwf_usd: 2,
     avasafe_usd: 29,
   },
-  processing_weeks: '8-12',
+  processing_weeks: '5-8',
   pdf_template: 'oci_new',
   requirements_search_query: 'OCI new application requirements USA VFS 2025 documents site:services.vfsglobal.com OR site:ociservices.gov.in',
 }

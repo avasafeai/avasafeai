@@ -83,11 +83,14 @@ export default function ReviewPage() {
   }, [])
 
   useEffect(() => {
-    const id = sessionStorage.getItem('application_id')
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlId = urlParams.get('applicationId')
+    const id = urlId ?? sessionStorage.getItem('application_id')
     const svc = sessionStorage.getItem('service_type') ?? 'oci_new'
     const stored = sessionStorage.getItem('form_data')
     setApplicationId(id)
     setServiceType(svc)
+    if (id) sessionStorage.setItem('application_id', id)
     let fd: Record<string, string> = {}
     if (stored) {
       try { fd = JSON.parse(stored) as Record<string, string>; setFormData(fd) } catch { /* ignore */ }

@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(node -e \"require\\(''pdf-lib''\\); console.log\\(''pdf-lib ok''\\)\")",
-      "Bash(node -e \"const a = require\\(''''@anthropic-ai/sdk''''\\); console.log\\(a.version ?? ''''no version''''\\)\")"
+      "Bash(node -e \"const a = require\\(''''@anthropic-ai/sdk''''\\); console.log\\(a.version ?? ''''no version''''\\)\")",
+      "Bash(find supabase:*)",
+      "Bash(do echo:*)",
+      "Read(//Users/sivakandati/Documents/avasafe-ai/**)",
+      "Bash(grep -n \"Content-Type\\\\|headers.*fetch\\\\|fetch.*headers\" src/app/apply/prepare/[serviceId]/page.tsx)",
+      "Bash(grep -n \"processing\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)"
     ],
     "additionalDirectories": [
       "/Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare"

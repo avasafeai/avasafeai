@@ -75,9 +75,14 @@ export default function SubmitVFSPage() {
     if (id < 5) setActiveStep(id + 1)
   }
 
+  function getAppId(): string | null {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get('applicationId') ?? sessionStorage.getItem('application_id')
+  }
+
   async function downloadApplicationForm() {
     setGeneratingPdf(true)
-    const appId = sessionStorage.getItem('application_id')
+    const appId = getAppId()
     if (!appId) { setGeneratingPdf(false); return }
     try {
       const res = await fetch(`/api/generate-package?application_id=${appId}`)
@@ -96,7 +101,7 @@ export default function SubmitVFSPage() {
 
   async function handleVFSComplete() {
     setSubmitting(true)
-    const appId = sessionStorage.getItem('application_id')
+    const appId = getAppId()
     if (appId) {
       await fetch('/api/update-application', {
         method: 'POST',
@@ -104,7 +109,7 @@ export default function SubmitVFSPage() {
         body: JSON.stringify({ application_id: appId, vfs_submitted: true }),
       }).catch(() => {})
     }
-    router.push('/apply/package')
+    router.push(appId ? `/apply/package?applicationId=${appId}` : '/apply/package')
   }
 
   const allDone = steps.every(s => s.done)
