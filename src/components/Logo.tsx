@@ -4,6 +4,7 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
   href?: string
+  onDark?: boolean
 }
 
 const sizes = {
@@ -12,7 +13,7 @@ const sizes = {
   lg: '32px',
 }
 
-export default function Logo({ size = 'md', className = '', href = '/' }: LogoProps) {
+export default function Logo({ size = 'md', className = '', href = '/', onDark = false }: LogoProps) {
   const fontSize = sizes[size]
 
   return (
@@ -29,7 +30,7 @@ export default function Logo({ size = 'md', className = '', href = '/' }: LogoPr
           gap: 0,
         }}
       >
-        <span style={{ color: 'var(--navy)' }}>ava</span>
+        <span style={{ color: onDark ? '#ffffff' : 'var(--navy)' }}>ava</span>
         <span style={{ color: 'var(--gold)' }}>safe</span>
       </span>
     </Link>

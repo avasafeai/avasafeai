@@ -82,7 +82,7 @@ export default function PackagePage() {
       </div>
 
       <header style={{ height: 64, background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
-        <Logo size="sm" href="/dashboard" />
+        <Logo size="sm" href="/dashboard" onDark />
         <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Your Package</span>
         <div style={{ width: 80 }} />
       </header>

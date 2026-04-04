@@ -404,6 +404,22 @@ body {
     gap: 8px !important;
     padding: 10px 16px !important;
   }
+  .doc-pdf-card {
+    flex-wrap: wrap;
+    gap: 12px !important;
+    padding: 16px 20px !important;
+  }
+  .doc-pdf-actions {
+    width: 100%;
+    gap: 8px !important;
+  }
+  .doc-pdf-actions a,
+  .doc-pdf-actions button {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    height: 44px !important;
+  }
 }
 
 /* Landing page grid: 2-col on tablet → 1-col on mobile */

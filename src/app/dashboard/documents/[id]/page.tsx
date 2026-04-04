@@ -135,7 +135,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
         )}
 
         {previewUrl && isPdf && (
-          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 28px', boxShadow: 'var(--shadow-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div className="doc-pdf-card" style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 28px', boxShadow: 'var(--shadow-sm)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--error-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <FileText size={20} color="var(--error)" />
             </div>
@@ -146,7 +146,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
                 {doc.file_size_bytes ? ` · ${fmtBytes(doc.file_size_bytes)}` : ''}
               </p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="doc-pdf-actions" style={{ display: 'flex', gap: 8 }}>
               <a
                 href={previewUrl}
                 target="_blank"

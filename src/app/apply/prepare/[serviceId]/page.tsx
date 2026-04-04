@@ -196,7 +196,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
       </div>
 
       <header style={{ height: 64, background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-        <Logo size="sm" href="/dashboard" />
+        <Logo size="sm" href="/dashboard" onDark />
         <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>{service.short_name}</span>
         <div style={{ width: 80 }} />
       </header>
