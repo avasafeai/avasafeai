@@ -8,7 +8,9 @@
       "Read(//Users/sivakandati/Documents/avasafe-ai/**)",
       "Bash(grep -n \"Content-Type\\\\|headers.*fetch\\\\|fetch.*headers\" src/app/apply/prepare/[serviceId]/page.tsx)",
       "Bash(grep -n \"processing\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(sed -i '' \"s/can now pre-fill everything — ready to start/can now pre-fill everything. Ready to start./g\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
+      "Bash(__NEW_LINE_4579b28cf9585b4a__ sed:*)"
     ],
     "additionalDirectories": [
       "/Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare"

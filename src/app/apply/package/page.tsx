@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Download, CheckCircle, Package, Truck, Loader2 } from 'lucide-react'
+import { Download, CheckCircle, Truck, Loader2, Package } from 'lucide-react'
 import Logo from '@/components/Logo'
 
 const STATE_VFS_ADDRESSES: Record<string, { center: string; address: string }> = {
@@ -45,7 +45,7 @@ export default function PackagePage() {
     }
   }, [])
 
-  async function downloadPackage() {
+  async function downloadChecklist() {
     if (!appId) return
     setDownloading(true)
     try {
@@ -55,7 +55,7 @@ export default function PackagePage() {
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
-        a.download = 'avasafe-application-package.pdf'
+        a.download = 'avasafe-checklist.pdf'
         a.click()
         URL.revokeObjectURL(url)
         setDownloaded(true)
@@ -78,14 +78,13 @@ export default function PackagePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column' }}>
-      {/* Progress bar — full */}
       <div style={{ height: 2, background: 'var(--border)' }}>
         <div style={{ height: '100%', width: '100%', background: 'var(--navy)' }} />
       </div>
 
       <header style={{ height: 64, background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <Logo size="sm" href="/dashboard" onDark />
-        <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Your Package</span>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'white' }}>Your Checklist</span>
         <div style={{ width: 80 }} />
       </header>
 
@@ -100,7 +99,7 @@ export default function PackagePage() {
             <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--gold)' }}>AVA</span>
           </div>
           <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 17, color: 'var(--text-primary)', lineHeight: 1.6 }}>
-            Everything is ready to mail. Download your package, sign where marked, and drop it at any UPS location.
+            Your application checklist is ready. Download it, follow each step, and drop your envelope at UPS. You are essentially done.
           </p>
         </div>
 
@@ -112,21 +111,20 @@ export default function PackagePage() {
             </div>
             <div>
               <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: 'var(--navy)', marginBottom: 4 }}>
-                {downloaded ? 'Package downloaded ✓' : 'Download your application package'}
+                {downloaded ? 'Checklist downloaded' : 'Download your application checklist'}
               </p>
-              <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Print · Sign where marked ★ · Mail</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>One-page PDF with everything you need to mail</p>
             </div>
           </div>
 
-          {/* Package contents */}
           <div style={{ background: 'var(--off-white)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 12 }}>Package contents</p>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 12 }}>Checklist includes</p>
             {[
-              'Pre-filled OCI application form',
-              '4 passport-style photo placeholders',
-              'Document checklist with sign markers',
-              'Supporting document instructions',
-              'Pre-addressed UPS shipping label',
+              'Your application details (pre-filled)',
+              'Documents to include in your envelope',
+              'Photo requirements',
+              'Step-by-step submission instructions',
+              'Your pre-addressed VFS mailing address',
             ].map(item => (
               <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <CheckCircle size={13} color="var(--success)" style={{ flexShrink: 0 }} />
@@ -136,33 +134,34 @@ export default function PackagePage() {
           </div>
 
           <button
-            onClick={downloadPackage}
+            onClick={downloadChecklist}
             disabled={downloading || !appId}
             className="btn-gold"
             style={{ height: 52, padding: '0 28px', fontSize: 15, display: 'inline-flex', alignItems: 'center', gap: 10, borderRadius: 12, opacity: downloading ? 0.7 : 1 }}
           >
             {downloading ? (
-              <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Generating PDF…</>
+              <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Generating checklist...</>
             ) : downloaded ? (
               <><CheckCircle size={18} /> Download again</>
             ) : (
-              <><Download size={18} /> Download package (PDF)</>
+              <><Download size={18} /> Download checklist (PDF)</>
             )}
           </button>
         </div>
 
-        {/* UPS drop-off instructions */}
+        {/* What to do now */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 20 }}>
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Truck size={20} color="white" />
             </div>
             <div>
-              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: 'var(--navy)', marginBottom: 4 }}>Drop at any UPS location</p>
-              <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>About 5 minutes. No appointment needed.</p>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: 'var(--navy)', marginBottom: 4 }}>Mail your application</p>
+              <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>About 10 minutes. Any UPS location. No appointment needed.</p>
             </div>
           </div>
 
+          {/* VFS address */}
           <div style={{ background: 'var(--navy)', borderRadius: 12, padding: '16px 20px', marginBottom: 20 }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>
               Mail to: VFS {vfsInfo.center}
@@ -172,11 +171,11 @@ export default function PackagePage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              'Print all pages of the PDF',
-              'Sign the application form where marked with ★',
-              'Place all documents in a 9×12 manila envelope',
-              'Affix the pre-addressed UPS label from the last page',
-              'Drop at any UPS Store — keep your tracking number',
+              'Print all pages of your checklist PDF',
+              'Gather all required documents listed on the checklist',
+              'Sign the application form where marked',
+              'Place everything in a 9x12 manila envelope',
+              'Drop at any UPS Store and keep your tracking number',
             ].map((step, i) => (
               <div key={step} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                 <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
@@ -188,7 +187,7 @@ export default function PackagePage() {
           </div>
         </div>
 
-        {/* Tracking number input */}
+        {/* Tracking number */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
             <Package size={16} color="var(--text-tertiary)" />
@@ -199,7 +198,7 @@ export default function PackagePage() {
           </p>
           {trackingSaved ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--success)', fontSize: 14, fontWeight: 500 }}>
-              <CheckCircle size={16} /> Tracking number saved — AVA is watching your shipment.
+              <CheckCircle size={16} /> Tracking number saved. AVA is watching your shipment.
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 10 }}>
@@ -216,13 +215,12 @@ export default function PackagePage() {
                 className="btn-navy"
                 style={{ height: 44, padding: '0 20px', borderRadius: 10, fontSize: 14, opacity: !trackingNumber.trim() ? 0.4 : 1 }}
               >
-                {savingTracking ? 'Saving…' : 'Save'}
+                {savingTracking ? 'Saving...' : 'Save'}
               </button>
             </div>
           )}
         </div>
 
-        {/* View status */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0' }}>
           <CheckCircle size={16} color="var(--success)" style={{ flexShrink: 0 }} />
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>

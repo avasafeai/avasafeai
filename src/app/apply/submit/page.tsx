@@ -38,7 +38,7 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
-    id: 2, name: 'Passport details', avaNote: 'For US passports, place of issue must be entered as USDOS — this is the most common rejection cause.',
+    id: 2, name: 'Passport details', avaNote: 'For US passports, place of issue must be entered as USDOS. This is the most common rejection cause.',
     timeNote: 'Takes about 2 minutes',
     fields: [
       { key: 'passport_number',      label: 'Passport number',  portalLabel: 'Passport No.' },
@@ -344,7 +344,7 @@ export default function SubmitPage() {
               disabled={!usanNumber.trim() || savingUsan}
               style={{ height: 48, padding: '0 24px', borderRadius: 12, background: 'var(--navy)', color: 'white', border: 'none', fontSize: 15, fontWeight: 600, cursor: !usanNumber.trim() ? 'not-allowed' : 'pointer', opacity: !usanNumber.trim() ? 0.4 : 1 }}
             >
-              {savingUsan ? 'Saving…' : "I've submitted — next step →"}
+              {savingUsan ? 'Saving...' : "I've submitted. Next step →"}
             </button>
           </div>
         )}
@@ -358,7 +358,7 @@ export default function SubmitPage() {
           )}
           {currentSection.id < 5 && (
             <button onClick={confirmSection} className="btn-navy" style={{ flex: 1, height: 52, borderRadius: 12, fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              Confirmed — next section <ChevronRight size={16} />
+              Confirmed. Next section <ChevronRight size={16} />
               <span style={{ fontSize: 12, opacity: 0.6, fontFamily: 'var(--font-mono)' }}>[Space]</span>
             </button>
           )}
@@ -372,7 +372,7 @@ export default function SubmitPage() {
             <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <Check size={28} color="var(--success)" />
             </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--navy)', marginBottom: 8 }}>Halfway there — everything correct</h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--navy)', marginBottom: 8 }}>Halfway there. Everything correct.</h2>
             <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 24 }}>3 sections done · 2 remaining · about 4 minutes left</p>
             <button onClick={continueAfterHalfway} className="btn-navy" style={{ width: '100%', height: 48, borderRadius: 12, fontSize: 15 }}>
               Continue →

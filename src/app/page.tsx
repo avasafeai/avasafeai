@@ -32,7 +32,7 @@ const HOW_IT_WORKS = [
   {
     step: '01',
     title: 'Upload your documents',
-    body: 'Take a photo of your passport. AVA reads every field instantly. Upload once — every future application is pre-filled automatically.',
+    body: 'Take a photo of your passport. AVA reads every field instantly. Upload once and every future application is pre-filled automatically.',
   },
   {
     step: '02',
@@ -42,7 +42,7 @@ const HOW_IT_WORKS = [
   {
     step: '03',
     title: 'You submit in two steps',
-    body: 'Pay the government fee — one tap. Drop the prepared envelope at UPS — five minutes. AVA tracks everything from there.',
+    body: 'Pay the government fee: one tap. Drop the prepared envelope at UPS: five minutes. AVA tracks everything from there.',
   },
 ]
 
@@ -64,7 +64,7 @@ const AVA_FILLS_COLUMNS = [
   {
     icon: Zap,
     title: 'AVA pre-fills everything',
-    body: 'Every field on both government portals — pre-filled, validated, and copied to your clipboard. Open the portal and paste. Takes 10 minutes.',
+    body: 'Every field on both government portals pre-filled, validated, and copied to your clipboard. Open the portal and paste. Takes 10 minutes.',
   },
   {
     icon: ShieldCheck,
@@ -172,36 +172,36 @@ const PRICING = [
 const FAQ = [
   {
     q: 'How is this different from services like human-powered application helpers?',
-    a: "Traditional services send your passport details to a human over WhatsApp who manually fills out forms on your behalf. With Avasafe, your documents never leave your encrypted locker. AVA — our AI — prepares everything automatically. No human at Avasafe ever sees your documents. It's faster, more private, and more reliable.",
+    a: "Traditional services send your passport details to a human over WhatsApp who manually fills out forms on your behalf. With Avasafe, your documents never leave your encrypted locker. AVA prepares everything automatically. No human at Avasafe ever sees your documents. It is faster, more private, and more reliable.",
   },
   {
     q: 'Is it safe to upload my passport?',
-    a: 'Your documents are encrypted with AES-256-GCM and stored in your private locker. Encryption keys are managed by Google Cloud KMS — even we cannot read your files directly. No human ever sees them. You can delete any document at any time.',
+    a: 'Your documents are encrypted with AES-256-GCM and stored in your private locker. Encryption keys are managed by Google Cloud KMS, so even we cannot read your files directly. No human ever sees them. You can delete any document at any time.',
   },
   {
     q: 'How does per-application pricing work?',
-    a: "You only pay when you need to apply. Guided ($29) and Human Assisted ($79) are one-time payments per application — not subscriptions. Locker ($19/year) is the only recurring charge and keeps your documents safe between applications. You can store documents and monitor expiry dates without ever paying for an application.",
+    a: "You only pay when you need to apply. Guided ($29) and Human Assisted ($79) are one-time payments per application, not subscriptions. Locker ($19/year) is the only recurring charge and keeps your documents safe between applications. You can store documents and monitor expiry dates without ever paying for an application.",
   },
   {
     q: 'What exactly does AVA do for my OCI application?',
-    a: 'AVA fills both the Indian government portal and the VFS Global portal automatically — every field, every document upload. She captures your ARN, generates a pre-addressed shipping label, and assembles a complete PDF package ready to mail.',
+    a: 'AVA fills both the Indian government portal and the VFS Global portal automatically: every field, every document upload. She captures your ARN, generates a pre-addressed shipping label, and assembles a complete checklist ready to mail.',
   },
   {
     q: 'What do I actually need to do myself?',
-    a: "Two things only. Pay the government fee directly (one tap — AVA opens the pre-filled payment page). Drop an envelope at UPS. That's it. About 10 minutes total.",
+    a: "Two things only. Pay the government fee directly (one tap, AVA opens the pre-filled payment page). Drop an envelope at UPS. That is it. About 10 minutes total.",
   },
   {
     q: 'What if my application gets rejected?',
     a: "If the rejection is caused by an error in AVA's validation, we fix your application at no cost. Our validation checks every known rejection cause before you pay.",
   },
   {
-    q: 'What about complex edge cases — name changes, previous rejections?',
+    q: 'What about complex edge cases like name changes or previous rejections?',
     a: 'AVA handles most cases automatically. For genuine edge cases, choose Human Assisted ($79) and an Avasafe expert will guide you through every step on a live Zoom session.',
   },
 ]
 
 // ─── Hero word-by-word animation ────────────────────────────────────────────
-const HEADLINE = 'Apply for your OCI card without getting rejected.'
+const HEADLINE = 'Your OCI application, done right the first time.'
 
 function AnimatedHeadline() {
   const words = HEADLINE.split(' ')
@@ -341,6 +341,105 @@ function DocumentCard() {
   )
 }
 
+// ─── Beta Section ────────────────────────────────────────────────────────────
+function BetaSection() {
+  const [slotsRemaining, setSlotsRemaining] = useState<number>(50)
+  const [betaAvailable, setBetaAvailable] = useState<boolean>(true)
+  const [joining, setJoining] = useState(false)
+  const [joined, setJoined] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/beta/join')
+      .then(r => r.json())
+      .then(d => {
+        setSlotsRemaining(d.remaining ?? 50)
+        setBetaAvailable(d.available ?? true)
+      })
+      .catch(() => { /* keep defaults */ })
+  }, [])
+
+  async function handleJoin() {
+    setJoining(true)
+    setError('')
+    const res = await fetch('/api/beta/join', { method: 'POST' })
+    const json = await res.json() as { data?: { already_beta?: boolean; beta_number?: number }; error?: string }
+    if (res.ok && json.data) {
+      setJoined(true)
+      setSlotsRemaining(prev => Math.max(0, prev - (json.data?.already_beta ? 0 : 1)))
+    } else if (res.status === 401) {
+      window.location.href = '/auth?mode=signup'
+    } else {
+      setError(json.error ?? 'Something went wrong')
+    }
+    setJoining(false)
+  }
+
+  const isFull = !betaAvailable
+
+  return (
+    <section
+      id="beta"
+      style={{
+        background: '#0A1628',
+        padding: '100px 24px',
+        textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Decorative gold dots */}
+      <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, rgba(201,136,42,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+      <div style={{ maxWidth: 560, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        {/* Slot counter pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 100, border: '1px solid rgba(201,136,42,0.4)', marginBottom: 28 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: isFull ? '#9CA3AF' : '#C9882A', animation: isFull ? 'none' : 'pulse 2s ease-in-out infinite' }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: isFull ? 'rgba(255,255,255,0.4)' : 'rgba(201,136,42,0.9)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            {isFull ? 'Beta full' : `${slotsRemaining} of 50 spots remaining`}
+          </span>
+        </div>
+
+        <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'clamp(26px, 4vw, 40px)', color: 'white', marginBottom: 16, lineHeight: 1.2, letterSpacing: '-0.02em' }}>
+          Get free Guided access as a beta member.
+        </h2>
+
+        <p style={{ fontSize: 17, color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, marginBottom: 36, maxWidth: 460, margin: '0 auto 36px' }}>
+          The first 50 members get free access to AVA&apos;s Guided application preparation. No payment, no credit card. In exchange, we ask for honest feedback.
+        </p>
+
+        {joined ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 24px', borderRadius: 12, background: 'rgba(201,136,42,0.12)', border: '1px solid rgba(201,136,42,0.3)' }}>
+            <span style={{ fontSize: 20 }}>✓</span>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#C9882A' }}>You are in. Check your email for your beta confirmation.</span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <button
+              onClick={handleJoin}
+              disabled={joining || isFull}
+              style={{
+                height: 52, padding: '0 36px', borderRadius: 12,
+                background: isFull ? 'rgba(255,255,255,0.1)' : '#C9882A',
+                color: 'white', border: 'none', fontSize: 15, fontWeight: 700,
+                cursor: joining || isFull ? 'not-allowed' : 'pointer',
+                opacity: joining ? 0.7 : 1,
+                fontFamily: 'var(--font-body)',
+              }}
+            >
+              {joining ? 'Claiming your spot...' : isFull ? 'All spots taken' : 'Claim your free spot'}
+            </button>
+            {error && <p style={{ fontSize: 13, color: '#F87171' }}>{error}</p>}
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)' }}>Requires a free account. Takes 30 seconds.</p>
+          </div>
+        )}
+      </div>
+
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+    </section>
+  )
+}
+
 // ─── Navigation ──────────────────────────────────────────────────────────────
 function Nav() {
   const [scrolled, setScrolled] = useState(false)
@@ -467,7 +566,7 @@ export default function HomePage() {
               marginBottom: 24,
             }}
           >
-            Your application is 90% ready the moment you upload your passport.
+            Upload your passport once. AVA pre-fills every field on every future application.
           </motion.p>
 
           {/* Subheadline */}
@@ -485,7 +584,7 @@ export default function HomePage() {
               textAlign: 'center',
             }}
           >
-            AVA stores your documents securely and prepares your application correctly the first time. No confusion. No errors. No rejections.
+            AVA reads your documents, prepares your complete application, and tells you exactly what to do next. No government portals. No confusing forms. No rejected applications.
           </motion.p>
 
           {/* Supporting line */}
@@ -1324,7 +1423,7 @@ export default function HomePage() {
               marginTop: 16,
             }}
           >
-            We validate your application against every known rejection cause before you submit. If your application is rejected due to an error in our validation — we fix it free. No questions asked.
+            We validate your application against every known rejection cause before you submit. If your application is rejected due to an error in our validation, we fix it free. No questions asked.
           </motion.p>
 
           <motion.p
@@ -1345,6 +1444,9 @@ export default function HomePage() {
           </motion.p>
         </div>
       </section>
+
+      {/* ── BETA SECTION ─────────────────────────────────────────────────── */}
+      <BetaSection />
 
       {/* ── PRICING ──────────────────────────────────────────────────────── */}
       <section

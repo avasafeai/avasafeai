@@ -27,14 +27,23 @@ export default async function DashboardShell({
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Get unread alert count for badge
-  const { data: unreadAlerts } = await supabase
-    .from('alerts')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user?.id ?? '')
-    .is('read_at', null)
+  // Get unread alert count for badge and beta status
+  const [{ data: unreadAlerts }, { data: profile }] = await Promise.all([
+    supabase
+      .from('alerts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user?.id ?? '')
+      .is('read_at', null),
+    supabase
+      .from('profiles')
+      .select('is_beta, beta_number')
+      .eq('id', user?.id ?? '')
+      .single() as unknown as Promise<{ data: { is_beta?: boolean; beta_number?: number | null } | null }>,
+  ])
 
   const unreadCount = (unreadAlerts as unknown as { count: number } | null)?.count ?? 0
+  const isBeta = (profile as { is_beta?: boolean } | null)?.is_beta ?? false
+  const betaNumber = (profile as { beta_number?: number | null } | null)?.beta_number ?? null
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--off-white)' }}>
@@ -111,6 +120,18 @@ export default async function DashboardShell({
             )
           })}
         </nav>
+
+        {/* Beta badge */}
+        {isBeta && (
+          <div style={{ margin: '8px 12px 4px', padding: '10px 14px', borderRadius: 10, background: 'rgba(201,136,42,0.12)', border: '1px solid rgba(201,136,42,0.25)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold)', marginBottom: 2 }}>
+              Beta member{betaNumber ? ` #${betaNumber}` : ''}
+            </p>
+            <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.4 }}>
+              Free Guided access. Thank you for being early.
+            </p>
+          </div>
+        )}
 
         {/* User avatar + sign out */}
         {user?.email && <SidebarSignOut email={user.email} />}

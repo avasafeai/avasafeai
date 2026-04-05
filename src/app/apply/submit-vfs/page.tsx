@@ -179,7 +179,7 @@ export default function SubmitVFSPage() {
         {/* Step 4 — Pay VFS fee */}
         <StepCard step={4} title={steps[3].title} done={steps[3].done} active={activeStep === 4} onDone={() => markStepDone(4)}>
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 8 }}>
-            Select <strong>OCI — New Application</strong> and pay the VFS service fee. VFS accepts credit/debit cards.
+            Select <strong>OCI New Application</strong> and pay the VFS service fee. VFS accepts credit/debit cards.
           </p>
           <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Fee: approximately $25–$60 depending on service level.</p>
         </StepCard>
@@ -203,7 +203,7 @@ export default function SubmitVFSPage() {
             className="btn-gold"
             style={{ width: '100%', height: 52, borderRadius: 12, fontSize: 15, opacity: submitting ? 0.6 : 1 }}
           >
-            {submitting ? 'Saving…' : "I've submitted to VFS — generate my package →"}
+            {submitting ? 'Saving...' : "I've submitted to VFS. Generate my checklist →"}
           </button>
           {!allDone && (
             <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 10 }}>

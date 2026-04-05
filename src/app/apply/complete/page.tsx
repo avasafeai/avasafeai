@@ -12,6 +12,7 @@ export default function CompletePage() {
   const [checksPassed, setChecksPassed] = useState(10)
   const [showModal, setShowModal] = useState(false)
   const [os, setOs] = useState<'mac' | 'windows' | 'chromebook'>('mac')
+  const [isHumanAssisted, setIsHumanAssisted] = useState(false)
   const ringRef = useRef<SVGCircleElement>(null)
 
   useEffect(() => {
@@ -19,6 +20,7 @@ export default function CompletePage() {
     const c = parseInt(sessionStorage.getItem('checks_passed') ?? '10', 10)
     setScore(s || 94)
     setChecksPassed(c || 10)
+    setIsHumanAssisted(sessionStorage.getItem('user_plan') === 'human_assisted')
 
     // Detect OS
     const p = navigator.userAgent.toLowerCase()
@@ -137,18 +139,38 @@ export default function CompletePage() {
 
         {/* CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
-          <button
-            onClick={handleSubmitToPortal}
-            style={{ width: '100%', maxWidth: 360, height: 56, borderRadius: 14, background: '#C9882A', color: 'white', border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-          >
-            Submit to government portal →
-          </button>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
-            Opens the portal with your answers ready. Takes about 8 minutes.
-          </p>
-          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-            Install Chrome extension to fill automatically (coming soon)
-          </p>
+          {isHumanAssisted ? (
+            <>
+              <button
+                onClick={() => {
+                  const urlParams = new URLSearchParams(window.location.search)
+                  const appId = urlParams.get('applicationId') ?? sessionStorage.getItem('application_id') ?? ''
+                  router.push(appId ? `/apply/human?applicationId=${appId}` : '/apply/human')
+                }}
+                style={{ width: '100%', maxWidth: 360, height: 56, borderRadius: 14, background: '#C9882A', color: 'white', border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              >
+                Book your expert session →
+              </button>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+                45 minutes on Zoom. Your expert guides every remaining step.
+              </p>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={handleSubmitToPortal}
+                style={{ width: '100%', maxWidth: 360, height: 56, borderRadius: 14, background: '#C9882A', color: 'white', border: 'none', fontSize: 16, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-body)' }}
+              >
+                Submit to government portal →
+              </button>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
+                Opens the portal with your answers ready. Takes about 8 minutes.
+              </p>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+                Install Chrome extension to fill automatically (coming soon)
+              </p>
+            </>
+          )}
         </div>
       </div>
 
@@ -207,10 +229,10 @@ export default function CompletePage() {
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => { setShowModal(false); openPortalAndGoToCompanion() }} style={{ flex: 1, height: 40, borderRadius: 10, border: '1px solid var(--border)', background: 'white', fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                Skip — use tabs instead
+                Skip, use tabs instead
               </button>
               <button onClick={handleSplitDone} style={{ flex: 2, height: 40, borderRadius: 10, background: 'var(--navy)', color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-                I&apos;ve set up split screen — start filling
+                I&apos;ve set up split screen. Start filling.
               </button>
             </div>
           </div>

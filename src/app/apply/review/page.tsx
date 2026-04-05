@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReadinessResult, ReadinessCheck } from '@/types/supabase'
-import { CheckCircle, XCircle, Info, ShieldCheck } from 'lucide-react'
+import { CheckCircle, XCircle, Info, ShieldCheck, Lock } from 'lucide-react'
 import Logo from '@/components/Logo'
 import ReadinessRing from '@/components/ReadinessRing'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 const FIELD_GROUPS = [
   {
@@ -65,6 +66,7 @@ export default function ReviewPage() {
   const [continuing, setContinuing] = useState(false)
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applyingFix, setApplyingFix] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<string>('free')
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
     const res = await fetch(`/api/validate-application?application_id=${id}`)
@@ -74,7 +76,6 @@ export default function ReviewPage() {
       setFormData(json.form_data as Record<string, string>)
     }
     if (fd) {
-      // Store for complete page
       sessionStorage.setItem('readiness_score', String(json.data?.score ?? 0))
       sessionStorage.setItem('checks_passed', String(json.data?.checks_passed ?? 0))
     }
@@ -92,6 +93,15 @@ export default function ReviewPage() {
     if (stored) {
       try { fd = JSON.parse(stored) as Record<string, string>; setFormData(fd) } catch { /* ignore */ }
     }
+
+    // Fetch plan
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('plan').eq('id', user.id).single()
+        .then(({ data }) => { if (data?.plan) setUserPlan(data.plan as string) })
+    })
+
     if (!id) { setLoading(false); return }
     loadValidation(id, fd).catch(() => setLoading(false))
   }, [loadValidation])
@@ -134,6 +144,21 @@ export default function ReviewPage() {
   const passedChecks = checksArr.filter(c => c.status === 'passed')
   const hasFormData = Object.values(formData).some(v => !!v)
 
+  const isPaid = userPlan === 'guided' || userPlan === 'human_assisted'
+  const issueCount = (result?.blockers ?? 0) + (result?.warnings ?? 0)
+
+  function handleUpgrade(plan: 'guided' | 'human_assisted') {
+    sessionStorage.setItem('user_plan', plan)
+    fetch('/api/set-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    }).then(() => {
+      const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'
+      router.push(`/apply/payment?applicationId=${applicationId}&serviceType=${serviceType}`)
+    })
+  }
+
   return (
     <main style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
       {/* Progress bar */}
@@ -166,10 +191,81 @@ export default function ReviewPage() {
             </div>
             <span style={{ fontSize: 15, color: 'var(--text-secondary)' }}>AVA is running validation checks...</span>
           </div>
-        ) : (
+        ) : !isPaid ? (
+          // ── PAYWALL STATE ──────────────────────────────────────────────────────
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-            {/* ── Readiness score ring ── */}
+            {/* Locked score */}
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 24px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--off-white)', border: '3px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Lock size={36} color="var(--text-tertiary)" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--navy)', marginBottom: 4 }}>
+                  AVA found {issueCount} issue{issueCount !== 1 ? 's' : ''}
+                </p>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                  Unlock the full report to see what needs fixing before you submit.
+                </p>
+              </div>
+            </div>
+
+            {/* Blurred issue preview */}
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)', position: 'relative', overflow: 'hidden' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--error)', marginBottom: 16 }}>
+                Issues found ({issueCount})
+              </p>
+              {/* Blurred placeholder rows */}
+              {Array.from({ length: Math.min(issueCount || 2, 4) }).map((_, i) => (
+                <div key={i} style={{ height: 52, borderRadius: 10, background: 'var(--off-white)', marginBottom: 10, filter: 'blur(4px)', userSelect: 'none' }}>
+                  <div style={{ height: '100%', borderLeft: '3px solid var(--error)', borderRadius: '0 10px 10px 0', padding: '14px 16px', display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ width: 120, height: 12, borderRadius: 6, background: 'var(--border)' }} />
+                    <div style={{ width: 180, height: 10, borderRadius: 6, background: 'var(--border)' }} />
+                  </div>
+                </div>
+              ))}
+              {/* Lock overlay */}
+              <div style={{ position: 'absolute', inset: 0, background: 'rgba(250,250,248,0.7)', backdropFilter: 'blur(2px)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', background: 'white', borderRadius: 100, border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+                  <Lock size={14} color="var(--text-secondary)" />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Full report locked</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Upgrade options */}
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-md)' }}>
+              <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, color: 'var(--navy)', marginBottom: 6 }}>
+                Unlock your full validation report
+              </p>
+              <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.6 }}>
+                See every issue, get exact fix instructions, and submit with confidence.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <button onClick={() => handleUpgrade('guided')} className="btn-gold" style={{ width: '100%', height: 56, borderRadius: 12, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                  <span style={{ fontWeight: 700 }}>Fix with AVA — $29</span>
+                  <span style={{ fontSize: 12, opacity: 0.85, fontWeight: 400 }}>AI-validated application + full mailing package</span>
+                </button>
+                <button onClick={() => handleUpgrade('human_assisted')} style={{ width: '100%', height: 56, borderRadius: 12, background: 'var(--navy)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: 'var(--font-body)' }}>
+                  <span style={{ fontWeight: 700 }}>Book an Expert — $79</span>
+                  <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 400 }}>45-min Zoom session with an Avasafe expert</span>
+                </button>
+              </div>
+              <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'var(--gold-subtle)', borderRadius: 10 }}>
+                <ShieldCheck size={16} color="var(--gold)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Rejection guarantee included.</strong>{' '}
+                  If our validation causes a rejection, we fix it at no cost.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          // ── FULL REVIEW (paid users) ───────────────────────────────────────────
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* Readiness score ring */}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '32px 24px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
               <ReadinessRing score={score} />
               <p style={{ fontSize: 14, color: 'var(--text-tertiary)', textAlign: 'center' }}>
@@ -177,7 +273,7 @@ export default function ReviewPage() {
               </p>
             </div>
 
-            {/* ── All clear ── */}
+            {/* All clear */}
             {score >= 90 && (
               <div style={{ background: '#F0FFF4', border: '1px solid rgba(26,107,58,0.25)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                 <CheckCircle size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
@@ -188,7 +284,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Blockers ── */}
+            {/* Blockers */}
             {blockerChecks.length > 0 && (
               <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--error)', marginBottom: 16 }}>Fix these before submitting</p>
@@ -200,7 +296,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Warnings ── */}
+            {/* Warnings */}
             {warningChecks.length > 0 && (
               <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--warning)', marginBottom: 16 }}>Recommendations</p>
@@ -212,7 +308,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Suggestions ── */}
+            {/* Suggestions */}
             {suggestionChecks.length > 0 && (
               <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-tertiary)', marginBottom: 16 }}>Suggestions</p>
@@ -230,7 +326,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Passed checks summary ── */}
+            {/* Passed checks summary */}
             {passedChecks.length > 0 && (
               <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
                 <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--success)', marginBottom: 14 }}>{passedChecks.length} checks passed</p>
@@ -245,7 +341,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Application summary ── */}
+            {/* Application summary */}
             {hasFormData && (
               <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)' }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 24 }}>Application summary</h2>
@@ -271,7 +367,7 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* ── Document checklist ── */}
+            {/* Document checklist */}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, boxShadow: 'var(--shadow-sm)' }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 16 }}>Document checklist</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -296,7 +392,7 @@ export default function ReviewPage() {
               </div>
             </div>
 
-            {/* ── Trust badge ── */}
+            {/* Trust badge */}
             <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: '18px 24px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: 'var(--shadow-sm)' }}>
               <ShieldCheck size={20} color="var(--gold)" style={{ flexShrink: 0 }} />
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -305,7 +401,7 @@ export default function ReviewPage() {
               </p>
             </div>
 
-            {/* ── CTA ── */}
+            {/* CTA */}
             <div className="review-cta" style={{ display: 'flex', gap: 12, marginTop: 8 }}>
               <button onClick={() => router.back()} style={{ flex: 1, height: 52, borderRadius: 12, border: '1.5px solid var(--border)', background: 'white', fontSize: 15, fontWeight: 500, color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
                 Edit application
@@ -316,11 +412,11 @@ export default function ReviewPage() {
                 </button>
               ) : warnings > 0 ? (
                 <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>
-                  {continuing ? 'One moment…' : 'Continue with warnings →'}
+                  {continuing ? 'One moment...' : 'Continue with warnings →'}
                 </button>
               ) : (
                 <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>
-                  {continuing ? 'One moment…' : 'Application ready — continue →'}
+                  {continuing ? 'One moment...' : 'Application ready — continue →'}
                 </button>
               )}
             </div>
@@ -364,7 +460,7 @@ function IssueCard({ check, color, onApplyFix, applying }: {
                 fontWeight: 600, cursor: applying ? 'not-allowed' : 'pointer', opacity: applying ? 0.6 : 1,
               }}
             >
-              {applying ? 'Applying…' : `Apply fix → ${check.correct_value}`}
+              {applying ? 'Applying...' : `Apply fix → ${check.correct_value}`}
             </button>
           )}
         </div>

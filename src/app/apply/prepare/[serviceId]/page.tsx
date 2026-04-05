@@ -256,10 +256,10 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
         <AvaMessage
           message={
             justCompleted
-              ? 'All required documents found. I can now pre-fill everything — ready to start.'
+              ? 'All required documents found. I can now pre-fill everything. Ready to start.'
               : allRequiredPresent
-              ? `I already have everything I need. Let me show you what I'll pre-fill — then we can start.`
-              : `I need a few documents to prepare your ${service.short_name} application. Upload them below — I'll read them instantly.`
+              ? `I already have everything I need. Let me show you what I'll pre-fill. Then we can start..`
+              : `I need a few documents to prepare your ${service.short_name} application. Upload them below and I'll read them instantly..`
           }
           className="mb-6"
         />
@@ -600,7 +600,7 @@ function ContinueButton({
   let bg = 'var(--gold)'
   let color = 'white'
   let border = 'none'
-  let label = starting ? 'Preparing your application…' : 'Continue — AVA will pre-fill everything →'
+  let label = starting ? 'Preparing your application…' : 'Continue: AVA will pre-fill everything →'
 
   if (!allPresent && !nonePresent) {
     bg = 'transparent'
@@ -634,7 +634,7 @@ function ContinueButton({
       </button>
       {!allPresent && missingCount > 0 && (
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-tertiary)', marginTop: 10 }}>
-          You can proceed without all documents — AVA will flag what&apos;s missing during review.
+          You can proceed without all documents. AVA will flag what&apos;s missing during review.
         </p>
       )}
     </div>

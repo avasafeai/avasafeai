@@ -12,15 +12,35 @@ import { CheckCircle } from 'lucide-react'
 const VFS_CENTERS: Record<string, string> = {
   CA: 'San Francisco VFS Global',
   NY: 'New York VFS Global',
-  TX: 'Houston VFS Global',
-  IL: 'Chicago VFS Global',
-  WA: 'Seattle VFS Global',
-  GA: 'Atlanta VFS Global',
-  FL: 'Orlando VFS Global',
   NJ: 'New York VFS Global',
+  TX: 'Houston VFS Global',
+  OK: 'Houston VFS Global',
+  IL: 'Chicago VFS Global',
+  WA: 'San Francisco VFS Global',
+  GA: 'Atlanta VFS Global',
+  FL: 'Atlanta VFS Global',
   VA: 'Washington DC VFS Global',
-  MA: 'Boston VFS Global',
+  DC: 'Washington DC VFS Global',
+  MA: 'New York VFS Global',
+  PA: 'New York VFS Global',
+  CT: 'New York VFS Global',
+  OH: 'Chicago VFS Global',
+  MI: 'Chicago VFS Global',
+  WI: 'Chicago VFS Global',
+  MN: 'Chicago VFS Global',
+  AZ: 'San Francisco VFS Global',
+  CO: 'San Francisco VFS Global',
+  NC: 'Atlanta VFS Global',
+  MD: 'Washington DC VFS Global',
 }
+
+const ALL_US_STATES = [
+  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA',
+  'HI','ID','IL','IN','IA','KS','KY','LA','ME','MD',
+  'MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC',
+  'SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC',
+]
 
 interface FormData {
   first_name: string
@@ -145,7 +165,7 @@ const STEPS: Step[] = [
       { field: 'address_city', label: 'City', placeholder: 'Austin' },
       {
         field: 'address_state', label: 'State',
-        options: Object.keys(VFS_CENTERS).sort(),
+        options: ALL_US_STATES,
       },
       { field: 'address_zip', label: 'ZIP code', placeholder: '78701' },
     ],
@@ -237,7 +257,7 @@ function getAvaMessage(
   const prefilledField = fields.find(f => prefillSources[f])
   if (prefilledField) {
     const src = prefillSources[prefilledField]!
-    return `I found this in your ${SOURCE_LABELS[src] ?? 'documents'}. Confirm it looks correct — you can edit if needed.`
+    return `I found this in your ${SOURCE_LABELS[src] ?? 'documents'}. Confirm it looks correct. You can edit if needed..`
   }
   return step.ava
 }
@@ -253,8 +273,9 @@ export default function FormPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [prefillSources, setPrefillSources] = useState<Partial<Record<keyof FormData, string>>>({})
   const [editedFields, setEditedFields] = useState<Set<keyof FormData>>(new Set())
+  const [showResumeBanner, setShowResumeBanner] = useState(false)
 
-  // Load applicationId from URL params or sessionStorage, then load prefill data
+  // Load applicationId from URL params or sessionStorage, then load prefill data and saved progress
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const urlId = urlParams.get('applicationId')
@@ -262,6 +283,20 @@ export default function FormPage() {
     setApplicationId(id)
     if (id) {
       sessionStorage.setItem('application_id', id)
+      // Restore saved form progress
+      const savedForm = sessionStorage.getItem(`form_progress_${id}`)
+      const savedStep = sessionStorage.getItem(`form_step_${id}`)
+      if (savedForm) {
+        try {
+          const parsed = JSON.parse(savedForm) as Partial<FormData>
+          const hasProgress = Object.values(parsed).some(v => !!v)
+          if (hasProgress) {
+            setForm(prev => ({ ...prev, ...parsed }))
+            setShowResumeBanner(true)
+            if (savedStep) setStep(Math.min(parseInt(savedStep, 10), STEPS.length - 1))
+          }
+        } catch { /* ignore */ }
+      }
       loadPrefill(id).catch(() => { /* non-fatal */ })
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -310,20 +345,39 @@ export default function FormPage() {
     }
   }
 
+  function saveProgress(currentForm: FormData, currentStep: number) {
+    if (!applicationId) return
+    sessionStorage.setItem(`form_progress_${applicationId}`, JSON.stringify(currentForm))
+    sessionStorage.setItem(`form_step_${applicationId}`, String(currentStep))
+    // Also persist to sessionStorage as form_data for review page
+    sessionStorage.setItem('form_data', JSON.stringify(currentForm))
+  }
+
   function goNext() {
     setDirection(1)
-    setStep((s) => s + 1)
+    setStep((s) => {
+      const next = s + 1
+      saveProgress(form, next)
+      return next
+    })
   }
 
   function goBack() {
     setDirection(-1)
-    setStep((s) => Math.max(0, s - 1))
+    setStep((s) => {
+      const prev = Math.max(0, s - 1)
+      saveProgress(form, prev)
+      return prev
+    })
   }
 
   async function handleFinish() {
     if (!applicationId) return
     setSaving(true)
     sessionStorage.setItem('form_data', JSON.stringify(form))
+    // Clear saved step progress — form is complete
+    sessionStorage.removeItem(`form_progress_${applicationId}`)
+    sessionStorage.removeItem(`form_step_${applicationId}`)
     const res = await fetch('/api/validate-application', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -401,6 +455,19 @@ export default function FormPage() {
       {/* Content */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px 24px' }}>
         <div style={{ width: '100%', maxWidth: 560 }}>
+
+          {/* Resume banner */}
+          {showResumeBanner && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#EEF6FF', border: '1px solid #BFDBFE', borderRadius: 12, padding: '12px 16px', marginBottom: 20, gap: 12 }}>
+              <p style={{ fontSize: 13, color: '#1E40AF', fontWeight: 500, margin: 0 }}>
+                Picking up where you left off.
+              </p>
+              <button onClick={() => { setShowResumeBanner(false) }} style={{ fontSize: 12, color: '#1E40AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <AnimatePresence mode="wait" custom={direction} initial={false}>
             <motion.div
               key={step}
