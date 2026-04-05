@@ -4,7 +4,7 @@ import Link from 'next/link'
 import {
   FileText, AlertTriangle, Plus, ChevronRight,
   ShieldCheck, Globe, CreditCard, Image, PenLine,
-  MapPin, BookOpen,
+  MapPin, BookOpen, RotateCcw,
 } from 'lucide-react'
 import DashboardShell from '@/components/DashboardShell'
 import AlertDismiss from './AlertDismiss'
@@ -55,10 +55,17 @@ function monthsUntil(expiresAt: string): number {
   return Math.floor((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))
 }
 
+const TOTAL_STEPS: Record<string, number> = {
+  oci_new:          13,
+  oci_renewal:      11,
+  passport_renewal: 10,
+}
+
 // ── Status badge ─────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; bg: string; color: string }> = {
     draft:             { label: 'Draft',          bg: 'var(--surface)',      color: 'var(--text-tertiary)' },
+    in_progress:       { label: 'In progress',    bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
     locker_ready:      { label: 'Ready',           bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
     form_complete:     { label: 'In progress',     bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
     validated:         { label: 'Validated',       bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
@@ -224,6 +231,7 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const unreadAlerts = alerts?.length ?? 0
+  const inProgressApps = apps?.filter(a => a.status === 'in_progress') ?? []
 
   const topBarActions = (
     <Link href="/apply" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px' }}>
@@ -286,6 +294,75 @@ export default async function DashboardPage() {
           Your document locker and applications, all in one place.
         </p>
       </div>
+
+      {/* ── In-progress applications ─────────────────── */}
+      {inProgressApps.length > 0 && (
+        <section style={{ marginBottom: 40 }}>
+          <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 18, color: 'var(--text-primary)', margin: '0 0 16px' }}>
+            Your applications
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {inProgressApps.map((app) => {
+              const currentStep = (app.current_step as number | null) ?? 0
+              const totalSteps = TOTAL_STEPS[app.service_type] ?? 13
+              const progressPct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0
+              const startedAt = new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              return (
+                <div
+                  key={app.id}
+                  style={{
+                    background: 'white',
+                    border: '2px solid var(--gold)',
+                    borderRadius: 16,
+                    padding: '20px 24px',
+                    boxShadow: 'var(--shadow-sm)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: '0 0 3px' }}>
+                        {SERVICE_LABELS[app.service_type] ?? app.service_type}
+                      </p>
+                      <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>
+                        Started {startedAt}
+                      </p>
+                    </div>
+                    <span className="badge" style={{ background: 'var(--gold-subtle)', color: 'var(--gold)', flexShrink: 0 }}>
+                      In progress
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                        Step {currentStep} of {totalSteps}
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                        {progressPct}%
+                      </span>
+                    </div>
+                    <div style={{ height: 4, background: 'var(--border)', borderRadius: 100 }}>
+                      <div style={{ height: '100%', background: 'var(--gold)', borderRadius: 100, width: `${progressPct}%` }} />
+                    </div>
+                  </div>
+                  <Link
+                    href={`/apply/prepare/${app.service_type}?applicationId=${app.id}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                      width: '100%', height: 44, borderRadius: 12,
+                      background: 'var(--gold)', color: 'white',
+                      fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <RotateCcw size={15} />
+                    Resume →
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {/* ── Document Locker ───────────────────────────── */}
       <section style={{ marginBottom: 40 }}>

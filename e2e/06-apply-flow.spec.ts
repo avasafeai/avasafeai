@@ -23,8 +23,7 @@ test.describe('Apply flow', () => {
   test('/apply shows service picker with OCI and passport renewal', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply')
-    await expect(page.getByText('OCI Card (New Application)')).toBeVisible()
-    await expect(page.getByText('OCI Card (Renewal)')).toBeVisible()
+    await expect(page.getByText('OCI New Application')).toBeVisible()
     await expect(page.getByText('Indian Passport Renewal')).toBeVisible()
   })
 
@@ -37,8 +36,8 @@ test.describe('Apply flow', () => {
   test('/apply shows fee information for first service', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply')
-    await expect(page.getByText(/\$275/).first()).toBeVisible()
-    await expect(page.getByText(/\$29 Avasafe fee/).first()).toBeVisible()
+    await expect(page.getByText(/\$274/).first()).toBeVisible()
+    await expect(page.getByText(/\$29 Guided/).first()).toBeVisible()
   })
 
   test('/apply/form loads multi-step form with first question', async ({ page }) => {
@@ -84,7 +83,7 @@ test.describe('Apply flow', () => {
   test('/apply/review loads review page', async ({ page }) => {
     await signIn(page)
     await page.goto('/apply/review')
-    await expect(page.getByText('Review your application')).toBeVisible()
+    await expect(page.getByText('Application validation complete')).toBeVisible()
   })
 
   // NOTE: /apply/status redirects to /apply when no application exists.

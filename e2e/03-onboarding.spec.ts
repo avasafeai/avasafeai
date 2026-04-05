@@ -46,7 +46,7 @@ test.describe('Onboarding — passport upload and extraction', () => {
     await signIn(page)
     await page.goto('/onboarding')
     // Step indicator text is visible
-    await expect(page.getByText('Step 1 of 1')).toBeVisible()
+    await expect(page.getByText('Step 1 of 2')).toBeVisible()
   })
 
   test('file upload zone shows file name after selection', async ({ page }) => {

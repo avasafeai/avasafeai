@@ -24,6 +24,8 @@ const bodySchema = z.object({
   plan: z.enum(['locker']).optional(),
   application_id: z.string().uuid().optional(),
   service_type: z.string().optional(),
+  // tier overrides profile plan — used by ApplyPrompt for free/locker users
+  tier: z.enum(['guided', 'human_assisted']).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { plan, application_id, service_type } = parsed.data
+  const { plan, application_id, service_type, tier: bodyTier } = parsed.data
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
   // ── Locker subscription ──────────────────────────────────────────────────
@@ -60,9 +62,70 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { url: session.url } })
   }
 
-  // ── Per-application checkout (Guided $29 or Human Assisted $79) ──────────
+  const SERVICE_LABELS: Record<string, string> = {
+    oci_new:          'OCI Card — New Application',
+    oci_renewal:      'OCI Card — Renewal',
+    passport_renewal: 'Indian Passport Renewal',
+  }
+
+  // ── New per-application checkout (service_type provided, no existing app) ──
+  // Creates a draft application record first, then routes through Stripe.
+  if (service_type && !application_id) {
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    const resolvedTier: 'guided' | 'human_assisted' =
+      bodyTier ??
+      (profileData?.plan === 'human_assisted' ? 'human_assisted' : 'guided')
+
+    // Create draft application record — webhook will update to 'in_progress'
+    const { data: newApp, error: appError } = await supabase
+      .from('applications')
+      .insert({ user_id: user.id, service_type, status: 'draft', current_step: 0 })
+      .select('id')
+      .single()
+
+    if (appError || !newApp) {
+      return NextResponse.json({ error: 'Failed to create application' }, { status: 500 })
+    }
+
+    const tierLabel = resolvedTier === 'human_assisted' ? 'Human Assisted' : 'Guided'
+    const priceId = PER_APP_PRICE_IDS[resolvedTier]
+    const svcLabel = SERVICE_LABELS[service_type] ?? 'Application preparation'
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: priceId
+        ? [{ price: priceId, quantity: 1 }]
+        : [{
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `${svcLabel} — ${tierLabel} (Avasafe AI)`,
+                description: resolvedTier === 'human_assisted'
+                  ? '45-min expert Zoom session, AVA pre-fill, validation, full PDF mailing package, rejection guarantee.'
+                  : 'AI-validated application: both portals completed, full PDF mailing package, rejection guarantee.',
+              },
+              unit_amount: PER_APP_FALLBACK_AMOUNTS[resolvedTier],
+            },
+            quantity: 1,
+          }],
+      mode: 'payment',
+      success_url: `${appUrl}/apply/prepare/${service_type}?applicationId=${newApp.id}&new=true`,
+      cancel_url: `${appUrl}/apply`,
+      metadata: { application_id: newApp.id, user_id: user.id, tier: resolvedTier, service_type },
+      customer_email: user.email,
+    })
+
+    return NextResponse.json({ data: { url: session.url } })
+  }
+
+  // ── Per-application checkout (existing application) ──────────────────────
   if (!application_id) {
-    return NextResponse.json({ error: 'Provide either plan or application_id' }, { status: 400 })
+    return NextResponse.json({ error: 'Provide plan, service_type, or application_id' }, { status: 400 })
   }
 
   const [appResult, profileResult] = await Promise.all([
@@ -84,15 +147,9 @@ export async function POST(req: NextRequest) {
   }
 
   const userPlan = profileResult.data?.plan ?? 'guided'
-  const tier: 'guided' | 'human_assisted' = userPlan === 'human_assisted' ? 'human_assisted' : 'guided'
+  const tier: 'guided' | 'human_assisted' = bodyTier ?? (userPlan === 'human_assisted' ? 'human_assisted' : 'guided')
   const tierLabel = tier === 'human_assisted' ? 'Human Assisted' : 'Guided'
   const priceId = PER_APP_PRICE_IDS[tier]
-
-  const SERVICE_LABELS: Record<string, string> = {
-    oci_new:          'OCI Card — New Application',
-    oci_renewal:      'OCI Card — Renewal',
-    passport_renewal: 'Indian Passport Renewal',
-  }
   const svcLabel = SERVICE_LABELS[service_type ?? appResult.data.service_type] ?? 'Application preparation'
 
   const session = await stripe.checkout.sessions.create({
@@ -113,9 +170,9 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         }],
     mode: 'payment',
-    success_url: `${appUrl}/apply/complete?applicationId=${application_id}`,
+    success_url: `${appUrl}/apply/prepare/${appResult.data.service_type}?applicationId=${application_id}&new=true`,
     cancel_url: `${appUrl}/apply/review?applicationId=${application_id}`,
-    metadata: { application_id, user_id: user.id, tier },
+    metadata: { application_id, user_id: user.id, tier, service_type: appResult.data.service_type },
     customer_email: user.email,
   })
 

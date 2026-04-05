@@ -76,23 +76,25 @@ export function DocLimitPrompt({ className = '' }: DocLimitPromptProps) {
 
 interface ApplyPromptProps {
   serviceId: string
+  onClose?: () => void
   className?: string
 }
 
-export function ApplyPrompt({ serviceId, className = '' }: ApplyPromptProps) {
+export function ApplyPrompt({ serviceId, onClose, className = '' }: ApplyPromptProps) {
   const [loadingGuided, setLoadingGuided] = useState(false)
   const [loadingHuman, setLoadingHuman] = useState(false)
 
-  async function selectPlan(plan: 'guided' | 'human_assisted') {
-    const setter = plan === 'guided' ? setLoadingGuided : setLoadingHuman
+  async function selectTier(tier: 'guided' | 'human_assisted') {
+    const setter = tier === 'guided' ? setLoadingGuided : setLoadingHuman
     setter(true)
-    const res = await fetch('/api/set-plan', {
+    const res = await fetch('/api/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ service_type: serviceId, tier }),
     })
-    if (res.ok) {
-      window.location.href = `/apply/prepare/${serviceId}`
+    const { data } = await res.json() as { data?: { url: string } }
+    if (data?.url) {
+      window.location.href = data.url
     } else {
       setter(false)
     }
@@ -113,9 +115,14 @@ export function ApplyPrompt({ serviceId, className = '' }: ApplyPromptProps) {
         maxWidth: 580,
       }}
     >
-      <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 18, color: 'var(--navy)', marginBottom: 6 }}>
-        Ready to apply?
-      </p>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+        <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 18, color: 'var(--navy)', margin: 0 }}>
+          Ready to apply?
+        </p>
+        {onClose && (
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0 0 0 8px', color: 'var(--text-tertiary)', fontSize: 18, lineHeight: 1 }}>×</button>
+        )}
+      </div>
       <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 24 }}>
         Choose how you&apos;d like to prepare your application.
       </p>
@@ -142,7 +149,7 @@ export function ApplyPrompt({ serviceId, className = '' }: ApplyPromptProps) {
             </div>
           </div>
           <button
-            onClick={() => selectPlan('guided')}
+            onClick={() => selectTier('guided')}
             disabled={loadingGuided || loadingHuman}
             style={{
               width: '100%', height: 44, borderRadius: 10,
@@ -174,7 +181,7 @@ export function ApplyPrompt({ serviceId, className = '' }: ApplyPromptProps) {
             </div>
           </div>
           <button
-            onClick={() => selectPlan('human_assisted')}
+            onClick={() => selectTier('human_assisted')}
             disabled={loadingGuided || loadingHuman}
             style={{
               width: '100%', height: 44, borderRadius: 10,

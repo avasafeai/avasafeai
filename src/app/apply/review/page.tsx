@@ -67,6 +67,7 @@ export default function ReviewPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applyingFix, setApplyingFix] = useState<string | null>(null)
   const [userPlan, setUserPlan] = useState<string>('free')
+  const [isPaidViaStripe, setIsPaidViaStripe] = useState(false)
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
     const res = await fetch(`/api/validate-application?application_id=${id}`)
@@ -94,13 +95,18 @@ export default function ReviewPage() {
       try { fd = JSON.parse(stored) as Record<string, string>; setFormData(fd) } catch { /* ignore */ }
     }
 
-    // Fetch plan
+    // Fetch plan and stripe payment status
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
       supabase.from('profiles').select('plan').eq('id', user.id).single()
         .then(({ data }) => { if (data?.plan) setUserPlan(data.plan as string) })
     })
+
+    if (id) {
+      supabase.from('applications').select('stripe_payment_id').eq('id', id).single()
+        .then(({ data }) => { if (data?.stripe_payment_id) setIsPaidViaStripe(true) })
+    }
 
     if (!id) { setLoading(false); return }
     loadValidation(id, fd).catch(() => setLoading(false))
@@ -144,19 +150,17 @@ export default function ReviewPage() {
   const passedChecks = checksArr.filter(c => c.status === 'passed')
   const hasFormData = Object.values(formData).some(v => !!v)
 
-  const isPaid = userPlan === 'guided' || userPlan === 'human_assisted'
+  const isPaid = isPaidViaStripe || userPlan === 'guided' || userPlan === 'human_assisted'
   const issueCount = (result?.blockers ?? 0) + (result?.warnings ?? 0)
 
-  function handleUpgrade(plan: 'guided' | 'human_assisted') {
-    sessionStorage.setItem('user_plan', plan)
-    fetch('/api/set-plan', {
+  async function handleUpgrade(tier: 'guided' | 'human_assisted') {
+    const res = await fetch('/api/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
-    }).then(() => {
-      const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'
-      router.push(`/apply/payment?applicationId=${applicationId}&serviceType=${serviceType}`)
+      body: JSON.stringify({ application_id: applicationId, tier }),
     })
+    const { data } = await res.json() as { data?: { url: string } }
+    if (data?.url) window.location.href = data.url
   }
 
   return (

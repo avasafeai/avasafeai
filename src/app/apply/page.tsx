@@ -10,11 +10,15 @@ export default async function ApplyPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: inProgressApps }] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', user.id).single(),
+    supabase
+      .from('applications')
+      .select('id, service_type, current_step, created_at, status')
+      .eq('user_id', user.id)
+      .eq('status', 'in_progress')
+      .order('created_at', { ascending: false }),
+  ])
 
   const userPlan = (profile?.plan ?? 'free') as Plan
 
@@ -35,7 +39,7 @@ export default async function ApplyPage() {
           className="mb-8"
         />
 
-        <ServiceCards userPlan={userPlan} />
+        <ServiceCards userPlan={userPlan} inProgressApps={inProgressApps ?? []} />
 
         <p style={{ marginTop: 32, fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           Not sure which to choose?{' '}

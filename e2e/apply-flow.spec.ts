@@ -1,12 +1,25 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Apply form tests — these visit /apply/form directly (client component, no server auth).
- * Service selection (/apply) requires auth — tested in 06-apply-flow.spec.ts.
+ * Apply form tests — these visit /apply/form, /apply/payment, /apply/review.
+ * All routes require authentication. We use the persistent test-guided account
+ * so no user creation/deletion is needed.
  */
+
+const GUIDED_EMAIL = 'test-guided@avasafe.ai'
+const GUIDED_PASSWORD = 'TestAvasafe2026!'
+
+async function loginAsGuided(page: Parameters<typeof test>[1]) {
+  await page.goto('/auth')
+  await page.fill('input[type="email"]', GUIDED_EMAIL)
+  await page.fill('input[type="password"]', GUIDED_PASSWORD)
+  await page.click('button[type="submit"]')
+  await page.waitForURL('**/dashboard**', { timeout: 12_000 })
+}
 
 test.describe('Apply — multi-step form (direct navigation)', () => {
   test.beforeEach(async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/form')
   })
 
@@ -60,9 +73,9 @@ test.describe('Apply — multi-step form (direct navigation)', () => {
     await page.getByRole('button', { name: 'Continue →' }).click()
     await page.waitForTimeout(300)
 
-    // Step 2: date + place
+    // Step 2: date + place (use input[type="text"] to avoid the date field)
     await page.locator('input[type="date"]').first().fill('1990-01-15')
-    const placeInput = page.getByRole('textbox')
+    const placeInput = page.locator('input[type="text"]')
     if (await placeInput.count() > 0) await placeInput.first().fill('Mumbai, India')
     await page.getByRole('button', { name: 'Continue →' }).click()
     await page.waitForTimeout(300)
@@ -77,30 +90,35 @@ test.describe('Apply — multi-step form (direct navigation)', () => {
 
 test.describe('Apply — payment page', () => {
   test('renders order summary and pay button', async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/payment')
     await expect(page.getByText(/order summary/i)).toBeVisible()
-    await expect(page.getByText(/\$29/)).toBeVisible()
+    await expect(page.getByText(/\$29/).first()).toBeVisible()
     await expect(page.getByRole('button', { name: /Pay.*\$29|pay.*secure|pay/i })).toBeVisible()
   })
 
   test('shows rejection guarantee badge', async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/payment')
-    await expect(page.getByText(/rejection guarantee/i)).toBeVisible()
+    await expect(page.getByText(/rejection guarantee/i).first()).toBeVisible()
   })
 
   test('shows Stripe security note', async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/payment')
-    await expect(page.getByText(/Stripe/i)).toBeVisible()
+    await expect(page.getByText(/Stripe/i).first()).toBeVisible()
   })
 })
 
 test.describe('Apply — review page', () => {
-  test('renders review heading and validation loading state', async ({ page }) => {
+  test('renders review heading and validation complete state', async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/review')
-    await expect(page.getByText('Review your application')).toBeVisible()
+    await expect(page.getByText('Application validation complete')).toBeVisible()
   })
 
   test('shows rejection guarantee', async ({ page }) => {
+    await loginAsGuided(page)
     await page.goto('/apply/review')
     await expect(page.getByText(/rejection guarantee/i)).toBeVisible()
   })

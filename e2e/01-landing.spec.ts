@@ -11,29 +11,30 @@ test.describe('Landing page', () => {
   })
 
   test('displays the how-it-works step cards', async ({ page }) => {
-    await expect(page.getByText('Upload your documents once')).toBeVisible()
-    await expect(page.getByText("Two steps and you're done")).toBeVisible()
+    await expect(page.getByText('Upload your documents')).toBeVisible()
+    await expect(page.getByText('You submit in two steps')).toBeVisible()
   })
 
   test('shows trust signal bar', async ({ page }) => {
-    await expect(page.getByText('256-bit encrypted')).toBeVisible()
-    await expect(page.getByText('No human access')).toBeVisible()
-    await expect(page.getByText('Free fix guarantee')).toBeVisible()
+    await expect(page.getByText('End-to-end encrypted').first()).toBeVisible()
+    await expect(page.getByText('No human sees your docs').first()).toBeVisible()
+    await expect(page.getByText('Fix rejections free').first()).toBeVisible()
   })
 
-  test('displays three pricing tiers with correct prices', async ({ page }) => {
+  test('displays four pricing tiers with correct prices', async ({ page }) => {
     const pricingSection = page.locator('#pricing')
+    await expect(pricingSection.getByText('Free', { exact: true })).toBeVisible()
     await expect(pricingSection.getByText('Locker', { exact: true })).toBeVisible()
-    await expect(pricingSection.getByText('Locker + Apply', { exact: true })).toBeVisible()
-    await expect(pricingSection.getByText('Family', { exact: true })).toBeVisible()
+    await expect(pricingSection.getByText('Guided', { exact: true })).toBeVisible()
+    await expect(pricingSection.getByText('Human Assisted', { exact: true })).toBeVisible()
     await expect(pricingSection.getByText('$19')).toBeVisible()
-    await expect(pricingSection.getByText('$49')).toBeVisible()
-    await expect(pricingSection.getByText('$99')).toBeVisible()
+    await expect(pricingSection.getByText('$29')).toBeVisible()
+    await expect(pricingSection.getByText('$79')).toBeVisible()
   })
 
   test('pricing rejection guarantee note is shown', async ({ page }) => {
     const pricingSection = page.locator('#pricing')
-    await expect(pricingSection.getByText(/Rejection guarantee included/)).toBeVisible()
+    await expect(pricingSection.getByText(/Rejection guarantee/)).toBeVisible()
   })
 
   test('shows FAQ section', async ({ page }) => {

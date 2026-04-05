@@ -17,8 +17,8 @@ test.describe('Auth — signup and login', () => {
     await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible()
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.locator('input[type="password"]')).toBeVisible()
-    // Use exact match to avoid matching "Sign in with magic link" button
-    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeVisible()
+    // Use submit button type to avoid ambiguity with the tab pill "Sign in" button
+    await expect(page.locator('button[type="submit"]')).toBeVisible()
   })
 
   test('signup mode shows full name field', async ({ page }) => {
@@ -57,9 +57,10 @@ test.describe('Auth — signup and login', () => {
     await page.fill('input[type="password"]', 'wrongpassword')
     await page.click('button[type="submit"]')
     await expect(page).toHaveURL(/\/auth/)
-    await expect(page.locator('p').filter({ hasText: /invalid|incorrect|wrong/i })).toBeVisible({
-      timeout: 6_000,
-    })
+    // Error may be "Incorrect email or password" or rate-limit message
+    await expect(
+      page.locator('[role="alert"], p').filter({ hasText: /incorrect|invalid|wrong|too many|please wait/i })
+    ).toBeVisible({ timeout: 6_000 })
   })
 
   test('unauthenticated access to /dashboard redirects to /auth', async ({ page }) => {

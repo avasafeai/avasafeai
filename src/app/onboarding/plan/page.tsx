@@ -13,19 +13,19 @@ const PLANS = [
     name: 'Free',
     price: '$0',
     priceLabel: 'Free forever',
-    description: 'Start protecting your documents today',
+    description: 'Upload your passports and documents. AVA extracts every field and stores them securely.',
     features: [
-      { text: 'Store up to 3 documents', included: true },
-      { text: 'AI extraction of every field', included: true },
-      { text: 'Basic document dashboard', included: true },
+      { text: 'Up to 3 documents', included: true },
+      { text: 'AI field extraction', included: true },
+      { text: 'Basic dashboard', included: true },
       { text: 'Smart expiry alerts', included: false },
       { text: 'Application preparation', included: false },
     ],
     icon: Lock,
-    cta: 'Start free',
+    cta: 'Get started free',
     highlight: false,
     badge: null,
-    // free plan — no checkout, just go to dashboard
+    note: null as string | null,
     action: 'dashboard' as const,
   },
   {
@@ -33,18 +33,19 @@ const PLANS = [
     name: 'Locker',
     price: '$19',
     priceLabel: '$19 / year',
-    description: 'Keep your documents safe and up to date',
+    description: 'Unlimited storage with smart expiry alerts. Never miss a passport renewal again.',
     features: [
-      { text: 'Unlimited document storage', included: true },
-      { text: 'AI extraction of every field', included: true },
+      { text: 'Unlimited documents', included: true },
       { text: 'Smart expiry alerts', included: true },
-      { text: 'Encrypted document download', included: true },
+      { text: 'Encrypted download', included: true },
+      { text: 'Field masking', included: true },
       { text: 'Application preparation', included: false },
     ],
     icon: Bell,
-    cta: 'Get Locker',
+    cta: 'Get Locker — $19/year',
     highlight: false,
     badge: null,
+    note: null as string | null,
     action: 'checkout' as const,
   },
   {
@@ -52,19 +53,20 @@ const PLANS = [
     name: 'Guided',
     price: '$29',
     priceLabel: '$29 per application',
-    description: "Let AVA prepare your application and guide you through the portal",
+    description: 'AVA pre-fills your entire application from your documents and validates against every known rejection cause.',
     features: [
       { text: 'Everything AVA does', included: true },
       { text: 'Pre-fill from your documents', included: true },
-      { text: 'Validation + rejection prevention', included: true },
+      { text: 'Validation against rejection causes', included: true },
       { text: 'Companion mode for portal', included: true },
-      { text: 'PDF mailing package', included: true },
+      { text: 'PDF checklist', included: true },
+      { text: 'Rejection guarantee', included: true },
     ],
     icon: Zap,
-    cta: 'Choose Guided',
+    cta: 'Choose your application',
     highlight: true,
     badge: 'Most popular',
-    // free to select — pay when you apply
+    note: 'Pay $29 when you select your application' as string | null,
     action: 'set-plan' as const,
   },
   {
@@ -72,19 +74,19 @@ const PLANS = [
     name: 'Human Assisted',
     price: '$79',
     priceLabel: '$79 per application',
-    description: 'An Avasafe expert guides you through every step on a live screen share',
+    description: 'An Avasafe expert joins a live screen share and guides you through every step of the portal.',
     features: [
       { text: 'Everything in Guided', included: true },
-      { text: '45-minute 1-on-1 Zoom session', included: true },
+      { text: '45-minute Zoom session', included: true },
       { text: 'Expert guides portal submission', included: true },
       { text: 'You handle passwords only', included: true },
       { text: 'Priority 48-hour booking', included: true },
     ],
     icon: Users,
-    cta: 'Book Expert Session',
+    cta: 'Choose your application',
     highlight: false,
     badge: 'Best results',
-    // free to select — pay when you apply
+    note: 'Pay $79 when you select your application' as string | null,
     action: 'set-plan' as const,
   },
 ]
@@ -106,14 +108,14 @@ export default function OnboardingPlanPage() {
     }
 
     if (plan.action === 'set-plan') {
-      // Guided / Human Assisted — free to select, pay per application
+      // Guided / Human Assisted — set intent, then go to /apply where payment happens
       const res = await fetch('/api/set-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ plan: selected }),
       })
       if (res.ok) {
-        router.push('/dashboard')
+        router.push('/apply')
       } else {
         setLoading(false)
       }
@@ -234,9 +236,6 @@ export default function OnboardingPlanPage() {
                       </div>
                       <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 10, lineHeight: 1.5 }}>
                         {plan.description}
-                        {(plan.action === 'set-plan') && (
-                          <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}> — pay when you apply</span>
-                        )}
                       </p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {plan.features.map(f => (
@@ -254,6 +253,11 @@ export default function OnboardingPlanPage() {
                             </span>
                           </div>
                         ))}
+                        {plan.note && (
+                          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--gold)', fontWeight: 500, marginTop: 6, margin: '6px 0 0' }}>
+                            {plan.note}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {isSelected && (
@@ -281,8 +285,9 @@ export default function OnboardingPlanPage() {
                 : 'Choose a plan to continue'}
           </motion.button>
 
-          <p style={{ textAlign: 'center', marginTop: 12, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)' }}>
-            You can always upgrade when you need to apply. Locker keeps your documents safe until then.
+          <p style={{ textAlign: 'center', marginTop: 12, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+            Guided and Human Assisted are pay-per-application. You only pay when you start a specific application.
+            Locker is the only subscription.
           </p>
         </div>
       </div>

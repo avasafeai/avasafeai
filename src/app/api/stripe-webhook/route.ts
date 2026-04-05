@@ -67,16 +67,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing application_id or plan in metadata' }, { status: 400 })
   }
 
+  // Mark application as in_progress (paid, actively being worked on)
   await supabase
     .from('applications')
     .update({
-      status: 'paid',
-      stripe_payment_id: session.payment_intent as string,
+      status: 'in_progress',
+      stripe_payment_id: (session.payment_intent as string) ?? session.id,
     })
     .eq('id', application_id)
     .eq('user_id', user_id)
 
+  // Update user plan to the paid tier
   const paidTier = tier ?? 'guided'
+  await supabase
+    .from('profiles')
+    .update({ plan: paidTier })
+    .eq('id', user_id)
+
   const tierLabel = paidTier === 'human_assisted' ? 'Human Assisted ($79)' : 'Guided ($29)'
   const amount = paidTier === 'human_assisted' ? '$79' : '$29'
 
