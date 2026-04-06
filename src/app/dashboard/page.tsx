@@ -231,7 +231,7 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const unreadAlerts = alerts?.length ?? 0
-  const inProgressApps = apps?.filter(a => a.status === 'in_progress') ?? []
+  const inProgressApps = apps?.filter(a => a.status === 'in_progress' && a.stripe_payment_id) ?? []
 
   const topBarActions = (
     <Link href="/apply" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px' }}>

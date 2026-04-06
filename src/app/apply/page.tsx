@@ -17,6 +17,7 @@ export default async function ApplyPage() {
       .select('id, service_type, current_step, created_at, status')
       .eq('user_id', user.id)
       .eq('status', 'in_progress')
+      .not('stripe_payment_id', 'is', null)
       .order('created_at', { ascending: false }),
   ])
 

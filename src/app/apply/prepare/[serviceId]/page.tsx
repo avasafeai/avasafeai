@@ -15,12 +15,13 @@ import Link from 'next/link'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type UploadState = 'idle' | 'uploading' | 'success' | 'error'
+type InitState = 'checking' | 'polling' | 'ready' | 'timeout'
 
 interface DocUploadStatus {
   presentInLocker: boolean
   uploadState: UploadState
   errorMsg: string | null
-  summary: string | null   // key field extracted, e.g. "John Smith"
+  summary: string | null
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -43,6 +44,10 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   const router = useRouter()
   const service = getService(serviceId)
 
+  // Application identity — set after webhook confirms payment
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [initState, setInitState] = useState<InitState>('checking')
+
   const [docStatuses, setDocStatuses] = useState<Record<string, DocUploadStatus>>({})
   const [coverage, setCoverage] = useState<number | null>(null)
   const [requirements, setRequirements] = useState<RequirementsResult | null>(null)
@@ -51,7 +56,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   const [optionalExpanded, setOptionalExpanded] = useState(false)
   const [isMinorApplication, setIsMinorApplication] = useState<boolean | null>(null)
 
-  // Compute coverage whenever docStatuses changes
   const computeCoverage = useCallback((statuses: Record<string, DocUploadStatus>) => {
     if (!service) return
     const presentTypes = new Set(
@@ -70,6 +74,79 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     setCoverage(fullTotal > 0 ? Math.round((fullResolved / fullTotal) * 100) : 0)
   }, [service])
 
+  // ── Determine applicationId from URL ──────────────────────────────────────
+  useEffect(() => {
+    async function init() {
+      const params = new URLSearchParams(window.location.search)
+      const sessionId = params.get('session_id')
+      const appId = params.get('applicationId')
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.replace('/auth'); return }
+
+      // Case B — applicationId provided (resume or post-redirect)
+      if (appId) {
+        setApplicationId(appId)
+        sessionStorage.setItem('application_id', appId)
+        sessionStorage.setItem('service_type', serviceId)
+        setInitState('ready')
+        return
+      }
+
+      // Case A — session_id provided (just paid, webhook may still be processing)
+      if (sessionId) {
+        setInitState('polling')
+        let found: string | null = null
+        for (let i = 0; i < 10; i++) {
+          await new Promise(r => setTimeout(r, 1200))
+          const { data } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('stripe_payment_id', sessionId)
+            .single()
+          if (data?.id) { found = data.id; break }
+        }
+        if (found) {
+          setApplicationId(found)
+          sessionStorage.setItem('application_id', found)
+          sessionStorage.setItem('service_type', serviceId)
+          // Replace URL so a refresh uses Case B
+          const url = new URL(window.location.href)
+          url.searchParams.delete('session_id')
+          url.searchParams.set('applicationId', found)
+          window.history.replaceState({}, '', url.toString())
+          setInitState('ready')
+        } else {
+          setInitState('timeout')
+        }
+        return
+      }
+
+      // Case C — neither: look for existing paid in_progress app for this service
+      const { data: existingApp } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('service_type', serviceId)
+        .eq('status', 'in_progress')
+        .not('stripe_payment_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (existingApp?.id) {
+        const url = new URL(window.location.href)
+        url.searchParams.set('applicationId', existingApp.id)
+        window.location.replace(url.toString())
+      } else {
+        // No paid application — must pay first
+        router.replace('/apply')
+      }
+    }
+    init()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serviceId])
+
+  // ── Load document statuses ─────────────────────────────────────────────────
   useEffect(() => {
     if (!service) return
     loadData()
@@ -82,7 +159,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     const { data: docs } = await supabase.from('documents').select('doc_type, extracted_data')
     const presentTypes = new Set((docs ?? []).map(d => d.doc_type as string))
 
-    // Detect minor from existing locker docs
     const passportDoc = (docs ?? []).find(d => d.doc_type === 'us_passport' || d.doc_type === 'child_passport')
     if (passportDoc?.extracted_data) {
       const pData = passportDoc.extracted_data as Record<string, string>
@@ -121,13 +197,11 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   }
 
   function onDocUploaded(docType: string, extractedData: Record<string, string>) {
-    // Minor detection: if user uploads applicant's passport, check DOB
     if (docType === 'us_passport' || docType === 'child_passport') {
       const dob = extractedData.date_of_birth
       if (dob) {
         const minor = isMinor(dob)
         setIsMinorApplication(minor)
-        // Ensure parent passport slots exist in docStatuses
         if (minor) {
           setOptionalExpanded(true)
           setDocStatuses(prev => {
@@ -179,34 +253,52 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     })
   }
 
+  // ── Continue to form (applicationId already exists from webhook) ───────────
   async function startApplication() {
-    if (!service) return
+    if (!service || !applicationId) return
     setStarting(true)
-    const res = await fetch('/api/create-application', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ service_type: service.id }),
-    })
-    if (!res.ok) { setStarting(false); return }
 
-    const { data } = await res.json() as { data: { id: string } }
-    const appId = data.id
-    // Keep sessionStorage for compat with downstream pages
-    sessionStorage.setItem('application_id', appId)
+    sessionStorage.setItem('application_id', applicationId)
     sessionStorage.setItem('service_type', service.id)
 
-    // Run prefill server-side (non-blocking if it fails)
     try {
       await fetch('/api/prefill', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ applicationId: appId, serviceId: service.id }),
+        body: JSON.stringify({ applicationId, serviceId: service.id }),
       })
     } catch {
-      // Non-fatal — form still works, just won't be pre-filled
+      // Non-fatal — form still works without pre-fill
     }
 
-    router.push(`/apply/form?applicationId=${appId}`)
+    router.push(`/apply/form?applicationId=${applicationId}`)
+  }
+
+  // ── Loading / polling / error states ──────────────────────────────────────
+  if (initState === 'checking' || initState === 'polling') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+        <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTop: '3px solid var(--gold)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', fontFamily: 'var(--font-body)' }}>
+          {initState === 'polling' ? 'Confirming your payment…' : 'Loading…'}
+        </p>
+      </div>
+    )
+  }
+
+  if (initState === 'timeout') {
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 24px' }}>
+        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--navy)', textAlign: 'center' }}>Payment confirmed — setting up your application</p>
+        <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', maxWidth: 400 }}>
+          This is taking a moment. Please wait a few seconds and refresh the page, or go to your dashboard to resume.
+        </p>
+        <Link href="/dashboard" style={{ color: 'var(--gold)', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+          Go to dashboard →
+        </Link>
+      </div>
+    )
   }
 
   if (!service) {
@@ -220,7 +312,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   }
 
   const requiredDocs = service.required_documents
-  // Show conditional docs only when condition is met
   const optionalDocs = service.optional_documents.filter(doc => {
     if (doc.condition === 'minor_application') return isMinorApplication === true
     return true
@@ -236,7 +327,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     return s ? (!s.presentInLocker && s.uploadState !== 'success') : true
   })
 
-  // Celebration: all required docs now present (and at least one was just uploaded)
   const justCompleted = allRequiredPresent && Object.values(docStatuses).some(s => s.uploadState === 'success')
 
   return (
@@ -335,7 +425,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
                 key={doc.id}
                 doc={doc}
                 status={docStatuses[doc.doc_type]}
-
                 onUploading={() => onDocUploading(doc.doc_type)}
                 onUploaded={(data) => onDocUploaded(doc.doc_type, data)}
                 onError={(msg) => onDocUploadError(doc.doc_type, msg)}
@@ -369,7 +458,6 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
                       key={doc.id}
                       doc={doc}
                       status={docStatuses[doc.doc_type]}
-      
                       onUploading={() => onDocUploading(doc.doc_type)}
                       onUploaded={(data) => onDocUploaded(doc.doc_type, data)}
                       onError={(msg) => onDocUploadError(doc.doc_type, msg)}
@@ -455,7 +543,6 @@ function DocCard({
     if (file) handleFile(file)
   }
 
-  // ── Already in locker ──────────────────────────────────────────────────────
   if (presentInLocker) {
     return (
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -471,7 +558,6 @@ function DocCard({
     )
   }
 
-  // ── Uploading ──────────────────────────────────────────────────────────────
   if (uploadState === 'uploading') {
     return (
       <div>
@@ -493,7 +579,6 @@ function DocCard({
     )
   }
 
-  // ── Success ────────────────────────────────────────────────────────────────
   if (uploadState === 'success') {
     return (
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -517,7 +602,6 @@ function DocCard({
     )
   }
 
-  // ── Error ──────────────────────────────────────────────────────────────────
   if (uploadState === 'error') {
     return (
       <div>
@@ -540,7 +624,6 @@ function DocCard({
     )
   }
 
-  // ── Idle — upload zone ─────────────────────────────────────────────────────
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>

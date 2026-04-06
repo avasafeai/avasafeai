@@ -153,14 +153,10 @@ export default function ReviewPage() {
   const isPaid = isPaidViaStripe || userPlan === 'guided' || userPlan === 'human_assisted'
   const issueCount = (result?.blockers ?? 0) + (result?.warnings ?? 0)
 
-  async function handleUpgrade(tier: 'guided' | 'human_assisted') {
-    const res = await fetch('/api/create-checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ application_id: applicationId, tier }),
-    })
-    const { data } = await res.json() as { data?: { url: string } }
-    if (data?.url) window.location.href = data.url
+  // In the new flow, payment always happens before the prepare/form/review screens.
+  // If a user somehow reaches review without a paid application, send them to /apply.
+  function handleUpgrade() {
+    router.push('/apply')
   }
 
   return (
@@ -246,11 +242,11 @@ export default function ReviewPage() {
                 See every issue, get exact fix instructions, and submit with confidence.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <button onClick={() => handleUpgrade('guided')} className="btn-gold" style={{ width: '100%', height: 56, borderRadius: 12, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                <button onClick={() => handleUpgrade()} className="btn-gold" style={{ width: '100%', height: 56, borderRadius: 12, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
                   <span style={{ fontWeight: 700 }}>Fix with AVA — $29</span>
                   <span style={{ fontSize: 12, opacity: 0.85, fontWeight: 400 }}>AI-validated application + full mailing package</span>
                 </button>
-                <button onClick={() => handleUpgrade('human_assisted')} style={{ width: '100%', height: 56, borderRadius: 12, background: 'var(--navy)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: 'var(--font-body)' }}>
+                <button onClick={() => handleUpgrade()} style={{ width: '100%', height: 56, borderRadius: 12, background: 'var(--navy)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: 'var(--font-body)' }}>
                   <span style={{ fontWeight: 700 }}>Book an Expert — $79</span>
                   <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 400 }}>45-min Zoom session with an Avasafe expert</span>
                 </button>

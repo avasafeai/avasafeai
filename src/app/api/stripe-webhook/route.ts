@@ -6,12 +6,6 @@ import { Resend } from 'resend'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
-// Price ID → plan name mapping (set in Vercel env vars)
-const priceIdToPlan: Record<string, string> = {}
-if (process.env.STRIPE_LOCKER_PRICE_ID) priceIdToPlan[process.env.STRIPE_LOCKER_PRICE_ID] = 'locker'
-if (process.env.STRIPE_GUIDED_PRICE_ID) priceIdToPlan[process.env.STRIPE_GUIDED_PRICE_ID] = 'guided'
-if (process.env.STRIPE_HUMAN_PRICE_ID)  priceIdToPlan[process.env.STRIPE_HUMAN_PRICE_ID]  = 'human_assisted'
-
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')!
@@ -29,7 +23,7 @@ export async function POST(req: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session
-  const { application_id, user_id, plan, tier } = session.metadata ?? {}
+  const { user_id, service_type, tier, plan } = session.metadata ?? {}
 
   if (!user_id) {
     return NextResponse.json({ error: 'Missing user_id in metadata' }, { status: 400 })
@@ -38,9 +32,12 @@ export async function POST(req: NextRequest) {
   const supabase = createServiceClient()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://avasafe.ai'
 
-  // ── Locker subscription payment ──────────────────────────────────────────
+  // Use session.id as the payment reference so prepare screen can poll by it
+  const sessionId = session.id
+
+  // ── Locker subscription ──────────────────────────────────────────────────────
   if (plan === 'locker') {
-    const planExpires = new Date(Date.now() + 366 * 24 * 60 * 60 * 1000).toISOString()
+    const planExpires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
 
     await supabase
       .from('profiles')
@@ -62,49 +59,61 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  // ── Per-application payment (Guided $29 or Human Assisted $79) ───────────
-  if (!application_id) {
-    return NextResponse.json({ error: 'Missing application_id or plan in metadata' }, { status: 400 })
-  }
-
-  // Mark application as in_progress (paid, actively being worked on)
-  await supabase
-    .from('applications')
-    .update({
-      status: 'in_progress',
-      stripe_payment_id: (session.payment_intent as string) ?? session.id,
-    })
-    .eq('id', application_id)
-    .eq('user_id', user_id)
-
-  // Update user plan to the paid tier
+  // ── Per-application payment (Guided $29 or Human Assisted $79) ───────────────
   const paidTier = tier ?? 'guided'
-  await supabase
-    .from('profiles')
-    .update({ plan: paidTier })
-    .eq('id', user_id)
 
-  const tierLabel = paidTier === 'human_assisted' ? 'Human Assisted ($79)' : 'Guided ($29)'
-  const amount = paidTier === 'human_assisted' ? '$79' : '$29'
+  if (paidTier === 'guided' || paidTier === 'human_assisted') {
+    if (!service_type) {
+      return NextResponse.json({ error: 'Missing service_type in metadata' }, { status: 400 })
+    }
 
-  if (session.customer_email) {
-    const emailBody = paidTier === 'human_assisted'
-      ? `<p>Hi,</p>
+    // Idempotency: only create one application per payment session
+    const { data: existing } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('stripe_payment_id', sessionId)
+      .single()
+
+    if (!existing) {
+      await supabase
+        .from('applications')
+        .insert({
+          user_id,
+          service_type,
+          status: 'in_progress',
+          current_step: 0,
+          stripe_payment_id: sessionId,
+        })
+    }
+
+    // Update user plan to reflect paid tier
+    await supabase
+      .from('profiles')
+      .update({ plan: paidTier })
+      .eq('id', user_id)
+
+    const tierLabel = paidTier === 'human_assisted' ? 'Human Assisted ($79)' : 'Guided ($29)'
+    const amount = paidTier === 'human_assisted' ? '$79' : '$29'
+
+    if (session.customer_email) {
+      const emailBody = paidTier === 'human_assisted'
+        ? `<p>Hi,</p>
 <p>We received your <strong>${amount}</strong> payment for <strong>Human Assisted</strong> application preparation.</p>
 <p>An Avasafe expert will contact you within 48 hours to schedule your 45-minute Zoom session. AVA has already pre-filled and validated your application.</p>
 <p>You can track your application at <a href="${appUrl}/apply/package">${appUrl}/apply/package</a>.</p>
 <p>— The Avasafe AI team</p>`
-      : `<p>Hi,</p>
+        : `<p>Hi,</p>
 <p>We received your <strong>${amount}</strong> payment for <strong>${tierLabel}</strong>. AVA is now completing your application on both portals and assembling your mailing package.</p>
 <p>We'll email you as soon as your package is ready. You can track progress at <a href="${appUrl}/apply/package">${appUrl}/apply/package</a>.</p>
 <p>— The Avasafe AI team</p>`
 
-    await resend.emails.send({
-      from: 'Avasafe AI <noreply@avasafe.ai>',
-      to: session.customer_email,
-      subject: 'Payment received — AVA is preparing your application',
-      html: emailBody,
-    })
+      await resend.emails.send({
+        from: 'Avasafe AI <noreply@avasafe.ai>',
+        to: session.customer_email,
+        subject: 'Payment received — AVA is preparing your application',
+        html: emailBody,
+      })
+    }
   }
 
   return NextResponse.json({ received: true })
