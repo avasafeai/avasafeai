@@ -212,7 +212,10 @@ export default async function DashboardPage() {
 
   const firstName = profile?.full_name?.split(' ')[0] ?? 'there'
   const unreadAlerts = alerts?.length ?? 0
-  const inProgressApps = apps?.filter(a => a.status === 'in_progress' && a.stripe_payment_id) ?? []
+  // Safety guard: only show apps that belong to the authenticated user
+  const inProgressApps = apps?.filter(a =>
+    a.user_id === user.id && a.status === 'in_progress' && a.stripe_payment_id
+  ) ?? []
 
   const topBarActions = (
     <Link href="/apply" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px' }}>

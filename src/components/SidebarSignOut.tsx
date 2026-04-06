@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -10,7 +9,6 @@ interface SidebarSignOutProps {
 }
 
 export default function SidebarSignOut({ email }: SidebarSignOutProps) {
-  const router = useRouter()
   const supabase = createClient()
   const [hovering, setHovering] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -20,7 +18,9 @@ export default function SidebarSignOut({ email }: SidebarSignOutProps) {
   async function handleSignOut() {
     setLoading(true)
     await supabase.auth.signOut()
-    router.push('/auth')
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.href = '/'
   }
 
   return (

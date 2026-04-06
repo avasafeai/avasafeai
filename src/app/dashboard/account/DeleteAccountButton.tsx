@@ -23,7 +23,9 @@ export default function DeleteAccountButton() {
     await supabase.from('documents').delete().eq('user_id', user.id)
     await supabase.from('profiles').delete().eq('id', user.id)
     await supabase.auth.signOut()
-    router.push('/')
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.href = '/'
   }
 
   if (deleting) {

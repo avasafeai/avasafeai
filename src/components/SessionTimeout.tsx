@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000
 const WARNING_BEFORE_MS = 2 * 60 * 1000
@@ -12,7 +11,6 @@ export function SessionTimeout() {
   const [countdown, setCountdown] = useState(120)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const warningRef = useRef<NodeJS.Timeout | null>(null)
-  const router = useRouter()
   const supabase = createClient()
 
   const resetTimer = () => {
@@ -28,7 +26,9 @@ export function SessionTimeout() {
 
     timeoutRef.current = setTimeout(async () => {
       await supabase.auth.signOut()
-      router.push('/auth?reason=timeout')
+      localStorage.clear()
+      sessionStorage.clear()
+      window.location.href = '/auth?reason=timeout'
     }, SESSION_TIMEOUT_MS)
   }
 
@@ -94,7 +94,12 @@ export function SessionTimeout() {
           Stay signed in
         </button>
         <button
-          onClick={async () => { await supabase.auth.signOut(); router.push('/auth') }}
+          onClick={async () => {
+            await supabase.auth.signOut()
+            localStorage.clear()
+            sessionStorage.clear()
+            window.location.href = '/'
+          }}
           style={{
             flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white',
             border: 'none', borderRadius: 8, padding: 8,
