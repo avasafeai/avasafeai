@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import {
-  FileText, AlertTriangle, Plus, ChevronRight,
+  FileText, AlertTriangle, Plus,
   ShieldCheck, Globe, CreditCard, Image, PenLine,
   MapPin, BookOpen, RotateCcw,
 } from 'lucide-react'
@@ -62,26 +62,6 @@ const TOTAL_STEPS: Record<string, number> = {
   passport_renewal: 10,
 }
 
-// ── Status badge ─────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; bg: string; color: string }> = {
-    draft:             { label: 'Draft',          bg: 'var(--surface)',      color: 'var(--text-tertiary)' },
-    in_progress:       { label: 'In progress',    bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
-    locker_ready:      { label: 'Ready',           bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
-    form_complete:     { label: 'In progress',     bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
-    validated:         { label: 'Validated',       bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
-    paid:              { label: 'Paid',            bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
-    package_generated: { label: 'Package ready',  bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
-    submitted:         { label: 'Submitted',       bg: 'var(--success-bg)',   color: 'var(--success)' },
-    approved:          { label: 'Approved',        bg: 'var(--success-bg)',   color: 'var(--success)' },
-  }
-  const s = map[status] ?? { label: status, bg: 'var(--surface)', color: 'var(--text-tertiary)' }
-  return (
-    <span className="badge" style={{ background: s.bg, color: s.color }}>
-      {s.label}
-    </span>
-  )
-}
 
 // ── Document card ─────────────────────────────────────────────────────
 function DocumentCard({ doc }: { doc: {
@@ -349,10 +329,10 @@ export default async function DashboardPage() {
                   <div style={{ marginBottom: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                       <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                        Step {currentStep} of {totalSteps}
+                        {currentStep === 0 ? 'Ready to start' : `Step ${currentStep} of ${totalSteps}`}
                       </span>
                       <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                        {progressPct}%
+                        {currentStep === 0 ? 'Tap Resume to begin' : `${progressPct}%`}
                       </span>
                     </div>
                     <div style={{ height: 4, background: 'var(--border)', borderRadius: 100 }}>
@@ -445,95 +425,6 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      {/* ── Applications ─────────────────────────────── */}
-      <section>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h3 style={{
-            fontFamily: 'var(--font-display)',
-            fontWeight: 600,
-            fontSize: 18,
-            color: 'var(--text-primary)',
-            margin: 0,
-          }}>
-            Applications
-          </h3>
-          <Link
-            href="/apply"
-            style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: 'var(--navy-mid)', textDecoration: 'none' }}
-          >
-            <Plus size={15} /> New application
-          </Link>
-        </div>
-
-        {!apps || apps.length === 0 ? (
-          <div style={{
-            background: 'white',
-            border: '1px solid var(--border)',
-            borderRadius: 16,
-            padding: '24px 28px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            boxShadow: 'var(--shadow-sm)',
-          }}>
-            <div>
-              <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: '0 0 4px' }}>
-                Ready to apply for your OCI card?
-              </p>
-              <p style={{ fontSize: 14, color: 'var(--text-secondary)', margin: 0 }}>
-                AVA has everything she needs from your locker.
-              </p>
-            </div>
-            <Link href="/apply" className="btn-gold" style={{ height: 40, fontSize: 14, padding: '0 18px', flexShrink: 0 }}>
-              Start now →
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {apps.slice(0, 5).map((app) => (
-              <Link
-                key={app.id}
-                href={`/apply/status?id=${app.id}`}
-                style={{
-                  background: 'white',
-                  border: '1px solid var(--border)',
-                  borderRadius: 14,
-                  padding: '16px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  boxShadow: 'var(--shadow-sm)',
-                  textDecoration: 'none',
-                  transition: 'box-shadow 200ms ease',
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', margin: '0 0 3px' }}>
-                    {SERVICE_LABELS[app.service_type] ?? app.service_type}
-                  </p>
-                  <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-                    {new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <StatusBadge status={app.status} />
-                  <ChevronRight size={16} color="var(--text-tertiary)" />
-                </div>
-              </Link>
-            ))}
-            {apps.length > 5 && (
-              <Link
-                href="/dashboard/applications"
-                style={{ textAlign: 'center', fontSize: 14, color: 'var(--navy-mid)', fontWeight: 600, textDecoration: 'none', padding: '8px 0' }}
-              >
-                View all {apps.length} applications →
-              </Link>
-            )}
-          </div>
-        )}
-      </section>
     </DashboardShell>
   )
 }
