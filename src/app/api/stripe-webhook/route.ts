@@ -22,20 +22,20 @@ export async function POST(req: NextRequest) {
   }
 
   const session = event.data.object as Stripe.Checkout.Session
-  const { user_id, service_type, tier, plan } = session.metadata ?? {}
+  const metadata = session.metadata || {}
+  const userId = metadata.user_id
+  const serviceType = metadata.service_type
+  const tier = metadata.tier
+  const plan = metadata.plan
 
   console.log('Webhook received:', {
     sessionId: session.id,
-    user_id,
-    service_type,
+    userId,
+    serviceType,
     tier,
     plan,
     paymentStatus: session.payment_status,
   })
-
-  if (!user_id) {
-    return NextResponse.json({ error: 'Missing user_id in metadata' }, { status: 400 })
-  }
 
   // Only process completed payments
   if (session.payment_status !== 'paid' && session.mode !== 'subscription') {
@@ -43,16 +43,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  const supabase = createServiceClient()
+  const supabaseAdmin = createServiceClient()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://avasafe.ai'
 
   // ── Locker subscription ──────────────────────────────────────────────────────
   if (plan === 'locker') {
+    if (!userId) {
+      console.error('Missing metadata:', metadata)
+      return NextResponse.json({ received: true })
+    }
     const planExpires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-    await supabase
+    await supabaseAdmin
       .from('profiles')
       .update({ plan: 'locker', plan_expires: planExpires })
-      .eq('id', user_id)
+      .eq('id', userId)
 
     if (session.customer_email) {
       await resend.emails.send({
@@ -70,12 +74,13 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Per-application payment (Guided or Expert Session) ───────────────────────
-  if (!service_type || !tier) {
-    return NextResponse.json({ error: 'Missing service_type or tier in metadata' }, { status: 400 })
+  if (!userId || !serviceType || !tier) {
+    console.error('Missing metadata:', metadata)
+    return NextResponse.json({ received: true })
   }
 
   // Idempotency: skip if already processed this session
-  const { data: existing } = await supabase
+  const { data: existing } = await supabaseAdmin
     .from('applications')
     .select('id')
     .eq('stripe_payment_id', session.id)
@@ -86,13 +91,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  // Create the application record
-  const { data: app, error } = await supabase
+  // Create the application record — only valid columns, no extras
+  const { data: app, error } = await supabaseAdmin
     .from('applications')
     .insert({
-      user_id,
-      service_type,
-      tier,
+      user_id: userId,
+      service_type: serviceType,
+      tier: tier,
       status: 'in_progress',
       current_step: 0,
       stripe_payment_id: session.id,
@@ -100,12 +105,12 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  if (error || !app) {
-    console.error('Failed to create application:', error)
-    return NextResponse.json({ error: 'DB insert failed' }, { status: 500 })
+  if (error) {
+    console.error('Application insert failed:', error)
+    return NextResponse.json({ error: 'Insert failed' }, { status: 500 })
   }
 
-  console.log('Application created:', app.id, '| tier:', tier, '| service:', service_type)
+  console.log('Application created successfully:', app.id, 'tier:', app.tier, 'service:', app.service_type)
 
   // DO NOT update profile plan for guided/human_assisted —
   // plan only reflects document storage subscription (free/locker)
@@ -122,7 +127,7 @@ export async function POST(req: NextRequest) {
 <p>— The Avasafe AI team</p>`
       : `<p>Hi,</p>
 <p>We received your <strong>${amount}</strong> payment for <strong>${tierLabel}</strong>.</p>
-<p>AVA is ready to pre-fill your application. Continue at <a href="${appUrl}/apply/prepare/${service_type}?applicationId=${app.id}">${appUrl}/apply/prepare/${service_type}</a>.</p>
+<p>AVA is ready to pre-fill your application. Continue at <a href="${appUrl}/apply/prepare/${serviceType}?applicationId=${app.id}">${appUrl}/apply/prepare/${serviceType}</a>.</p>
 <p>— The Avasafe AI team</p>`
 
     await resend.emails.send({
