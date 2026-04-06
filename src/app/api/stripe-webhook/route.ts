@@ -9,11 +9,10 @@ const resend = new Resend(process.env.RESEND_API_KEY!)
 export async function POST(req: NextRequest) {
   const body = await req.text()
   const sig = req.headers.get('stripe-signature')!
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
@@ -25,20 +24,31 @@ export async function POST(req: NextRequest) {
   const session = event.data.object as Stripe.Checkout.Session
   const { user_id, service_type, tier, plan } = session.metadata ?? {}
 
+  console.log('Webhook received:', {
+    sessionId: session.id,
+    user_id,
+    service_type,
+    tier,
+    plan,
+    paymentStatus: session.payment_status,
+  })
+
   if (!user_id) {
     return NextResponse.json({ error: 'Missing user_id in metadata' }, { status: 400 })
+  }
+
+  // Only process completed payments
+  if (session.payment_status !== 'paid' && session.mode !== 'subscription') {
+    console.log('Skipping — payment not completed:', session.payment_status)
+    return NextResponse.json({ received: true })
   }
 
   const supabase = createServiceClient()
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://avasafe.ai'
 
-  // Use session.id as the payment reference so prepare screen can poll by it
-  const sessionId = session.id
-
   // ── Locker subscription ──────────────────────────────────────────────────────
   if (plan === 'locker') {
     const planExpires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
-
     await supabase
       .from('profiles')
       .update({ plan: 'locker', plan_expires: planExpires })
@@ -51,7 +61,7 @@ export async function POST(req: NextRequest) {
         subject: 'Welcome to Avasafe Locker — your plan is active',
         html: `<p>Hi,</p>
 <p>Your <strong>Locker ($19/year)</strong> plan is now active. Unlimited document storage and smart expiry alerts are ready.</p>
-<p>Go to your dashboard: <a href="${appUrl}/dashboard">${appUrl}/dashboard</a></p>
+<p><a href="${appUrl}/dashboard">${appUrl}/dashboard</a></p>
 <p>— The Avasafe AI team</p>`,
       })
     }
@@ -59,61 +69,68 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
-  // ── Per-application payment (Guided $29 or Human Assisted $79) ───────────────
-  const paidTier = tier ?? 'guided'
+  // ── Per-application payment (Guided or Expert Session) ───────────────────────
+  if (!service_type || !tier) {
+    return NextResponse.json({ error: 'Missing service_type or tier in metadata' }, { status: 400 })
+  }
 
-  if (paidTier === 'guided' || paidTier === 'human_assisted') {
-    if (!service_type) {
-      return NextResponse.json({ error: 'Missing service_type in metadata' }, { status: 400 })
-    }
+  // Idempotency: skip if already processed this session
+  const { data: existing } = await supabase
+    .from('applications')
+    .select('id')
+    .eq('stripe_payment_id', session.id)
+    .maybeSingle()
 
-    // Idempotency: only create one application per payment session
-    const { data: existing } = await supabase
-      .from('applications')
-      .select('id')
-      .eq('stripe_payment_id', sessionId)
-      .single()
+  if (existing) {
+    console.log('Already processed:', session.id, '→', existing.id)
+    return NextResponse.json({ received: true })
+  }
 
-    if (!existing) {
-      await supabase
-        .from('applications')
-        .insert({
-          user_id,
-          service_type,
-          status: 'in_progress',
-          current_step: 0,
-          stripe_payment_id: sessionId,
-        })
-    }
+  // Create the application record
+  const { data: app, error } = await supabase
+    .from('applications')
+    .insert({
+      user_id,
+      service_type,
+      tier,
+      status: 'in_progress',
+      current_step: 0,
+      stripe_payment_id: session.id,
+    })
+    .select()
+    .single()
 
-    // Update user plan to reflect paid tier
-    await supabase
-      .from('profiles')
-      .update({ plan: paidTier })
-      .eq('id', user_id)
+  if (error || !app) {
+    console.error('Failed to create application:', error)
+    return NextResponse.json({ error: 'DB insert failed' }, { status: 500 })
+  }
 
-    const tierLabel = paidTier === 'human_assisted' ? 'Human Assisted ($79)' : 'Guided ($29)'
-    const amount = paidTier === 'human_assisted' ? '$79' : '$29'
+  console.log('Application created:', app.id, '| tier:', tier, '| service:', service_type)
 
-    if (session.customer_email) {
-      const emailBody = paidTier === 'human_assisted'
-        ? `<p>Hi,</p>
-<p>We received your <strong>${amount}</strong> payment for <strong>Human Assisted</strong> application preparation.</p>
-<p>An Avasafe expert will contact you within 48 hours to schedule your 45-minute Zoom session. AVA has already pre-filled and validated your application.</p>
-<p>You can track your application at <a href="${appUrl}/apply/package">${appUrl}/apply/package</a>.</p>
+  // DO NOT update profile plan for guided/human_assisted —
+  // plan only reflects document storage subscription (free/locker)
+
+  const tierLabel = tier === 'human_assisted' ? 'Expert Session ($79)' : 'Guided ($29)'
+  const amount = tier === 'human_assisted' ? '$79' : '$29'
+
+  if (session.customer_email) {
+    const emailBody = tier === 'human_assisted'
+      ? `<p>Hi,</p>
+<p>We received your <strong>${amount}</strong> payment for an <strong>Expert Session</strong>.</p>
+<p>An Avasafe expert will contact you within 48 hours to schedule your 45-minute Zoom session.</p>
+<p>Complete your document checklist and book your slot at <a href="${appUrl}/apply/human?applicationId=${app.id}">${appUrl}/apply/human</a>.</p>
 <p>— The Avasafe AI team</p>`
-        : `<p>Hi,</p>
-<p>We received your <strong>${amount}</strong> payment for <strong>${tierLabel}</strong>. AVA is now completing your application on both portals and assembling your mailing package.</p>
-<p>We'll email you as soon as your package is ready. You can track progress at <a href="${appUrl}/apply/package">${appUrl}/apply/package</a>.</p>
+      : `<p>Hi,</p>
+<p>We received your <strong>${amount}</strong> payment for <strong>${tierLabel}</strong>.</p>
+<p>AVA is ready to pre-fill your application. Continue at <a href="${appUrl}/apply/prepare/${service_type}?applicationId=${app.id}">${appUrl}/apply/prepare/${service_type}</a>.</p>
 <p>— The Avasafe AI team</p>`
 
-      await resend.emails.send({
-        from: 'Avasafe AI <noreply@avasafe.ai>',
-        to: session.customer_email,
-        subject: 'Payment received — AVA is preparing your application',
-        html: emailBody,
-      })
-    }
+    await resend.emails.send({
+      from: 'Avasafe AI <noreply@avasafe.ai>',
+      to: session.customer_email,
+      subject: 'Payment confirmed — AVA is ready',
+      html: emailBody,
+    })
   }
 
   return NextResponse.json({ received: true })

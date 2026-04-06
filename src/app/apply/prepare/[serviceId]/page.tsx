@@ -47,6 +47,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   // Application identity — set after webhook confirms payment
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [initState, setInitState] = useState<InitState>('checking')
+  const [isNewPayment, setIsNewPayment] = useState(false)
 
   const [docStatuses, setDocStatuses] = useState<Record<string, DocUploadStatus>>({})
   const [coverage, setCoverage] = useState<number | null>(null)
@@ -89,6 +90,8 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
         setApplicationId(appId)
         sessionStorage.setItem('application_id', appId)
         sessionStorage.setItem('service_type', serviceId)
+        const isNew = params.get('new') === 'true'
+        if (isNew) setIsNewPayment(true)
         setInitState('ready')
         return
       }
@@ -96,24 +99,45 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
       // Case A — session_id provided (just paid, webhook may still be processing)
       if (sessionId) {
         setInitState('polling')
+        setIsNewPayment(true)
         let found: string | null = null
-        for (let i = 0; i < 10; i++) {
-          await new Promise(r => setTimeout(r, 1200))
+        const MAX_ATTEMPTS = 20
+        const INTERVAL = 1500
+
+        for (let i = 0; i < MAX_ATTEMPTS; i++) {
+          await new Promise(r => setTimeout(r, INTERVAL))
           const { data } = await supabase
             .from('applications')
             .select('id')
             .eq('stripe_payment_id', sessionId)
-            .single()
+            .eq('user_id', user.id)
+            .maybeSingle()
           if (data?.id) { found = data.id; break }
         }
+
+        if (!found) {
+          // Fallback: look for most recent paid in_progress app for this service
+          const { data: fallback } = await supabase
+            .from('applications')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('service_type', serviceId)
+            .eq('status', 'in_progress')
+            .not('stripe_payment_id', 'is', null)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          if (fallback?.id) found = fallback.id
+        }
+
         if (found) {
           setApplicationId(found)
           sessionStorage.setItem('application_id', found)
           sessionStorage.setItem('service_type', serviceId)
-          // Replace URL so a refresh uses Case B
           const url = new URL(window.location.href)
           url.searchParams.delete('session_id')
           url.searchParams.set('applicationId', found)
+          url.searchParams.set('new', 'true')
           window.history.replaceState({}, '', url.toString())
           setInitState('ready')
         } else {
@@ -353,6 +377,19 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
           }
           className="mb-6"
         />
+
+        {/* Payment confirmed banner */}
+        {isNewPayment && (
+          <div style={{ background: '#F0FFF4', border: '1px solid rgba(26,107,58,0.25)', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <CheckCircle size={18} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--success)', marginBottom: 2 }}>Payment confirmed. Let us get started.</p>
+              <p style={{ fontSize: 13, color: '#276749', lineHeight: 1.5 }}>
+                AVA will pre-fill your application from your documents. Most fields will already be filled in — just confirm each one.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Pre-fill coverage */}
         {coverage !== null && (

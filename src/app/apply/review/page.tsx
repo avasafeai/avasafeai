@@ -66,7 +66,6 @@ export default function ReviewPage() {
   const [continuing, setContinuing] = useState(false)
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applyingFix, setApplyingFix] = useState<string | null>(null)
-  const [userPlan, setUserPlan] = useState<string>('free')
   const [isPaidViaStripe, setIsPaidViaStripe] = useState(false)
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
@@ -95,15 +94,8 @@ export default function ReviewPage() {
       try { fd = JSON.parse(stored) as Record<string, string>; setFormData(fd) } catch { /* ignore */ }
     }
 
-    // Fetch plan and stripe payment status
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase.from('profiles').select('plan').eq('id', user.id).single()
-        .then(({ data }) => { if (data?.plan) setUserPlan(data.plan as string) })
-    })
-
     if (id) {
+      const supabase = createClient()
       supabase.from('applications').select('stripe_payment_id').eq('id', id).single()
         .then(({ data }) => { if (data?.stripe_payment_id) setIsPaidViaStripe(true) })
     }
@@ -150,7 +142,7 @@ export default function ReviewPage() {
   const passedChecks = checksArr.filter(c => c.status === 'passed')
   const hasFormData = Object.values(formData).some(v => !!v)
 
-  const isPaid = isPaidViaStripe || userPlan === 'guided' || userPlan === 'human_assisted'
+  const isPaid = isPaidViaStripe
   const issueCount = (result?.blockers ?? 0) + (result?.warnings ?? 0)
 
   // In the new flow, payment always happens before the prepare/form/review screens.

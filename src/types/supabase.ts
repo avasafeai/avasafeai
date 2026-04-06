@@ -87,6 +87,7 @@ export interface Database {
           user_id: string
           service_type: string
           status: string
+          tier: string | null
           current_step: number | null
           form_data: Json | null
           validation_errors: Json | null
@@ -111,6 +112,7 @@ export interface Database {
           user_id: string
           service_type: string
           status?: string
+          tier?: string | null
           current_step?: number | null
           form_data?: Json | null
           validation_errors?: Json | null
@@ -135,6 +137,7 @@ export interface Database {
           user_id?: string
           service_type?: string
           status?: string
+          tier?: string | null
           current_step?: number | null
           form_data?: Json | null
           validation_errors?: Json | null

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import DashboardShell from '@/components/DashboardShell'
 import AlertDismiss from './AlertDismiss'
+import { getResumeUrl } from '@/lib/plan-utils'
 
 // ── Types ────────────────────────────────────────────────────────────
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -307,6 +308,9 @@ export default async function DashboardPage() {
               const totalSteps = TOTAL_STEPS[app.service_type] ?? 13
               const progressPct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0
               const startedAt = new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              const tier = app.tier as string | null
+              const isExpert = tier === 'human_assisted'
+              const resumeUrl = getResumeUrl({ id: app.id, service_type: app.service_type, tier })
               return (
                 <div
                   key={app.id}
@@ -320,9 +324,20 @@ export default async function DashboardPage() {
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
                     <div>
-                      <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: '0 0 3px' }}>
-                        {SERVICE_LABELS[app.service_type] ?? app.service_type}
-                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
+                        <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: 0 }}>
+                          {SERVICE_LABELS[app.service_type] ?? app.service_type}
+                        </p>
+                        {tier && (
+                          <span style={{
+                            fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
+                            background: isExpert ? 'rgba(15,45,82,0.08)' : 'var(--gold-subtle)',
+                            color: isExpert ? 'var(--navy)' : 'var(--gold)',
+                          }}>
+                            {isExpert ? 'Expert Session' : 'Guided'}
+                          </span>
+                        )}
+                      </div>
                       <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>
                         Started {startedAt}
                       </p>
@@ -345,17 +360,17 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   <Link
-                    href={`/apply/prepare/${app.service_type}?applicationId=${app.id}`}
+                    href={resumeUrl}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                       width: '100%', height: 44, borderRadius: 12,
-                      background: 'var(--gold)', color: 'white',
+                      background: isExpert ? 'var(--navy)' : 'var(--gold)', color: 'white',
                       fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 14,
                       textDecoration: 'none',
                     }}
                   >
                     <RotateCcw size={15} />
-                    Resume →
+                    {isExpert ? 'Prepare for session →' : 'Resume →'}
                   </Link>
                 </div>
               )

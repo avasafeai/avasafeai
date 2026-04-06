@@ -90,7 +90,7 @@ export function ApplyPrompt({ serviceId, onClose, className = '' }: ApplyPromptP
     const res = await fetch('/api/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ service_type: serviceId, tier }),
+      body: JSON.stringify({ serviceType: serviceId, tier }),
     })
     const { data } = await res.json() as { data?: { url: string } }
     if (data?.url) {
@@ -207,7 +207,7 @@ interface UpgradePromptProps {
   title: string
   body: string
   buttonText: string
-  targetPlan: 'locker' | 'guided' | 'human_assisted'
+  targetPlan: 'locker'
 }
 
 export default function UpgradePrompt({ title, body, buttonText, targetPlan }: UpgradePromptProps) {

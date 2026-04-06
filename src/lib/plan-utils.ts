@@ -1,68 +1,88 @@
-export type Plan = 'free' | 'locker' | 'guided' | 'human_assisted'
+// ── Plan model ────────────────────────────────────────────────────────────────
+// Plan = the user's document storage subscription (profiles.plan)
+// ApplicationTier = the per-application service level (applications.tier)
+// These are completely independent. A free user can buy guided. A locker user
+// can buy an expert session. Plan and tier do not overlap.
 
-export const PLAN_LIMITS = {
+export type Plan = 'free' | 'locker'
+
+export type ApplicationTier = 'guided' | 'human_assisted'
+
+export const PLAN_LIMITS: Record<Plan, {
+  maxDocuments: number
+  alertsEnabled: boolean
+  label: string
+  price: string
+  period: string
+}> = {
   free: {
     maxDocuments: 3,
-    canApply: false,
     alertsEnabled: false,
-    maxProfiles: 1,
-    humanAssistance: false,
     label: 'Free',
     price: '$0',
     period: 'forever',
   },
   locker: {
     maxDocuments: Infinity,
-    canApply: false,
     alertsEnabled: true,
-    maxProfiles: 1,
-    humanAssistance: false,
     label: 'Locker',
     price: '$19',
     period: 'per year',
   },
+}
+
+export const APPLICATION_TIERS: Record<ApplicationTier, {
+  label: string
+  price: number
+  priceLabel: string
+  description: string
+  features: string[]
+}> = {
   guided: {
-    maxDocuments: Infinity,
-    canApply: true,
-    alertsEnabled: true,
-    maxProfiles: 1,
-    humanAssistance: false,
     label: 'Guided',
-    price: '$29',
-    period: 'per application',
+    price: 29,
+    priceLabel: '$29',
+    description: 'AVA pre-fills and validates your entire application',
+    features: [
+      'AVA pre-fills from your documents',
+      'Validates against rejection causes',
+      'Readiness score with auto-fixes',
+      'Companion mode for portal',
+      'PDF checklist',
+      'Rejection guarantee',
+    ],
   },
   human_assisted: {
-    maxDocuments: Infinity,
-    canApply: true,
-    alertsEnabled: true,
-    maxProfiles: 1,
-    humanAssistance: true,
-    label: 'Human Assisted',
-    price: '$79',
-    period: 'per application',
+    label: 'Expert Session',
+    price: 79,
+    priceLabel: '$79',
+    description: 'Live screen share with an Avasafe expert',
+    features: [
+      'Everything in Guided',
+      '45-minute Zoom session',
+      'Expert guides portal submission',
+      'You handle passwords only',
+      'Priority 48-hour booking',
+      'Support until card arrives',
+    ],
   },
-} satisfies Record<Plan, {
-  maxDocuments: number
-  canApply: boolean
-  alertsEnabled: boolean
-  maxProfiles: number
-  humanAssistance: boolean
-  label: string
-  price: string
-  period: string
-}>
+}
 
 export function canAddDocument(plan: Plan, currentCount: number): boolean {
   return currentCount < PLAN_LIMITS[plan].maxDocuments
 }
 
-export function canUserApply(plan: Plan): boolean {
-  return PLAN_LIMITS[plan].canApply
+export function hasAlerts(plan: Plan): boolean {
+  return PLAN_LIMITS[plan].alertsEnabled
 }
 
-export function hasHumanAssistance(plan: Plan): boolean {
-  return PLAN_LIMITS[plan].humanAssistance
+export function getResumeUrl(app: {
+  id: string
+  service_type: string
+  tier?: string | null
+}): string {
+  if (app.tier === 'human_assisted') {
+    return `/apply/human?applicationId=${app.id}`
+  }
+  return `/apply/prepare/${app.service_type}?applicationId=${app.id}`
 }
-
-// Legacy alias — keep so existing imports don't break
-export const canApply = canUserApply

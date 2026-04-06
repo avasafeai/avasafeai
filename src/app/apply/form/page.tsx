@@ -351,6 +351,13 @@ export default function FormPage() {
     sessionStorage.setItem(`form_step_${applicationId}`, String(currentStep))
     // Also persist to sessionStorage as form_data for review page
     sessionStorage.setItem('form_data', JSON.stringify(currentForm))
+    // Fire-and-forget DB save
+    const supabase = createClient()
+    supabase.from('applications')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ form_data: currentForm as any, current_step: currentStep })
+      .eq('id', applicationId)
+      .then(() => { /* non-fatal */ })
   }
 
   function goNext() {

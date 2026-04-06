@@ -5,33 +5,29 @@ import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Logo from '@/components/Logo'
 import AvaMessage from '@/components/AvaMessage'
-import { CheckCircle, Lock, Bell, Zap, Users } from 'lucide-react'
+import { CheckCircle, Lock, Bell } from 'lucide-react'
 
 const PLANS = [
   {
     id: 'free',
     name: 'Free',
-    price: '$0',
-    priceLabel: 'Free forever',
+    priceLabel: '$0 forever',
     description: 'Upload your passports and documents. AVA extracts every field and stores them securely.',
     features: [
       { text: 'Up to 3 documents', included: true },
       { text: 'AI field extraction', included: true },
       { text: 'Basic dashboard', included: true },
       { text: 'Smart expiry alerts', included: false },
-      { text: 'Application preparation', included: false },
+      { text: 'Unlimited documents', included: false },
     ],
     icon: Lock,
     cta: 'Get started free',
     highlight: false,
     badge: null,
-    note: null as string | null,
-    action: 'dashboard' as const,
   },
   {
     id: 'locker',
     name: 'Locker',
-    price: '$19',
     priceLabel: '$19 / year',
     description: 'Unlimited storage with smart expiry alerts. Never miss a passport renewal again.',
     features: [
@@ -39,57 +35,14 @@ const PLANS = [
       { text: 'Smart expiry alerts', included: true },
       { text: 'Encrypted download', included: true },
       { text: 'Field masking', included: true },
-      { text: 'Application preparation', included: false },
+      { text: 'Priority support', included: true },
     ],
     icon: Bell,
     cta: 'Get Locker — $19/year',
-    highlight: false,
-    badge: null,
-    note: null as string | null,
-    action: 'checkout' as const,
-  },
-  {
-    id: 'guided',
-    name: 'Guided',
-    price: '$29',
-    priceLabel: '$29 per application',
-    description: 'AVA pre-fills your entire application from your documents and validates against every known rejection cause.',
-    features: [
-      { text: 'Everything AVA does', included: true },
-      { text: 'Pre-fill from your documents', included: true },
-      { text: 'Validation against rejection causes', included: true },
-      { text: 'Companion mode for portal', included: true },
-      { text: 'PDF checklist', included: true },
-      { text: 'Rejection guarantee', included: true },
-    ],
-    icon: Zap,
-    cta: 'Choose your application',
     highlight: true,
     badge: 'Most popular',
-    note: 'Pay $29 when you select your application' as string | null,
-    action: 'set-plan' as const,
   },
-  {
-    id: 'human_assisted',
-    name: 'Human Assisted',
-    price: '$79',
-    priceLabel: '$79 per application',
-    description: 'An Avasafe expert joins a live screen share and guides you through every step of the portal.',
-    features: [
-      { text: 'Everything in Guided', included: true },
-      { text: '45-minute Zoom session', included: true },
-      { text: 'Expert guides portal submission', included: true },
-      { text: 'You handle passwords only', included: true },
-      { text: 'Priority 48-hour booking', included: true },
-    ],
-    icon: Users,
-    cta: 'Choose your application',
-    highlight: false,
-    badge: 'Best results',
-    note: 'Pay $79 when you select your application' as string | null,
-    action: 'set-plan' as const,
-  },
-]
+] as const
 
 export default function OnboardingPlanPage() {
   const router = useRouter()
@@ -97,36 +50,24 @@ export default function OnboardingPlanPage() {
   const [loading, setLoading] = useState(false)
 
   async function handleContinue() {
-    if (!selected) return
+    if (!selected || loading) return
     setLoading(true)
 
-    const plan = PLANS.find(p => p.id === selected)!
-
-    if (plan.action === 'dashboard') {
+    if (selected === 'free') {
+      await fetch('/api/set-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: 'free' }),
+      })
       router.push('/dashboard')
       return
     }
 
-    if (plan.action === 'set-plan') {
-      // Guided / Human Assisted — set intent, then go to /apply where payment happens
-      const res = await fetch('/api/set-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selected }),
-      })
-      if (res.ok) {
-        router.push('/apply')
-      } else {
-        setLoading(false)
-      }
-      return
-    }
-
-    // Locker — Stripe checkout
+    // Locker → Stripe checkout
     const res = await fetch('/api/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: selected }),
+      body: JSON.stringify({ plan: 'locker' }),
     })
     const { data } = await res.json() as { data?: { url: string } }
     if (data?.url) {
@@ -144,9 +85,8 @@ export default function OnboardingPlanPage() {
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-start pt-12 pb-20 px-4">
-        <div className="w-full max-w-[640px]">
+        <div className="w-full max-w-[520px]">
 
-          {/* Header */}
           <div className="flex flex-col items-center gap-2 mb-10">
             <Logo size="md" />
             <span style={{
@@ -160,11 +100,10 @@ export default function OnboardingPlanPage() {
           </div>
 
           <AvaMessage
-            message="Your passport is saved. How would you like to get started?"
+            message="Your passport is saved. How would you like to store your documents?"
             className="mb-8"
           />
 
-          {/* Plan cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
             {PLANS.map((plan, i) => {
               const Icon = plan.icon
@@ -184,12 +123,8 @@ export default function OnboardingPlanPage() {
                       ? '2px solid var(--gold, #C9882A)'
                       : plan.highlight
                         ? '2px solid var(--gold, #C9882A)'
-                        : plan.id === 'human_assisted'
-                          ? '1.5px solid var(--navy, #0F2D52)'
-                          : '1.5px solid var(--border, #E8E8E4)',
-                    background: isSelected
-                      ? 'var(--gold-subtle, #FDF6EC)'
-                      : 'white',
+                        : '1.5px solid var(--border, #E8E8E4)',
+                    background: isSelected ? 'var(--gold-subtle, #FDF6EC)' : 'white',
                     padding: '18px 20px',
                     cursor: 'pointer',
                     width: '100%',
@@ -200,17 +135,10 @@ export default function OnboardingPlanPage() {
                 >
                   {plan.badge && (
                     <span style={{
-                      position: 'absolute',
-                      top: -11,
-                      left: 20,
-                      background: plan.highlight ? 'var(--gold, #C9882A)' : 'var(--navy, #0F2D52)',
-                      color: 'white',
-                      fontFamily: 'var(--font-body)',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      padding: '3px 10px',
-                      borderRadius: 20,
-                      letterSpacing: '0.04em',
+                      position: 'absolute', top: -11, left: 20,
+                      background: 'var(--gold, #C9882A)', color: 'white',
+                      fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 600,
+                      padding: '3px 10px', borderRadius: 20, letterSpacing: '0.04em',
                     }}>
                       {plan.badge}
                     </span>
@@ -253,11 +181,6 @@ export default function OnboardingPlanPage() {
                             </span>
                           </div>
                         ))}
-                        {plan.note && (
-                          <p style={{ fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--gold)', fontWeight: 500, marginTop: 6, margin: '6px 0 0' }}>
-                            {plan.note}
-                          </p>
-                        )}
                       </div>
                     </div>
                     {isSelected && (
@@ -275,7 +198,7 @@ export default function OnboardingPlanPage() {
             className="btn-navy"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.28 }}
+            transition={{ duration: 0.3, delay: 0.18 }}
             style={{ width: '100%', opacity: (!selected || loading) ? 0.5 : 1 }}
           >
             {loading
@@ -285,9 +208,9 @@ export default function OnboardingPlanPage() {
                 : 'Choose a plan to continue'}
           </motion.button>
 
-          <p style={{ textAlign: 'center', marginTop: 12, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
-            Guided and Human Assisted are pay-per-application. You only pay when you start a specific application.
-            Locker is the only subscription.
+          <p style={{ textAlign: 'center', marginTop: 14, fontFamily: 'var(--font-body)', fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+            Ready to apply? Start any application from your dashboard.{' '}
+            Guided ($29) and Expert sessions ($79) are pay-per-application.
           </p>
         </div>
       </div>

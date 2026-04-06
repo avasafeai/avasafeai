@@ -150,7 +150,7 @@ const PRICING = [
     ],
   },
   {
-    name: 'Human Assisted',
+    name: 'Expert Session',
     price: '$79',
     period: '/application',
     description: 'An Avasafe expert guides you through every step on a live screen share',

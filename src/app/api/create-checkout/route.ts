@@ -5,19 +5,7 @@ import { z } from 'zod'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 
-const SUBSCRIPTION_PRICE_IDS: Record<string, string | undefined> = {
-  locker: process.env.STRIPE_LOCKER_PRICE_ID,
-}
-
-const PER_APP_PRICE_IDS: Record<string, string | undefined> = {
-  guided:         process.env.STRIPE_GUIDED_PRICE_ID,
-  human_assisted: process.env.STRIPE_HUMAN_PRICE_ID,
-}
-
-const PER_APP_FALLBACK_AMOUNTS: Record<string, number> = {
-  guided:         2900,
-  human_assisted: 7900,
-}
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const SERVICE_LABELS: Record<string, string> = {
   oci_new:          'OCI Card — New Application',
@@ -25,11 +13,20 @@ const SERVICE_LABELS: Record<string, string> = {
   passport_renewal: 'Indian Passport Renewal',
 }
 
-const bodySchema = z.object({
-  plan: z.enum(['locker']).optional(),
-  service_type: z.string().optional(),
-  tier: z.enum(['guided', 'human_assisted']).optional(),
-})
+const TIER_AMOUNTS: Record<string, number> = {
+  guided:         2900,
+  human_assisted: 7900,
+}
+
+const bodySchema = z.union([
+  // Locker subscription
+  z.object({ plan: z.literal('locker') }),
+  // Per-application checkout
+  z.object({
+    serviceType: z.string(),
+    tier: z.enum(['guided', 'human_assisted']),
+  }),
+])
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -42,16 +39,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { plan, service_type, tier: bodyTier } = parsed.data
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-
   // ── Locker subscription ──────────────────────────────────────────────────────
-  if (plan === 'locker') {
-    const priceId = SUBSCRIPTION_PRICE_IDS.locker
+  if ('plan' in parsed.data && parsed.data.plan === 'locker') {
+    const priceId = process.env.STRIPE_LOCKER_PRICE_ID
     if (!priceId) {
-      return NextResponse.json({ error: 'STRIPE_LOCKER_PRICE_ID is not configured' }, { status: 500 })
+      return NextResponse.json({ error: 'STRIPE_LOCKER_PRICE_ID not configured' }, { status: 500 })
     }
-
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
@@ -61,30 +54,28 @@ export async function POST(req: NextRequest) {
       metadata: { user_id: user.id, plan: 'locker' },
       customer_email: user.email,
     })
-
     return NextResponse.json({ data: { url: session.url } })
   }
 
   // ── Per-application checkout ─────────────────────────────────────────────────
-  // Application record is created by the webhook AFTER payment succeeds.
-  // No draft records are created here.
-  if (!service_type) {
-    return NextResponse.json({ error: 'Provide plan or service_type' }, { status: 400 })
+  // Application record is created by the Stripe webhook AFTER successful payment.
+  // Nothing is inserted into the DB here.
+  if (!('serviceType' in parsed.data)) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
+  const { serviceType, tier } = parsed.data
 
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('plan')
-    .eq('id', user.id)
-    .single()
+  const priceId = tier === 'guided'
+    ? process.env.STRIPE_GUIDED_PRICE_ID
+    : process.env.STRIPE_HUMAN_PRICE_ID
 
-  const resolvedTier: 'guided' | 'human_assisted' =
-    bodyTier ??
-    (profileData?.plan === 'human_assisted' ? 'human_assisted' : 'guided')
+  const tierLabel = tier === 'human_assisted' ? 'Expert Session' : 'Guided'
+  const svcLabel = SERVICE_LABELS[serviceType] ?? 'Application preparation'
 
-  const tierLabel = resolvedTier === 'human_assisted' ? 'Human Assisted' : 'Guided'
-  const priceId = PER_APP_PRICE_IDS[resolvedTier]
-  const svcLabel = SERVICE_LABELS[service_type] ?? 'Application preparation'
+  // Success URL differs by tier: guided goes to prepare screen, expert goes to human page
+  const successUrl = tier === 'guided'
+    ? `${appUrl}/apply/prepare/${serviceType}?session_id={CHECKOUT_SESSION_ID}&new=true`
+    : `${appUrl}/apply/human?session_id={CHECKOUT_SESSION_ID}&service_type=${serviceType}&new=true`
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
@@ -95,19 +86,18 @@ export async function POST(req: NextRequest) {
             currency: 'usd',
             product_data: {
               name: `${svcLabel} — ${tierLabel} (Avasafe AI)`,
-              description: resolvedTier === 'human_assisted'
-                ? '45-min expert Zoom session, AVA pre-fill, validation, full PDF mailing package, rejection guarantee.'
-                : 'AI-validated application: both portals completed, full PDF mailing package, rejection guarantee.',
+              description: tier === 'human_assisted'
+                ? '45-min expert Zoom session, AVA pre-fill, validation, full PDF package, rejection guarantee.'
+                : 'AI-validated application: both portals completed, full PDF package, rejection guarantee.',
             },
-            unit_amount: PER_APP_FALLBACK_AMOUNTS[resolvedTier],
+            unit_amount: TIER_AMOUNTS[tier],
           },
           quantity: 1,
         }],
     mode: 'payment',
-    // {CHECKOUT_SESSION_ID} is replaced by Stripe with the actual session ID
-    success_url: `${appUrl}/apply/prepare/${service_type}?session_id={CHECKOUT_SESSION_ID}&new=true`,
+    success_url: successUrl,
     cancel_url: `${appUrl}/apply`,
-    metadata: { user_id: user.id, service_type, tier: resolvedTier },
+    metadata: { user_id: user.id, service_type: serviceType, tier },
     customer_email: user.email,
   })
 

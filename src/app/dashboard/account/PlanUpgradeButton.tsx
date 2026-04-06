@@ -10,8 +10,8 @@ interface Props {
 export default function PlanUpgradeButton({ targetPlan = 'locker', currentPlan }: Props) {
   const [loading, setLoading] = useState(false)
 
-  // If already on locker or above, no upgrade to show
-  if (currentPlan === 'locker' || currentPlan === 'guided' || currentPlan === 'human_assisted') {
+  // If already on locker, no upgrade to show
+  if (currentPlan === 'locker') {
     return null
   }
 

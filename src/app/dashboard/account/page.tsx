@@ -6,10 +6,8 @@ import PlanUpgradeButton from './PlanUpgradeButton'
 import SignOutButton from './SignOutButton'
 
 const PLAN_LABELS: Record<string, string> = {
-  free:           'Free',
-  locker:         'Locker',
-  guided:         'Guided',
-  human_assisted: 'Human Assisted',
+  free:   'Free',
+  locker: 'Locker',
 }
 
 export default async function AccountPage() {
