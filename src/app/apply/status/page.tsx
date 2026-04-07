@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
 import { CheckCircle, Circle, Clock, ClipboardList, Plus } from 'lucide-react'
+import { getService } from '@/lib/services/registry'
 
 const STATUS_TIMELINE = [
   {
@@ -73,11 +74,6 @@ const STAGE_STATUS_MAP: Record<string, string> = {
   approved:         'approved',
 }
 
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new:          'OCI Card — New Application',
-  oci_renewal:      'OCI Card — Renewal',
-  passport_renewal: 'Indian Passport Renewal',
-}
 
 export default async function StatusPage({
   searchParams,
@@ -162,7 +158,7 @@ export default async function StatusPage({
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, marginBottom: 24, boxShadow: 'var(--shadow-sm)' }}>
           <p style={{ fontSize: 12, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)', marginBottom: 6 }}>Service</p>
           <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 20, color: 'var(--navy)', marginBottom: 16 }}>
-            {SERVICE_LABELS[a.service_type] ?? a.service_type}
+            {getService(a.service_type)?.name ?? a.service_type}
           </p>
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

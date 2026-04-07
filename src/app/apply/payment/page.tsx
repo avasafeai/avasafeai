@@ -3,21 +3,16 @@
 import { useEffect, useState } from 'react'
 import { ShieldCheck, Lock, ArrowRight } from 'lucide-react'
 import Logo from '@/components/Logo'
-
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new: 'OCI Card — New Application',
-  oci_renewal: 'OCI Card — Renewal',
-  passport_renewal: 'Indian Passport Renewal',
-}
+import { getService } from '@/lib/services/registry'
 
 export default function PaymentPage() {
-  const [serviceType, setServiceType] = useState('oci_new')
+  const [serviceType, setServiceType] = useState('')
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [paying, setPaying] = useState(false)
   const [tier, setTier] = useState<'guided' | 'human_assisted'>('guided')
 
   useEffect(() => {
-    setServiceType(sessionStorage.getItem('service_type') ?? 'oci_new')
+    setServiceType(sessionStorage.getItem('service_type') ?? '')
     const urlParams = new URLSearchParams(window.location.search)
     const urlId = urlParams.get('applicationId')
     setApplicationId(urlId ?? sessionStorage.getItem('application_id'))
@@ -27,7 +22,7 @@ export default function PaymentPage() {
   }, [])
 
   const price = tier === 'human_assisted' ? '$79' : '$29'
-  const tierLabel = tier === 'human_assisted' ? 'Human Assisted' : 'Guided'
+  const tierLabel = tier === 'human_assisted' ? 'Expert Session' : 'Guided'
 
   async function handlePay() {
     setPaying(true)
@@ -70,7 +65,7 @@ export default function PaymentPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>
-                  {SERVICE_LABELS[serviceType] ?? serviceType} — {tierLabel}
+                  {getService(serviceType)?.name ?? serviceType} — {tierLabel}
                 </p>
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
                   {tier === 'human_assisted' ? '45-min expert Zoom session + full application package' : 'AI-validated application + full mailing package'}

@@ -2,16 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { getService } from '@/lib/services/registry'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new:          'OCI Card — New Application',
-  oci_renewal:      'OCI Card — Renewal',
-  passport_renewal: 'Indian Passport Renewal',
-}
 
 const TIER_AMOUNTS: Record<string, number> = {
   guided:         2900,
@@ -70,7 +66,7 @@ export async function POST(req: NextRequest) {
     : process.env.STRIPE_HUMAN_PRICE_ID
 
   const tierLabel = tier === 'human_assisted' ? 'Expert Session' : 'Guided'
-  const svcLabel = SERVICE_LABELS[serviceType] ?? 'Application preparation'
+  const svcLabel = getService(serviceType)?.name ?? 'Application preparation'
 
   // Success URL differs by tier: guided goes to prepare screen, expert goes to human page
   const successUrl = tier === 'guided'

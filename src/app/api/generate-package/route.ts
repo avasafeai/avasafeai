@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
+import { getService } from '@/lib/services/registry'
 
 const STATE_VFS_ADDRESSES: Record<string, { center: string; address: string }> = {
   TX: { center: 'Houston', address: '9800 Richmond Ave, Suite 235, Houston, TX 77042' },
@@ -17,11 +18,6 @@ const STATE_VFS_ADDRESSES: Record<string, { center: string; address: string }> =
 }
 const FALLBACK_VFS = { center: 'San Francisco', address: '150 Pelican Way, San Rafael, CA 94901' }
 
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new:          'OCI Card — New Application',
-  oci_renewal:      'OCI Card — Renewal',
-  passport_renewal: 'Indian Passport Renewal',
-}
 
 export async function GET(req: NextRequest) {
   const supabase = createClient()
@@ -44,7 +40,7 @@ export async function GET(req: NextRequest) {
   const formData = (app.form_data ?? {}) as Record<string, string>
   const state = (formData.address_state ?? '').toUpperCase()
   const vfsInfo = STATE_VFS_ADDRESSES[state] ?? FALLBACK_VFS
-  const serviceLabel = SERVICE_LABELS[app.service_type] ?? 'Application'
+  const serviceLabel = getService(app.service_type)?.name ?? 'Application'
   const applicantName = `${formData.first_name ?? ''} ${formData.last_name ?? ''}`.trim() || 'Applicant'
   const generatedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 

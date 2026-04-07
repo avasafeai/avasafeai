@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, RotateCcw, CheckCircle } from 'lucide-react'
-import { getAvailableServices, getComingSoonServices } from '@/lib/services/registry'
+import { getAvailableServices, getComingSoonServices, getService } from '@/lib/services/registry'
 import { getResumeUrl } from '@/lib/plan-utils'
 
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -31,10 +31,8 @@ interface ServiceCardsProps {
   inProgressApps: InProgressApp[]
 }
 
-const TOTAL_STEPS: Record<string, number> = {
-  oci_new:          13,
-  oci_renewal:      11,
-  passport_renewal: 10,
+function getTotalSteps(serviceId: string): number {
+  return getService(serviceId)?.form_steps ?? 13
 }
 
 const GUIDED_FEATURES = [
@@ -85,7 +83,7 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
       {available.map((s) => {
         const existingApp = inProgressApps.find(a => a.service_type === s.id)
         const currentStep = existingApp?.current_step ?? 0
-        const totalSteps = TOTAL_STEPS[s.id] ?? 13
+        const totalSteps = getTotalSteps(s.id)
         const progressPct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0
         const startedAt = existingApp
           ? new Date(existingApp.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -189,6 +187,11 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8 }}>
                       $29 Guided · $79 Expert Session
                     </p>
+                    {s.id === 'oci_misc' && (
+                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>
+                        For physical reissuance — new passport after turning 20, lost card, or name change. If you just need to update your passport details online for free, go directly to ociservices.gov.in and select OCI Miscellaneous Services.
+                      </p>
+                    )}
                   </>
                 )}
 

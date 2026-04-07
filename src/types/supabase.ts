@@ -9,7 +9,7 @@ export type Json =
 export type Plan = 'locker' | 'apply' | 'family'
 export type DocType = 'us_passport' | 'indian_passport' | 'oci_card' | 'renunciation' | 'pan_card' | 'address_proof' | 'photo' | 'signature'
 export type ApplicationStatus = 'draft' | 'locker_ready' | 'form_complete' | 'validated' | 'paid' | 'package_generated' | 'submitted' | 'approved'
-export type ServiceType = 'oci_new' | 'oci_renewal' | 'passport_renewal'
+export type ServiceType = 'oci_new' | 'oci_misc' | 'oci_renewal' | 'passport_renewal'
 export type AlertType = 'expiry_warning' | 'expiry_critical' | 'update_required'
 
 export interface Database {

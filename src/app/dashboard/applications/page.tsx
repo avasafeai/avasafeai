@@ -3,12 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
 import { Plus, ClipboardList, ChevronRight } from 'lucide-react'
-
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new: 'OCI Card — New Application',
-  oci_renewal: 'OCI Card — Renewal',
-  passport_renewal: 'Indian Passport Renewal',
-}
+import { getService } from '@/lib/services/registry'
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   draft:             { label: 'Draft',          bg: 'var(--surface)',      color: 'var(--text-tertiary)' },
@@ -67,7 +62,7 @@ export default async function ApplicationsPage() {
                 >
                   <div style={{ flex: 1 }}>
                     <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', marginBottom: 3 }}>
-                      {SERVICE_LABELS[app.service_type] ?? app.service_type}
+                      {getService(app.service_type)?.name ?? app.service_type}
                     </p>
                     <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
                       {new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}

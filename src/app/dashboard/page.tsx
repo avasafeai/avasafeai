@@ -9,6 +9,7 @@ import {
 import DashboardShell from '@/components/DashboardShell'
 import AlertDismiss from './AlertDismiss'
 import { getResumeUrl } from '@/lib/plan-utils'
+import { getService } from '@/lib/services/registry'
 
 // ── Types ────────────────────────────────────────────────────────────
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -33,12 +34,6 @@ const DOC_ICONS: Record<string, React.ElementType> = {
   signature:       PenLine,
 }
 
-const SERVICE_LABELS: Record<string, string> = {
-  oci_new:          'OCI Card — New',
-  oci_renewal:      'OCI Card — Renewal',
-  passport_renewal: 'Passport Renewal',
-}
-
 // ── Helpers ──────────────────────────────────────────────────────────
 function expiryStatus(expiresAt: string | null): 'ok' | 'warning' | 'critical' | null {
   if (!expiresAt) return null
@@ -56,10 +51,8 @@ function monthsUntil(expiresAt: string): number {
   return Math.floor((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30))
 }
 
-const TOTAL_STEPS: Record<string, number> = {
-  oci_new:          13,
-  oci_renewal:      11,
-  passport_renewal: 10,
+function getTotalSteps(serviceType: string): number {
+  return getService(serviceType)?.form_steps ?? 13
 }
 
 
@@ -288,7 +281,7 @@ export default async function DashboardPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {inProgressApps.map((app) => {
               const currentStep = (app.current_step as number | null) ?? 0
-              const totalSteps = TOTAL_STEPS[app.service_type] ?? 13
+              const totalSteps = getTotalSteps(app.service_type)
               const progressPct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0
               const startedAt = new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
               const tier = app.tier as string | null
@@ -309,7 +302,7 @@ export default async function DashboardPage() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3, flexWrap: 'wrap' }}>
                         <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: 0 }}>
-                          {SERVICE_LABELS[app.service_type] ?? app.service_type}
+                          {getService(app.service_type)?.name ?? app.service_type}
                         </p>
                         {tier && (
                           <span style={{
