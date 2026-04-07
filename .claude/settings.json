@@ -10,7 +10,17 @@
       "Bash(grep -n \"processing\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
       "Bash(wait)",
       "Bash(sed -i '' \"s/can now pre-fill everything — ready to start/can now pre-fill everything. Ready to start./g\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
-      "Bash(__NEW_LINE_4579b28cf9585b4a__ sed:*)"
+      "Bash(__NEW_LINE_4579b28cf9585b4a__ sed:*)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test --reporter=list --timeout=30000)",
+      "Bash(ls /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test --reporter=line --timeout=30000)",
+      "Bash(grep -n \"Upload your documents\\\\|Two steps\\\\|256-bit\\\\|No human access\\\\|Free fix\\\\|OCI Card\\\\|Renewal\\\\|$275\\\\|$29 Avasafe\\\\|Welcome back\\\\|Step counter\\\\|order summary\\\\|Stripe\" /Users/sivakandati/Documents/avasafe-ai/src/app/page.tsx)",
+      "Bash(node -e \":*)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test e2e/guided-flow.spec.ts --reporter=list --timeout=30000)",
+      "Bash(grep -n \"256-bit\\\\|Bank.level\\\\|No human\\\\|Free fix\\\\|Rejection guarantee\\\\|Upload your doc\\\\|Two steps\\\\|OCI Card.*New\\\\|OCI Card.*Renew\\\\|Passport Renewal\\\\|$275\\\\|$29 Avasafe\\\\|order summary\\\\|Stripe\\\\|Review your\" /Users/sivakandati/Documents/avasafe-ai/src/app/page.tsx)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test e2e/apply-flow.spec.ts --reporter=list --timeout=20000)",
+      "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test --reporter=list)",
+      "Bash(git rm:*)"
     ],
     "additionalDirectories": [
       "/Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare"

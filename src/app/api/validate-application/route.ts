@@ -113,7 +113,7 @@ async function runChecks(
         title: 'Place of birth may be too detailed',
         status: 'warning',
         severity: 'medium',
-        message: `Place of birth "${pob}" may include a city or state. It must match your passport exactly — typically just "India" or country name only.`,
+        message: `Place of birth "${pob}" may include a city or state. It must match your passport exactly, typically just "India" or country name only.`,
         fix: null,
         field: 'place_of_birth',
         correct_value: p.place_of_birth ?? null,
@@ -142,7 +142,7 @@ async function runChecks(
         correct_value: null,
       })
     } else {
-      checks.push({ id: 'passport_expiry', title: 'Passport has sufficient validity', status: 'passed', severity: null, message: `Passport valid for ${Math.floor(daysLeft)} more days — well above 180-day minimum.`, fix: null, field: null, correct_value: null })
+      checks.push({ id: 'passport_expiry', title: 'Passport has sufficient validity', status: 'passed', severity: null, message: `Passport valid for ${Math.floor(daysLeft)} more days, well above the 180-day minimum.`, fix: null, field: null, correct_value: null })
     }
   } else {
     checks.push({ id: 'passport_expiry', title: 'Passport expiry missing', status: 'failed', severity: 'blocker', message: 'Passport expiry date is required to verify minimum validity.', fix: null, field: 'passport_expiry_date', correct_value: null })
@@ -223,7 +223,7 @@ async function runChecks(
     if (!f.date_of_birth) {
       checks.push({ id: 'dob_match', title: 'Date of birth missing', status: 'failed', severity: 'blocker', message: 'Date of birth is required.', fix: null, field: 'date_of_birth', correct_value: null })
     } else {
-      checks.push({ id: 'dob_match', title: 'Date of birth entered', status: 'passed', severity: null, message: 'Date of birth provided (unverified — no passport in locker).', fix: null, field: null, correct_value: null })
+      checks.push({ id: 'dob_match', title: 'Date of birth entered', status: 'passed', severity: null, message: 'Date of birth provided (unverified, no passport in locker).', fix: null, field: null, correct_value: null })
     }
   }
 

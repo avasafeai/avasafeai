@@ -5,6 +5,18 @@ import DashboardShell from '@/components/DashboardShell'
 import { Plus, ClipboardList, ChevronRight } from 'lucide-react'
 import { getService } from '@/lib/services/registry'
 
+const COMPLETED_STATUSES = ['package_generated', 'submitted', 'approved']
+
+function getAppHref(app: { id: string; service_type: string; tier: string | null; status: string }): string {
+  if (app.tier === 'human_assisted') {
+    return `/apply/human?applicationId=${app.id}`
+  }
+  if (COMPLETED_STATUSES.includes(app.status)) {
+    return `/apply/package?applicationId=${app.id}`
+  }
+  return `/apply/prepare/${app.service_type}?applicationId=${app.id}`
+}
+
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
   draft:             { label: 'Draft',          bg: 'var(--surface)',      color: 'var(--text-tertiary)' },
   locker_ready:      { label: 'Ready',           bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
@@ -51,7 +63,7 @@ export default async function ApplicationsPage() {
           {apps.map(app => {
             const s = STATUS_MAP[app.status] ?? { label: app.status, bg: 'var(--surface)', color: 'var(--text-tertiary)' }
             return (
-              <Link key={app.id} href={`/apply/status?id=${app.id}`} style={{ textDecoration: 'none' }}>
+              <Link key={app.id} href={getAppHref(app)} style={{ textDecoration: 'none' }}>
                 <div
                   className="hover:bg-[var(--off-white)] hover:shadow-md transition-all duration-200"
                   style={{

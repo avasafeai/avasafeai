@@ -62,11 +62,11 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: 'Avasafe AI <noreply@avasafe.ai>',
         to: session.customer_email,
-        subject: 'Welcome to Avasafe Locker — your plan is active',
+        subject: 'Welcome to Avasafe Locker. Your plan is active.',
         html: `<p>Hi,</p>
 <p>Your <strong>Locker ($19/year)</strong> plan is now active. Unlimited document storage and smart expiry alerts are ready.</p>
 <p><a href="${appUrl}/dashboard">${appUrl}/dashboard</a></p>
-<p>— The Avasafe AI team</p>`,
+<p>The Avasafe AI team</p>`,
       })
     }
 
@@ -124,16 +124,16 @@ export async function POST(req: NextRequest) {
 <p>We received your <strong>${amount}</strong> payment for an <strong>Expert Session</strong>.</p>
 <p>An Avasafe expert will contact you within 48 hours to schedule your 45-minute Zoom session.</p>
 <p>Complete your document checklist and book your slot at <a href="${appUrl}/apply/human?applicationId=${app.id}">${appUrl}/apply/human</a>.</p>
-<p>— The Avasafe AI team</p>`
+<p>The Avasafe AI team</p>`
       : `<p>Hi,</p>
 <p>We received your <strong>${amount}</strong> payment for <strong>${tierLabel}</strong>.</p>
 <p>AVA is ready to pre-fill your application. Continue at <a href="${appUrl}/apply/prepare/${serviceType}?applicationId=${app.id}">${appUrl}/apply/prepare/${serviceType}</a>.</p>
-<p>— The Avasafe AI team</p>`
+<p>The Avasafe AI team</p>`
 
     await resend.emails.send({
       from: 'Avasafe AI <noreply@avasafe.ai>',
       to: session.customer_email,
-      subject: 'Payment confirmed — AVA is ready',
+      subject: 'Payment confirmed. AVA is ready.',
       html: emailBody,
     })
   }

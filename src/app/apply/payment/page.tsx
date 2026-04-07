@@ -65,7 +65,7 @@ export default function PaymentPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 14, borderBottom: '1px solid var(--border)', marginBottom: 14 }}>
               <div>
                 <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 3 }}>
-                  {getService(serviceType)?.name ?? serviceType} — {tierLabel}
+                  {getService(serviceType)?.name ?? serviceType}{tierLabel ? `, ${tierLabel}` : ''}
                 </p>
                 <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>
                   {tier === 'human_assisted' ? '45-min expert Zoom session + full application package' : 'AI-validated application + full mailing package'}

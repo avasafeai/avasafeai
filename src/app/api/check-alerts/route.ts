@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         from: 'AVA at Avasafe <ava@avasafe.ai>',
         to: userEmail,
         subject: isCritical
-          ? `⚠️ Your ${docLabel} expires soon — start renewal now`
+          ? `⚠️ Your ${docLabel} expires soon. Start renewal now.`
           : `Your ${docLabel} expires in 6 months`,
         html: `<p>${message}</p>
 <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard">View your document locker →</a></p>

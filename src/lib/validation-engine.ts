@@ -111,7 +111,7 @@ export function evaluateRule(
     case 'parent_docs_for_minor': {
       const dob = f.date_of_birth
       if (!dob || !isMinor(dob)) {
-        return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'Adult application — no parent documents required.', fix: null, field: null, correct_value: null }
+        return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'Adult application. No parent documents required.', fix: null, field: null, correct_value: null }
       }
       const hasParentDoc =
         locker.includes('father_passport') ||

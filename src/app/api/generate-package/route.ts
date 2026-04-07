@@ -111,8 +111,8 @@ export async function GET(req: NextRequest) {
 
   const docs = [
     { item: 'Completed OCI application form (print from government portal)', sign: true },
-    { item: 'US passport — colour copy of bio data page', sign: false },
-    { item: 'Indian origin proof — old Indian passport or parent\'s Indian passport', sign: false },
+    { item: 'US passport, colour copy of bio data page', sign: false },
+    { item: 'Indian origin proof: old Indian passport or parent\'s Indian passport', sign: false },
     { item: 'US address proof dated within 3 months (utility bill, bank statement, or lease)', sign: false },
     { item: '4 passport-style photos (square, white background, no glasses)', sign: false },
   ]
@@ -133,12 +133,12 @@ export async function GET(req: NextRequest) {
   y -= 14
 
   const photoReqs = [
-    'Square format — 2x2 inches (51x51mm)',
-    'White or off-white background — no patterns',
+    'Square format, 2x2 inches (51x51mm)',
+    'White or off-white background, no patterns',
     'Face must fill 70-80% of the frame, looking straight at the camera',
     'No glasses, no headwear (except for religious reasons)',
     'Neutral expression, mouth closed',
-    '4 copies required — do not staple or fold',
+    '4 copies required. Do not staple or fold.',
   ]
 
   photoReqs.forEach(req => {
@@ -156,7 +156,7 @@ export async function GET(req: NextRequest) {
 
   const steps = [
     { n: '1', text: 'Print all documents listed above in colour where required.', bold: false },
-    { n: '2', text: 'Sign the application form in the designated signature box — blue or black ink, ballpoint pen only.', bold: false },
+    { n: '2', text: 'Sign the application form in the designated signature box. Blue or black ink, ballpoint pen only.', bold: false },
     { n: '3', text: 'Place all documents in a 9x12 inch manila envelope.', bold: false },
     { n: '4', text: `Address the envelope to: VFS Global ${vfsInfo.center}, ${vfsInfo.address}`, bold: true },
     { n: '5', text: 'Drop at any UPS location. No appointment needed. Keep your receipt and tracking number.', bold: false },

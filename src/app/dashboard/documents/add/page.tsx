@@ -24,7 +24,7 @@ export default async function AddDocumentPage() {
       <DashboardShell activePage="documents" pageTitle="Add Document">
         <UpgradePrompt
           title="You have reached your free limit"
-          body="Free accounts can store up to 3 documents. Upgrade to Locker for unlimited storage and smart expiry alerts — just $19 per year."
+          body="Free accounts can store up to 3 documents. Upgrade to Locker for unlimited storage and smart expiry alerts, just $19 per year."
           buttonText="Upgrade to Locker"
           targetPlan="locker"
         />

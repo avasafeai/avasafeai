@@ -314,7 +314,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   if (initState === 'timeout') {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '0 24px' }}>
-        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--navy)', textAlign: 'center' }}>Payment confirmed — setting up your application</p>
+        <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--navy)', textAlign: 'center' }}>Payment confirmed. Setting up your application.</p>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', textAlign: 'center', maxWidth: 400 }}>
           This is taking a moment. Please wait a few seconds and refresh the page, or go to your dashboard to resume.
         </p>
@@ -385,7 +385,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
             <div>
               <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--success)', marginBottom: 2 }}>Payment confirmed. Let us get started.</p>
               <p style={{ fontSize: 13, color: '#276749', lineHeight: 1.5 }}>
-                AVA will pre-fill your application from your documents. Most fields will already be filled in — just confirm each one.
+                AVA will pre-fill your application from your documents. Most fields will already be filled in. Just confirm each one.
               </p>
             </div>
           </div>

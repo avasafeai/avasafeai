@@ -37,7 +37,7 @@ export default function PlanUpgradeButton({ targetPlan = 'locker', currentPlan }
       className="btn-gold"
       style={{ height: 40, padding: '0 18px', fontSize: 14, opacity: loading ? 0.7 : 1 }}
     >
-      {loading ? 'Redirecting...' : 'Upgrade to Locker — $19/year'}
+      {loading ? 'Redirecting...' : 'Upgrade to Locker ($19/year)'}
     </button>
   )
 }

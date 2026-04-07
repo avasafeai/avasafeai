@@ -209,7 +209,7 @@ function ConfirmationScreen({ email, onBack }: { email: string; onBack: () => vo
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-body)', fontSize: 13, color: '#1A6B3A', fontWeight: 500 }}>
               <CheckCircle size={14} color="#1A6B3A" />
-              Email sent — check your inbox.
+              Email sent. Check your inbox.
             </span>
             {countdown > 0 && (
               <span style={{ fontFamily: 'var(--font-body)', fontSize: 11, color: 'var(--text-tertiary)' }}>
@@ -556,7 +556,7 @@ function AuthForm() {
                     <span>
                       {generalError}
                       {generalError.includes('confirm your email') && (
-                        <> <button type="button" onClick={async () => { await supabase.auth.resend({ type: 'signup', email }); setGeneralError('Confirmation email resent — check your inbox.') }} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: '#B91C1C', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>Resend confirmation →</button></>
+                        <> <button type="button" onClick={async () => { await supabase.auth.resend({ type: 'signup', email }); setGeneralError('Confirmation email resent. Check your inbox.') }} style={{ background: 'none', border: 'none', padding: 0, fontFamily: 'var(--font-body)', fontSize: 13, color: '#B91C1C', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', textUnderlineOffset: 2 }}>Resend confirmation →</button></>
                       )}
                     </span>
                   </motion.div>

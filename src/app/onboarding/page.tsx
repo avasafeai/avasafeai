@@ -336,7 +336,7 @@ export default function OnboardingPage() {
               transition={{ duration: 0.35 }}
             >
               <AvaMessage
-                message="I've read your passport. Take a moment to confirm everything looks right — then we're done with the hard part."
+                message="I've read your passport. Take a moment to confirm everything looks right. Then we're done with the hard part."
                 className="mb-8"
               />
 

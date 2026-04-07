@@ -180,7 +180,7 @@ const FAQ = [
   },
   {
     q: 'How does per-application pricing work?',
-    a: "You only pay when you need to apply. Guided ($29) and Human Assisted ($79) are one-time payments per application, not subscriptions. Locker ($19/year) is the only recurring charge and keeps your documents safe between applications. You can store documents and monitor expiry dates without ever paying for an application.",
+    a: "You only pay when you need to apply. Guided ($29) and Expert Session ($79) are one-time payments per application, not subscriptions. Locker ($19/year) is the only recurring charge and keeps your documents safe between applications. You can store documents and monitor expiry dates without ever paying for an application.",
   },
   {
     q: 'What exactly does AVA do for my OCI application?',
@@ -196,7 +196,7 @@ const FAQ = [
   },
   {
     q: 'What about complex edge cases like name changes or previous rejections?',
-    a: 'AVA handles most cases automatically. For genuine edge cases, choose Human Assisted ($79) and an Avasafe expert will guide you through every step on a live Zoom session.',
+    a: 'AVA handles most cases automatically. For genuine edge cases, choose Expert Session ($79) and an Avasafe expert will guide you through every step on a live Zoom session.',
   },
 ]
 
@@ -1519,7 +1519,7 @@ export default function HomePage() {
                   background: plan.highlighted ? 'var(--white)' : 'var(--surface)',
                   border: plan.highlighted
                     ? '2px solid var(--gold)'
-                    : plan.name === 'Human Assisted'
+                    : plan.name === 'Expert Session'
                     ? '1.5px solid var(--navy)'
                     : plan.name === 'Free'
                     ? '1.5px solid var(--border)'

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 
-export const metadata = { title: 'Privacy Policy — Avasafe AI' }
+export const metadata = { title: 'Privacy Policy | Avasafe AI' }
 
 export default function PrivacyPage() {
   return (
@@ -52,12 +52,12 @@ export default function PrivacyPage() {
           <p>We use the following services to deliver Avasafe:</p>
           <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {[
-              'Supabase — database and file storage, hosted on AWS',
-              'Stripe — payment processing',
-              'Resend — transactional email delivery',
-              'Twilio — SMS and WhatsApp notifications',
-              'Anthropic — AI document extraction and validation (no training use)',
-              'Vercel — application hosting',
+              'Supabase: database and file storage, hosted on AWS',
+              'Stripe: payment processing',
+              'Resend: transactional email delivery',
+              'Twilio: SMS and WhatsApp notifications',
+              'Anthropic: AI document extraction and validation (no training use)',
+              'Vercel: application hosting',
             ].map(item => (
               <li key={item} style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item}</li>
             ))}

@@ -104,6 +104,8 @@ export interface Database {
           prefill_sources: Json | null
           prefill_coverage: number | null
           readiness_score: number | null
+          calendly_booked: boolean | null
+          calendly_event_uri: string | null
           created_at: string
           updated_at: string
         }
@@ -129,6 +131,8 @@ export interface Database {
           prefill_sources?: Json | null
           prefill_coverage?: number | null
           readiness_score?: number | null
+          calendly_booked?: boolean | null
+          calendly_event_uri?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -154,6 +158,8 @@ export interface Database {
           prefill_sources?: Json | null
           prefill_coverage?: number | null
           readiness_score?: number | null
+          calendly_booked?: boolean | null
+          calendly_event_uri?: string | null
           created_at?: string
           updated_at?: string
         }

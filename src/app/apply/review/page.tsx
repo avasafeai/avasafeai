@@ -235,11 +235,11 @@ export default function ReviewPage() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <button onClick={() => handleUpgrade()} className="btn-gold" style={{ width: '100%', height: 56, borderRadius: 12, fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                  <span style={{ fontWeight: 700 }}>Fix with AVA — $29</span>
+                  <span style={{ fontWeight: 700 }}>Fix with AVA ($29)</span>
                   <span style={{ fontSize: 12, opacity: 0.85, fontWeight: 400 }}>AI-validated application + full mailing package</span>
                 </button>
                 <button onClick={() => handleUpgrade()} style={{ width: '100%', height: 56, borderRadius: 12, background: 'var(--navy)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 15, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2, fontFamily: 'var(--font-body)' }}>
-                  <span style={{ fontWeight: 700 }}>Book an Expert — $79</span>
+                  <span style={{ fontWeight: 700 }}>Book an Expert ($79)</span>
                   <span style={{ fontSize: 12, opacity: 0.75, fontWeight: 400 }}>45-min Zoom session with an Avasafe expert</span>
                 </button>
               </div>
@@ -408,7 +408,7 @@ export default function ReviewPage() {
                 </button>
               ) : (
                 <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>
-                  {continuing ? 'One moment...' : 'Application ready — continue →'}
+                  {continuing ? 'One moment...' : 'Application ready. Continue →'}
                 </button>
               )}
             </div>

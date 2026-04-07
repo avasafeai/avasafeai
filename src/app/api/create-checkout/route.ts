@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${svcLabel} — ${tierLabel} (Avasafe AI)`,
+              name: `${svcLabel}, ${tierLabel} (Avasafe AI)`,
               description: tier === 'human_assisted'
                 ? '45-min expert Zoom session, AVA pre-fill, validation, full PDF package, rejection guarantee.'
                 : 'AI-validated application: both portals completed, full PDF package, rejection guarantee.',

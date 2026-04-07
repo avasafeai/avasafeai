@@ -56,10 +56,10 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
   const available = getAvailableServices()
   const comingSoon = getComingSoonServices()
   const [expandedService, setExpandedService] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loadingTier, setLoadingTier] = useState<string | null>(null)
 
   async function handleCheckout(serviceType: string, tier: 'guided' | 'human_assisted') {
-    setLoading(true)
+    setLoadingTier(tier)
     try {
       const res = await fetch('/api/create-checkout', {
         method: 'POST',
@@ -73,8 +73,15 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
     } catch (err) {
       console.error('Checkout error:', err)
     } finally {
-      setLoading(false)
+      setLoadingTier(null)
     }
+  }
+
+  function handleExpand(serviceId: string) {
+    setExpandedService(serviceId)
+    setTimeout(() => {
+      document.getElementById(`service-${serviceId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
   }
 
   return (
@@ -94,6 +101,7 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
         return (
           <div
             key={s.id}
+            id={`service-${s.id}`}
             style={{
               background: 'white',
               borderRadius: 16,
@@ -174,7 +182,7 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                 {!isExpanded && (
                   <>
                     <button
-                      onClick={() => setExpandedService(s.id)}
+                      onClick={() => handleExpand(s.id)}
                       style={{
                         width: '100%', height: 46, borderRadius: 12, border: 'none',
                         background: 'var(--navy)', color: 'white',
@@ -185,22 +193,18 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       Start {s.short_name}
                     </button>
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8 }}>
-                      $29 Guided · $79 Expert Session
+                      Guided $29 · Expert Session $79
                     </p>
                     {s.id === 'oci_misc' && (
                       <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>
-                        For physical reissuance — new passport after turning 20, lost card, or name change. If you just need to update your passport details online for free, go directly to ociservices.gov.in and select OCI Miscellaneous Services.
+                        For physical reissuance: new passport after turning 20, lost card, or name change. If you just need to update your passport details online for free, go directly to ociservices.gov.in and select OCI Miscellaneous Services.
                       </p>
                     )}
                   </>
                 )}
 
                 {/* Expanded: inline tier selection */}
-                <div style={{
-                  overflow: 'hidden',
-                  maxHeight: isExpanded ? '520px' : '0',
-                  transition: 'max-height 250ms ease-in-out',
-                }}>
+                {isExpanded && (<div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 12 }}>
                     How would you like to prepare?
                   </p>
@@ -226,16 +230,16 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       </div>
                       <button
                         onClick={() => handleCheckout(s.id, 'guided')}
-                        disabled={loading}
+                        disabled={loadingTier !== null}
                         style={{
                           width: '100%', height: 40, borderRadius: 6, border: 'none',
                           background: '#C9882A', color: 'white',
                           fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 13,
-                          cursor: loading ? 'not-allowed' : 'pointer',
-                          opacity: loading ? 0.7 : 1,
+                          cursor: loadingTier !== null ? 'not-allowed' : 'pointer',
+                          opacity: loadingTier !== null ? 0.7 : 1,
                         }}
                       >
-                        {loading ? 'Loading…' : 'Start Guided — $29'}
+                        {loadingTier === 'guided' ? 'Loading…' : 'Start Guided ($29)'}
                       </button>
                     </div>
 
@@ -259,16 +263,16 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       </div>
                       <button
                         onClick={() => handleCheckout(s.id, 'human_assisted')}
-                        disabled={loading}
+                        disabled={loadingTier !== null}
                         style={{
                           width: '100%', height: 40, borderRadius: 6, border: 'none',
                           background: '#0F2D52', color: 'white',
                           fontFamily: 'var(--font-body)', fontWeight: 500, fontSize: 13,
-                          cursor: loading ? 'not-allowed' : 'pointer',
-                          opacity: loading ? 0.7 : 1,
+                          cursor: loadingTier !== null ? 'not-allowed' : 'pointer',
+                          opacity: loadingTier !== null ? 0.7 : 1,
                         }}
                       >
-                        {loading ? 'Loading…' : 'Book Expert — $79'}
+                        {loadingTier === 'human_assisted' ? 'Loading…' : 'Book Expert ($79)'}
                       </button>
                     </div>
                   </div>
@@ -279,7 +283,7 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                   >
                     ← Back
                   </button>
-                </div>
+                </div>)}
               </div>
             )}
           </div>

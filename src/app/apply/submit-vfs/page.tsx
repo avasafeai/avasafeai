@@ -181,7 +181,7 @@ export default function SubmitVFSPage() {
           <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 8 }}>
             Select <strong>OCI New Application</strong> and pay the VFS service fee. VFS accepts credit/debit cards.
           </p>
-          <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Fee: approximately $25–$60 depending on service level.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-tertiary)' }}>Fee: approximately $25 to $60 depending on service level.</p>
         </StepCard>
 
         {/* Step 5 — Shipping label */}

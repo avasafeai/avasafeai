@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Logo from '@/components/Logo'
 
-export const metadata = { title: 'Terms of Service — Avasafe AI' }
+export const metadata = { title: 'Terms of Service | Avasafe AI' }
 
 export default function TermsPage() {
   return (
@@ -27,7 +27,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="Payments and refunds">
-          <p>Locker subscriptions ($19/year) are billed annually. Guided ($29) and Human Assisted ($79) are one-time payments per application. All payments are processed by Stripe.</p>
+          <p>Locker subscriptions ($19/year) are billed annually. Guided ($29) and Expert Session ($79) are one-time payments per application. All payments are processed by Stripe.</p>
           <p style={{ marginTop: 12 }}>We offer a rejection guarantee: if your application is rejected and the rejection is caused by an error in AVA&apos;s validation output, we will correct the application at no additional charge. The guarantee does not apply to rejections caused by government policy changes after your application was prepared, information you entered incorrectly, missing documents, or factors outside our validation scope.</p>
           <p style={{ marginTop: 12 }}>Outside of the rejection guarantee, payments are non-refundable once the application package has been generated. If you have not yet generated a package, contact us within 7 days for a full refund.</p>
         </Section>
@@ -41,8 +41,8 @@ export default function TermsPage() {
           <p>You may not use Avasafe AI to process documents belonging to someone else without their explicit consent. You may not attempt to reverse-engineer, scrape, or abuse our service. You may not upload documents you know to be fraudulent or falsified. Violation of these rules will result in immediate account termination and may be reported to relevant authorities.</p>
         </Section>
 
-        <Section title="Human Assisted sessions">
-          <p>Human Assisted sessions are 45-minute Zoom calls with an Avasafe team member. The session must be booked and conducted before submission. If you miss your scheduled session without 24 hours notice, we may charge for rescheduling. Our expert guides your submission but does not enter your login credentials on your behalf. You maintain full control of your government accounts at all times.</p>
+        <Section title="Expert Sessions">
+          <p>Expert Sessions are 45-minute Zoom calls with an Avasafe team member. The session must be booked and conducted before submission. If you miss your scheduled session without 24 hours notice, we may charge for rescheduling. Our expert guides your submission but does not enter your login credentials on your behalf. You maintain full control of your government accounts at all times.</p>
         </Section>
 
         <Section title="Limitation of liability">

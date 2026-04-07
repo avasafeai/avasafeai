@@ -142,7 +142,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)', margin: '0 0 2px' }}>Original document</p>
               <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
-                Decrypted on demand — never cached
+                Decrypted on demand, never cached
                 {doc.file_size_bytes ? ` · ${fmtBytes(doc.file_size_bytes)}` : ''}
               </p>
             </div>
@@ -163,7 +163,7 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
         {!storagePath && (
           <div style={{ background: 'var(--off-white)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 20px', marginBottom: 20 }}>
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', margin: 0 }}>
-              Original file not available — only extracted data is stored for this document.
+              Original file not available. Only extracted data is stored for this document.
             </p>
           </div>
         )}

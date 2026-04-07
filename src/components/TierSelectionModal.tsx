@@ -141,7 +141,7 @@ export default function TierSelectionModal({
                     transition: 'opacity 200ms',
                   }}
                 >
-                  {loading === 'guided' ? 'Redirecting to payment...' : `Start Guided — ${guided.priceLabel}`}
+                  {loading === 'guided' ? 'Redirecting to payment...' : `Start Guided (${guided.priceLabel})`}
                 </button>
               </div>
 
@@ -181,7 +181,7 @@ export default function TierSelectionModal({
                     transition: 'opacity 200ms',
                   }}
                 >
-                  {loading === 'human_assisted' ? 'Redirecting to payment...' : `Book Expert — ${expert.priceLabel}`}
+                  {loading === 'human_assisted' ? 'Redirecting to payment...' : `Book Expert (${expert.priceLabel})`}
                 </button>
               </div>
             </div>

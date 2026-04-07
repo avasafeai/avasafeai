@@ -38,7 +38,7 @@ const PLANS = [
       { text: 'Priority support', included: true },
     ],
     icon: Bell,
-    cta: 'Get Locker — $19/year',
+    cta: 'Get Locker ($19/year)',
     highlight: true,
     badge: 'Most popular',
   },

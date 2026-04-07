@@ -148,7 +148,7 @@ export default function AddDocumentForm() {
           {/* Step 2: Upload */}
           {stage === 'upload' && (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-              <AvaMessage message={`Great. Upload your ${DOC_TYPES.find(d => d.value === docType)?.label ?? 'document'} — a clear photo or scan works perfectly.`} className="mb-8" />
+              <AvaMessage message={`Great. Upload your ${DOC_TYPES.find(d => d.value === docType)?.label ?? 'document'}. A clear photo or scan works perfectly.`} className="mb-8" />
               <div
                 onClick={() => inputRef.current?.click()}
                 style={{
@@ -201,7 +201,7 @@ export default function AddDocumentForm() {
                 ))}
               </div>
               <p style={{ fontFamily: 'var(--font-display)', fontStyle: 'italic', fontSize: 20, color: 'var(--text-primary)' }}>Reading your document…</p>
-              <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginTop: 8 }}>This usually takes 5–10 seconds</p>
+              <p style={{ fontSize: 14, color: 'var(--text-tertiary)', marginTop: 8 }}>This usually takes 5 to 10 seconds</p>
             </motion.div>
           )}
 

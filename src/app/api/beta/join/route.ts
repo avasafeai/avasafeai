@@ -70,7 +70,7 @@ export async function POST() {
       body: JSON.stringify({
         from: 'AVA at Avasafe <ava@avasafe.ai>',
         to: user.email,
-        subject: `You're Beta Member #${betaNumber} — welcome to Avasafe AI`,
+        subject: `You're Beta Member #${betaNumber}. Welcome to Avasafe AI.`,
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
             <p style="font-size:13px;color:#9CA3AF;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:16px">AVASAFE AI BETA</p>
@@ -78,7 +78,7 @@ export async function POST() {
               You're beta member #${betaNumber}.
             </h1>
             <p style="font-size:15px;color:#6B6B6B;line-height:1.6;margin-bottom:20px">
-              Your Guided access is now active. You can start your OCI or passport renewal application immediately — no payment required.
+              Your Guided access is now active. You can start your OCI or passport renewal application immediately, no payment required.
             </p>
             <a href="${process.env.NEXT_PUBLIC_APP_URL}/apply" style="display:inline-block;background:#C9882A;color:white;text-decoration:none;padding:14px 28px;border-radius:10px;font-size:15px;font-weight:600">
               Start your application →

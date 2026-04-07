@@ -51,7 +51,7 @@ export function DocLimitPrompt({ className = '' }: DocLimitPromptProps) {
             You&apos;ve reached the free limit
           </p>
           <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-            Free accounts store up to 3 documents. Upgrade to Locker for unlimited storage and smart expiry alerts — just $19 per year.
+            Free accounts store up to 3 documents. Upgrade to Locker for unlimited storage and smart expiry alerts, just $19 per year.
           </p>
         </div>
       </div>
@@ -66,13 +66,13 @@ export function DocLimitPrompt({ className = '' }: DocLimitPromptProps) {
           opacity: loading ? 0.7 : 1, transition: 'opacity 200ms',
         }}
       >
-        {loading ? 'Redirecting...' : 'Upgrade to Locker — $19/year'}
+        {loading ? 'Redirecting...' : 'Upgrade to Locker ($19/year)'}
       </button>
     </motion.div>
   )
 }
 
-// ── Apply access prompt — two-option (Guided / Human Assisted) ───────────────
+// ── Apply access prompt — two-option (Guided / Expert Session) ───────────────
 
 interface ApplyPromptProps {
   serviceId: string
@@ -160,11 +160,11 @@ export function ApplyPrompt({ serviceId, onClose, className = '' }: ApplyPromptP
               transition: 'opacity 200ms',
             }}
           >
-            {loadingGuided ? 'Setting up...' : 'Start Guided — $29'}
+            {loadingGuided ? 'Setting up...' : 'Start Guided ($29)'}
           </button>
         </div>
 
-        {/* Human Assisted */}
+        {/* Expert Session */}
         <div style={{ border: '1.5px solid var(--navy)', borderRadius: 14, padding: '20px 22px', background: 'rgba(15,45,82,0.015)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 16 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(15,45,82,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
@@ -172,7 +172,7 @@ export function ApplyPrompt({ serviceId, onClose, className = '' }: ApplyPromptP
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-                <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 16, color: 'var(--navy)' }}>Human Assisted</p>
+                <p style={{ fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 16, color: 'var(--navy)' }}>Expert Session</p>
                 <p style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 16, color: 'var(--navy)' }}>$79</p>
               </div>
               <p style={{ fontFamily: 'var(--font-body)', fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
@@ -192,7 +192,7 @@ export function ApplyPrompt({ serviceId, onClose, className = '' }: ApplyPromptP
               transition: 'opacity 200ms',
             }}
           >
-            {loadingHuman ? 'Setting up...' : 'Book Expert Session — $79'}
+            {loadingHuman ? 'Setting up...' : 'Book Expert Session ($79)'}
           </button>
         </div>
 

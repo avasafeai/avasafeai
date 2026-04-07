@@ -36,8 +36,8 @@ export default async function AlertsPage() {
           {/* Greyed-out preview cards */}
           <div style={{ opacity: 0.3, pointerEvents: 'none', userSelect: 'none', marginBottom: 24 }}>
             {[
-              'Your Indian passport expires in 8 months — start renewal soon.',
-              'Your OCI card expires in 3 months — apply for renewal.',
+              'Your Indian passport expires in 8 months. Start renewal soon.',
+              'Your OCI card expires in 3 months. Apply for renewal.',
             ].map((msg, i) => (
               <div key={i} style={{
                 background: 'white', border: '1px solid var(--border)', borderLeft: '3px solid var(--warning)',
@@ -53,7 +53,7 @@ export default async function AlertsPage() {
           {/* Upgrade overlay */}
           <UpgradePrompt
             title="Upgrade to receive smart alerts before documents expire"
-            body="AVA monitors all your documents and notifies you months before expiry — so you never miss a renewal. Available on Locker and above."
+            body="AVA monitors all your documents and notifies you months before expiry so you never miss a renewal. Available on Locker and above."
             buttonText="Upgrade to Locker"
             targetPlan="locker"
           />

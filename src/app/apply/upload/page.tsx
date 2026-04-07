@@ -142,7 +142,7 @@ export default function UploadPage() {
             <div>
               <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-6">
                 <h2 className="font-semibold text-slate-900 mb-4">
-                  Review extracted details — edit anything that&apos;s wrong
+                  Review extracted details. Edit anything that&apos;s wrong.
                 </h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {FIELDS.map(({ label, key }) => (
