@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
+import { toast } from '@/lib/toast'
 
 interface DownloadButtonProps {
   documentId: string
@@ -27,6 +28,7 @@ export default function DownloadButton({ documentId }: DownloadButtonProps) {
       URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Download error:', err)
+      toast.error('Download failed. Please try again.')
     } finally {
       setLoading(false)
     }

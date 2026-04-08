@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import AuthStateListener from '@/components/AuthStateListener'
+import Toast from '@/components/Toast'
 
 export const metadata: Metadata = {
   title: 'Avasafe AI | Your OCI card. Your passport renewal. Done.',
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthStateListener />
+        <Toast />
         {children}
       </body>
     </html>

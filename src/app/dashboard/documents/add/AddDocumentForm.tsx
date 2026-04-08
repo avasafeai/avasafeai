@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import AvaMessage from '@/components/AvaMessage'
 import { CheckCircle, Upload } from 'lucide-react'
 import { ExtractedPassportData } from '@/types/supabase'
+import { toast } from '@/lib/toast'
 import Link from 'next/link'
 
 const DOC_TYPES = [
@@ -19,16 +20,21 @@ const DOC_TYPES = [
   { value: 'signature', label: 'Signature' },
 ]
 
-const FIELD_LABELS: { key: keyof ExtractedPassportData; label: string }[] = [
-  { key: 'full_name', label: 'Full name' },
-  { key: 'date_of_birth', label: 'Date of birth' },
-  { key: 'passport_number', label: 'Document number' },
-  { key: 'expiry_date', label: 'Expiry date' },
-  { key: 'nationality', label: 'Nationality' },
-  { key: 'gender', label: 'Gender' },
-  { key: 'place_of_birth', label: 'Place of birth' },
-  { key: 'issue_date', label: 'Issue date' },
-]
+const FIELD_LABEL_MAP: Record<string, string> = {
+  first_name: 'First name',
+  last_name: 'Last name',
+  full_name: 'Full name',
+  date_of_birth: 'Date of birth',
+  place_of_birth: 'Place of birth',
+  passport_number: 'Document number',
+  nationality: 'Nationality',
+  issue_date: 'Issue date',
+  expiry_date: 'Expiry date',
+  issuing_country: 'Issuing country',
+  gender: 'Gender',
+}
+
+const SKIP_FIELDS = new Set(['document_type', 'confidence_notes'])
 
 type Stage = 'pick' | 'upload' | 'extracting' | 'confirm' | 'saving'
 
@@ -62,16 +68,23 @@ export default function AddDocumentForm() {
     const res = await fetch('/api/extract-document', { method: 'POST', body: fd })
     if (!res.ok) {
       const body = await res.json() as { error: string }
-      setError(body.error ?? 'Could not read document.')
+      const msg = body.error ?? 'Upload failed. Check your connection and try again.'
+      setError(msg)
+      toast.error(msg)
       setStage('upload')
       return
     }
 
     const { data: extracted, document_id } = await res.json() as { data: ExtractedPassportData; document_id: string | null }
+    const fieldCount = extracted
+      ? Object.entries(extracted).filter(([k, v]) => !SKIP_FIELDS.has(k) && v && v !== '').length
+      : 0
     setData(extracted)
     setDocumentId(document_id)
+    setVisibleFields(0)
     setStage('confirm')
-    for (let i = 1; i <= FIELD_LABELS.length; i++) {
+    const animCount = Math.max(fieldCount, 1)
+    for (let i = 1; i <= animCount; i++) {
       await new Promise(r => setTimeout(r, 80))
       setVisibleFields(i)
     }
@@ -87,6 +100,7 @@ export default function AddDocumentForm() {
         body: JSON.stringify({ document_id: documentId, extracted_data: data }),
       })
     }
+    toast.success('Saved to your locker.')
     router.push('/dashboard/documents')
   }
 
@@ -206,31 +220,61 @@ export default function AddDocumentForm() {
           )}
 
           {/* Confirm */}
-          {(stage === 'confirm' || stage === 'saving') && data && (
+          {(stage === 'confirm' || stage === 'saving') && (
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
               <AvaMessage message="I've read your document. Confirm the details look right." className="mb-8" />
-              <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <AnimatePresence>
-                  {FIELD_LABELS.slice(0, visibleFields).map(({ key, label }) => (
-                    data[key] ? (
-                      <motion.div key={key} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)' }}>{label}</label>
-                          <CheckCircle size={14} color="var(--success)" />
-                        </div>
-                        <input type="text" value={data[key] ?? ''} onChange={e => handleFieldEdit(key, e.target.value)} style={inputStyle} />
-                      </motion.div>
-                    ) : null
-                  ))}
-                </AnimatePresence>
-              </div>
-              {visibleFields === FIELD_LABELS.length && (
-                <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  onClick={handleConfirm} disabled={stage === 'saving'} className="btn-navy"
-                  style={{ width: '100%', marginTop: 20 }}>
-                  {stage === 'saving' ? 'Saving…' : 'Save to my locker →'}
-                </motion.button>
-              )}
+              {(() => {
+                const displayFields = data
+                  ? Object.entries(data).filter(([k, v]) => !SKIP_FIELDS.has(k) && v && v !== '')
+                  : []
+                const animDone = visibleFields >= Math.max(displayFields.length, 1)
+
+                if (!data || displayFields.length === 0) {
+                  return (
+                    <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                      <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                        We could not extract fields from this document. You can still save it to your locker and fill details manually.
+                      </p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <>
+                    <div style={{
+                      background: 'white', borderRadius: 16, padding: 24,
+                      boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)',
+                      display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16,
+                    }}>
+                      <AnimatePresence>
+                        {displayFields.slice(0, visibleFields).map(([key, value]) => (
+                          <motion.div key={key} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <label style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-tertiary)' }}>
+                                {FIELD_LABEL_MAP[key] ?? key.replace(/_/g, ' ')}
+                              </label>
+                              <CheckCircle size={12} color="var(--success)" />
+                            </div>
+                            <input
+                              type="text"
+                              value={String(value)}
+                              onChange={e => handleFieldEdit(key as keyof ExtractedPassportData, e.target.value)}
+                              style={inputStyle}
+                            />
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                    {animDone && (
+                      <motion.button initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                        onClick={handleConfirm} disabled={stage === 'saving'} className="btn-navy"
+                        style={{ width: '100%', marginTop: 20 }}>
+                        {stage === 'saving' ? 'Saving…' : 'Save to my locker →'}
+                      </motion.button>
+                    )}
+                  </>
+                )
+              })()}
             </motion.div>
           )}
         </div>

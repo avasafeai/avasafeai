@@ -20,7 +20,10 @@
       "Bash(grep -n \"256-bit\\\\|Bank.level\\\\|No human\\\\|Free fix\\\\|Rejection guarantee\\\\|Upload your doc\\\\|Two steps\\\\|OCI Card.*New\\\\|OCI Card.*Renew\\\\|Passport Renewal\\\\|$275\\\\|$29 Avasafe\\\\|order summary\\\\|Stripe\\\\|Review your\" /Users/sivakandati/Documents/avasafe-ai/src/app/page.tsx)",
       "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test e2e/apply-flow.spec.ts --reporter=list --timeout=20000)",
       "Bash(PLAYWRIGHT_BASE_URL=https://avasafe.ai npx playwright test --reporter=list)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(grep -n \"processing\\\\|5-8\\\\|4-6\\\\|weeks\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
+      "Bash(grep -n \"processing_weeks\\\\|getService\\\\|service\\\\b\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)",
+      "Bash(grep -n \"minor\\\\|Minor\\\\|parent.*passport\\\\|Both parents\" /Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare/[serviceId]/page.tsx)"
     ],
     "additionalDirectories": [
       "/Users/sivakandati/Documents/avasafe-ai/src/app/apply/prepare"

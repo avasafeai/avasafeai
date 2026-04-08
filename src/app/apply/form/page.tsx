@@ -8,6 +8,7 @@ import Logo from '@/components/Logo'
 import { createClient } from '@/lib/supabase/client'
 
 import { CheckCircle } from 'lucide-react'
+import { FIELD_VALIDATORS } from '@/lib/field-validators'
 
 const VFS_CENTERS: Record<string, string> = {
   CA: 'San Francisco VFS Global',
@@ -274,6 +275,7 @@ export default function FormPage() {
   const [prefillSources, setPrefillSources] = useState<Partial<Record<keyof FormData, string>>>({})
   const [editedFields, setEditedFields] = useState<Set<keyof FormData>>(new Set())
   const [showResumeBanner, setShowResumeBanner] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
   // Load applicationId from URL params or sessionStorage, then load prefill data and saved progress
   useEffect(() => {
@@ -335,6 +337,8 @@ export default function FormPage() {
 
   function update(key: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
+    // Clear field error as user types
+    setFieldErrors(prev => { const next = { ...prev }; delete next[key]; return next })
     // Track edits to pre-filled fields
     if (prefillSources[key]) {
       setEditedFields(prev => {
@@ -360,7 +364,30 @@ export default function FormPage() {
       .then(() => { /* non-fatal */ })
   }
 
+  function validateCurrentStep(): boolean {
+    const current = STEPS[step]
+    const fieldsToCheck: Array<keyof FormData> = current.group
+      ? current.group.filter(g => !g.field || g.field !== 'spouse_name').map(g => g.field)
+      : current.field && !current.optional && !current.options
+        ? [current.field]
+        : []
+    const errors: Partial<Record<keyof FormData, string>> = {}
+    for (const fieldKey of fieldsToCheck) {
+      const validator = FIELD_VALIDATORS[fieldKey]
+      if (validator) {
+        const err = validator(form[fieldKey] ?? '')
+        if (err) errors[fieldKey] = err
+      }
+    }
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return false
+    }
+    return true
+  }
+
   function goNext() {
+    if (!validateCurrentStep()) return
     setDirection(1)
     setStep((s) => {
       const next = s + 1
@@ -371,6 +398,7 @@ export default function FormPage() {
 
   function goBack() {
     setDirection(-1)
+    setFieldErrors({})
     setStep((s) => {
       const prev = Math.max(0, s - 1)
       saveProgress(form, prev)
@@ -520,14 +548,17 @@ export default function FormPage() {
                             value={form[g.field]}
                             onChange={(e) => update(g.field, e.target.value)}
                             placeholder={g.placeholder}
-                            style={inputStyle(g.field)}
+                            style={fieldErrors[g.field] ? { ...inputStyle(g.field), borderColor: 'var(--error)' } : inputStyle(g.field)}
                             onFocus={(e) => {
                               if (!prefillSources[g.field]) e.currentTarget.style.borderColor = 'var(--gold)'
                             }}
                             onBlur={(e) => {
-                              if (!prefillSources[g.field]) e.currentTarget.style.borderColor = 'var(--border)'
+                              if (!prefillSources[g.field]) e.currentTarget.style.borderColor = fieldErrors[g.field] ? 'var(--error)' : 'var(--border)'
                             }}
                           />
+                        )}
+                        {fieldErrors[g.field] && (
+                          <p style={{ fontSize: 12, color: 'var(--error)', marginTop: 4 }}>{fieldErrors[g.field]}</p>
                         )}
                       </div>
                     ))
@@ -571,14 +602,17 @@ export default function FormPage() {
                         value={form[current.field!]}
                         onChange={(e) => update(current.field!, e.target.value)}
                         placeholder={current.placeholder}
-                        style={inputStyle(current.field!)}
+                        style={fieldErrors[current.field!] ? { ...inputStyle(current.field!), borderColor: 'var(--error)' } : inputStyle(current.field!)}
                         onFocus={(e) => {
                           if (!prefillSources[current.field!]) e.currentTarget.style.borderColor = 'var(--gold)'
                         }}
                         onBlur={(e) => {
-                          if (!prefillSources[current.field!]) e.currentTarget.style.borderColor = 'var(--border)'
+                          if (!prefillSources[current.field!]) e.currentTarget.style.borderColor = fieldErrors[current.field!] ? 'var(--error)' : 'var(--border)'
                         }}
                       />
+                      {fieldErrors[current.field!] && (
+                        <p style={{ fontSize: 12, color: 'var(--error)', marginTop: 4 }}>{fieldErrors[current.field!]}</p>
+                      )}
                     </div>
                   )}
 

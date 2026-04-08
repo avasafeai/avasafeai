@@ -3,7 +3,6 @@ import { createClient } from '@/lib/supabase/server'
 import DashboardShell from '@/components/DashboardShell'
 import DeleteAccountButton from './DeleteAccountButton'
 import PlanUpgradeButton from './PlanUpgradeButton'
-import SignOutButton from './SignOutButton'
 
 const PLAN_LABELS: Record<string, string> = {
   free:   'Free',
@@ -82,11 +81,11 @@ export default async function AccountPage() {
 
         {/* Session */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 28, boxShadow: 'var(--shadow-sm)' }}>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 16 }}>Session</h2>
-          <p style={{ fontSize: 14, color: 'var(--text-secondary)', marginBottom: 16, lineHeight: 1.6 }}>
-            You&apos;re signed in as <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{user.email}</span>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 16, color: 'var(--navy)', marginBottom: 12 }}>Session</h2>
+          <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            Signed in as <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{user.email}</span>.
+            Use the <strong>Sign out</strong> button in the sidebar to end your session.
           </p>
-          <SignOutButton />
         </div>
 
         {/* Danger zone */}
