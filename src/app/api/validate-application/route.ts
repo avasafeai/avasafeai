@@ -167,7 +167,6 @@ async function runChecks(
   // Rule 6 — Document completeness (OCI New)
   const requiredDocs = [
     { type: 'us_passport', label: 'US Passport' },
-    { type: 'indian_passport', label: 'Indian Passport (or old Indian passport)' },
     { type: 'address_proof', label: 'US Address Proof (dated within 3 months)' },
   ]
   for (const rd of requiredDocs) {
@@ -185,6 +184,23 @@ async function runChecks(
     } else {
       checks.push({ id: `doc_${rd.type}`, title: `${rd.label} in locker`, status: 'passed', severity: null, message: `${rd.label} verified in your locker.`, fix: null, field: null, correct_value: null })
     }
+  }
+  // Indian passport or surrender certificate (either satisfies the requirement)
+  const hasIndianPassportOrEquiv = locker.includes('indian_passport') || locker.includes('surrender_certificate')
+  if (!hasIndianPassportOrEquiv) {
+    checks.push({
+      id: 'doc_indian_passport',
+      title: 'Missing: Indian Passport or Surrender Certificate',
+      status: 'failed',
+      severity: 'blocker',
+      message: 'An Indian passport with the citizenship surrender stamp OR a Surrender Certificate from the Indian consulate is required.',
+      fix: 'Upload your cancelled Indian passport or Surrender Certificate to your document locker',
+      field: null,
+      correct_value: null,
+    })
+  } else {
+    const label = locker.includes('surrender_certificate') ? 'Surrender Certificate' : 'Indian Passport'
+    checks.push({ id: 'doc_indian_passport', title: `${label} in locker`, status: 'passed', severity: null, message: `${label} verified in your locker.`, fix: null, field: null, correct_value: null })
   }
 
   // Rule 7 — VFS jurisdiction

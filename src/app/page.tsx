@@ -1697,6 +1697,10 @@ export default function HomePage() {
             No subscriptions for applications. Pay only when you apply.{' '}
             <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Locker is the only recurring charge.</span>
           </motion.p>
+
+          <p style={{ textAlign: 'center', marginTop: 12, fontSize: 12, fontFamily: 'var(--font-body)', color: 'var(--text-secondary)' }}>
+            Most OCI applications take 5-8 weeks after VFS receives your documents. Apply early.
+          </p>
         </div>
       </section>
 

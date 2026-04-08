@@ -127,7 +127,12 @@ export function evaluateRule(
     default: {
       if (rule.id.startsWith('doc_present_')) {
         const docType = rule.id.replace('doc_present_', '')
-        if (!locker.includes(docType)) {
+        // Indian passport: surrender certificate is accepted as equivalent
+        const hasIndianPassportOrEquivalent =
+          docType === 'indian_passport' &&
+          (locker.includes('indian_passport') || locker.includes('surrender_certificate'))
+        const present = hasIndianPassportOrEquivalent || locker.includes(docType)
+        if (!present) {
           return { id: rule.id, title: rule.title, status: 'failed', severity: rule.severity, message: rule.error_message, fix: rule.fix_message, field: null, correct_value: null }
         }
         return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: `${rule.title} found in locker.`, fix: null, field: null, correct_value: null }

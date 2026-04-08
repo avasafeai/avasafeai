@@ -113,11 +113,11 @@ export const OCI_NEW: ServiceConfig = {
     },
     {
       id: 'indian_passport',
-      name: 'Indian Passport (cancelled)',
-      description: 'Previous Indian passport with citizenship surrender stamp',
+      name: 'Indian Passport or Surrender Certificate',
+      description: 'Your cancelled Indian passport showing the citizenship surrender stamp, OR a Surrender Certificate from the Indian consulate if you no longer have the physical passport.',
       doc_type: 'indian_passport',
       mandatory: true,
-      notes: 'Must show "Cancelled on acquiring foreign citizenship" stamp',
+      notes: 'Must show "Cancelled on acquiring foreign citizenship" stamp. If you no longer have your Indian passport, a Surrender Certificate issued by the Indian consulate is also accepted. Upload it in place of the passport.',
       which_pages: 'First and last page only',
     },
     {
@@ -194,7 +194,7 @@ export const OCI_NEW: ServiceConfig = {
       description: 'If applicable',
       doc_type: 'renunciation',
       mandatory: false,
-      notes: null,
+      notes: 'Only required if you renounced Indian citizenship after 2010 AND your Indian passport does NOT have the "Cancelled on acquiring foreign citizenship" stamp. If your passport has the stamp you do not need this. If you only have a Surrender Certificate you also do not need this separately.',
       which_pages: null,
     },
   ],

@@ -195,10 +195,26 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8 }}>
                       Guided $29 · Expert Session $79
                     </p>
+                    {s.processing_weeks && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8 }}>
+                        <Clock size={11} color="var(--text-tertiary)" />
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          Typically {s.processing_weeks} weeks processing
+                        </span>
+                      </div>
+                    )}
                     {s.id === 'oci_misc' && (
-                      <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>
-                        For physical reissuance: new passport after turning 20, lost card, or name change. If you just need to update your passport details online for free, go directly to ociservices.gov.in and select OCI Miscellaneous Services.
-                      </p>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.7, marginTop: 8, background: 'var(--surface)', borderRadius: 8, padding: '10px 12px' }}>
+                        <p style={{ fontWeight: 600, marginBottom: 6, fontSize: 11 }}>Do you need this service? Quick check:</p>
+                        <p style={{ marginBottom: 4 }}>
+                          <strong>Got a new passport after turning 20?</strong><br />
+                          Yes, you need physical reissuance through VFS (this service).
+                        </p>
+                        <p>
+                          <strong>Got a new passport under 20 or over 50?</strong><br />
+                          Free online update at ociservices.gov.in. No mailing required.
+                        </p>
+                      </div>
                     )}
                   </>
                 )}

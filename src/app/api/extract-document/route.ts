@@ -15,7 +15,8 @@ const docTypeSchema = z.enum([
   'us_passport', 'indian_passport', 'oci_card',
   'renunciation', 'pan_card', 'address_proof', 'photo', 'signature',
   'marriage_certificate', 'birth_certificate', 'indian_visa',
-  'father_passport', 'mother_passport', 'child_passport', 'other',
+  'father_passport', 'mother_passport', 'child_passport',
+  'surrender_certificate', 'other',
 ])
 
 export async function POST(req: NextRequest) {

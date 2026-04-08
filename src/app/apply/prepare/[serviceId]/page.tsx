@@ -434,9 +434,19 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
           <div style={{ background: '#EFF6FF', border: '1px solid #93C5FD', borderRadius: 12, padding: '14px 18px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <Baby size={18} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
             <div>
-              <p style={{ fontWeight: 600, fontSize: 14, color: '#1D4ED8', marginBottom: 2 }}>Minor application detected</p>
-              <p style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.5 }}>
-                Both parents&apos; passports are needed to pre-fill family details. They&apos;ll appear in the Optional documents section below.
+              <p style={{ fontWeight: 600, fontSize: 14, color: '#1D4ED8', marginBottom: 6 }}>This is an application for a minor child</p>
+              <p style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.6, marginBottom: 8 }}>
+                To pre-fill parent names and complete the family section, please upload:
+              </p>
+              <ul style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.7, margin: '0 0 8px 16px', padding: 0 }}>
+                <li>Father&apos;s current valid passport</li>
+                <li>Mother&apos;s current valid passport</li>
+              </ul>
+              <p style={{ fontSize: 13, color: '#1E40AF', lineHeight: 1.5, marginBottom: 4 }}>
+                You can upload these below in the optional documents section.
+              </p>
+              <p style={{ fontSize: 12, color: '#3B82F6', lineHeight: 1.5 }}>
+                Both parents&apos; passports are required on the OCI application form regardless of whether parents have OCI cards.
               </p>
             </div>
           </div>
@@ -508,11 +518,15 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
         )}
 
         {/* Processing time */}
-        {requirements?.processing_time && (
+        {(requirements?.processing_time || service?.processing_weeks) && (
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 18px', marginBottom: 20 }}>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
               <strong style={{ color: 'var(--navy)' }}>Processing time: </strong>
-              {`Typically ${requirements.processing_time.includes('week') ? requirements.processing_time : `${requirements.processing_time} weeks`} after VFS receives your application`}
+              {(() => {
+                const pt = requirements?.processing_time
+                if (pt) return `Typically ${pt.includes('week') ? pt : `${pt} weeks`} after VFS receives your documents. Apply as early as possible.`
+                return `Typically ${service!.processing_weeks} weeks after VFS receives your documents. Apply as early as possible.`
+              })()}
             </p>
           </div>
         )}
