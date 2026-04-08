@@ -9,7 +9,7 @@ import type { RequirementsResult } from '@/lib/requirements-engine'
 import { isMinor } from '@/lib/prefill-engine'
 import Logo from '@/components/Logo'
 import AvaMessage from '@/components/AvaMessage'
-import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw, Baby } from 'lucide-react'
+import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw, Baby, Info } from 'lucide-react'
 import Link from 'next/link'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -55,6 +55,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
   const [, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
   const [optionalExpanded, setOptionalExpanded] = useState(false)
+  const [docsExplainedExpanded, setDocsExplainedExpanded] = useState(false)
   const [isMinorApplication, setIsMinorApplication] = useState<boolean | null>(null)
 
   const computeCoverage = useCallback((statuses: Record<string, DocUploadStatus>) => {
@@ -511,6 +512,50 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
                       onReset={() => onDocReset(doc.doc_type)}
                     />
                   ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Documents explained — OCI New only */}
+        {serviceId === 'oci_new' && (
+          <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, marginBottom: 16, boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <button
+              onClick={() => setDocsExplainedExpanded(e => !e)}
+              style={{ width: '100%', padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Info size={15} color="var(--navy)" style={{ flexShrink: 0 }} />
+                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--navy)' }}>Documents explained</p>
+              </div>
+              <ChevronDown
+                size={16}
+                color="var(--text-tertiary)"
+                style={{ flexShrink: 0, transition: 'transform 200ms ease', transform: docsExplainedExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
+            </button>
+            {docsExplainedExpanded && (
+              <div style={{ padding: '0 20px 20px', borderTop: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 16 }}>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--navy)', marginBottom: 4 }}>Indian passport with cancellation stamp</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      Most people have this. When you became a US citizen, your Indian passport was stamped &quot;Cancelled on acquiring foreign citizenship.&quot; Upload the bio data page and the page with this stamp. <strong>The stamp itself is your proof of renunciation — you do not need any separate document.</strong>
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--navy)', marginBottom: 4 }}>Surrender Certificate</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      If you no longer have your Indian passport (lost, expired and discarded, etc.), you can get a Surrender Certificate from your nearest Indian consulate. Upload this in place of the Indian passport. It is accepted as a full equivalent.
+                    </p>
+                  </div>
+                  <div>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--navy)', marginBottom: 4 }}>Renunciation Certificate (rare)</p>
+                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      Only needed if you naturalized after 2010, your Indian passport does not have the cancellation stamp, and you do not have a Surrender Certificate. This is uncommon. If you have a passport with the stamp or a Surrender Certificate, skip this entirely.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
