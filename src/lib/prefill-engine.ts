@@ -4,6 +4,7 @@
 
 import type { ServiceConfig } from './services/registry'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { decryptField } from './field-encryption'
 
 export interface PrefillResult {
   prefilled: Record<string, string>
@@ -35,9 +36,21 @@ export function getFieldValue(
 ): string | null {
   for (const name of fieldNames) {
     const val = doc[name]
-    if (val && typeof val === 'string' && val.trim()) return val.trim()
+    if (val && typeof val === 'string' && val.trim() && !val.startsWith('enc:')) return val.trim()
   }
   return null
+}
+
+// Decrypt a field value if it is encrypted, returning '' on failure
+async function safeDecrypt(raw: string | null | undefined): Promise<string> {
+  if (!raw) return ''
+  if (!raw.startsWith('enc:')) return raw
+  try {
+    return await decryptField(raw)
+  } catch (err) {
+    console.error('[prefill] decryptField failed:', err)
+    return ''
+  }
 }
 
 // ── Transform functions ────────────────────────────────────────────────────────
@@ -132,10 +145,12 @@ export async function buildPrefillMap(
 
   // 2. Detect minor application
   const applicantDoc = docMap['us_passport'] ?? docMap['child_passport']
-  const applicantDOB = getFieldValue(
-    applicantDoc ?? {},
-    'date_of_birth', 'dob',
-  )
+  const applicantDOBRaw = applicantDoc
+    ? ((applicantDoc['date_of_birth'] ?? applicantDoc['dob']) as string | undefined)
+    : undefined
+  const applicantDOB = applicantDOBRaw?.startsWith('enc:')
+    ? await safeDecrypt(applicantDOBRaw)
+    : (getFieldValue(applicantDoc ?? {}, 'date_of_birth', 'dob') ?? '')
   const applicationIsForMinor = applicantDOB ? isMinor(applicantDOB) : false
 
   // 3. Walk the prefill_map and resolve each field
@@ -169,9 +184,23 @@ export async function buildPrefillMap(
         )
       : null
 
-    if (!rawValue) continue
+    // If getFieldValue returned null, check if the raw DB value is encrypted
+    // and decrypt it rather than skipping the field entirely
+    let resolvedValue: string | null = rawValue
+    if (!resolvedValue && mapping.source_field) {
+      const allCandidates = [mapping.source_field, ...getAddressFallbacks(mapping.field_id)]
+      for (const candidate of allCandidates) {
+        const dbVal = (sourceDoc as Record<string, unknown>)[candidate]
+        if (typeof dbVal === 'string' && dbVal.startsWith('enc:')) {
+          resolvedValue = await safeDecrypt(dbVal)
+          if (resolvedValue) break
+        }
+      }
+    }
 
-    const transformed = applyTransform(rawValue, mapping.transform)
+    if (!resolvedValue) continue
+
+    const transformed = applyTransform(resolvedValue, mapping.transform)
     if (transformed) {
       prefilled[mapping.field_id] = transformed
       sources[mapping.field_id] = mapping.source_doc

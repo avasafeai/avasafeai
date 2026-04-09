@@ -347,8 +347,8 @@ export default function ReviewPage() {
               </div>
             )}
 
-            {/* Expert upgrade card — only for guided users with issues */}
-            {appTier === 'guided' && score < 95 && (blockerChecks.length > 0 || warningChecks.length > 0) && (
+            {/* Expert upgrade card — guided users whose score isn't perfect */}
+            {appTier === 'guided' && isPaid && score < 95 && (
               <div style={{ background: 'var(--off-white)', border: '0.5px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <Users size={20} color="#0F2D52" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
@@ -455,6 +455,10 @@ export default function ReviewPage() {
               {blockers > 0 ? (
                 <button disabled style={{ flex: 2, height: 52, borderRadius: 12, border: '1.5px solid var(--navy)', background: 'white', fontSize: 15, fontWeight: 500, color: 'var(--navy)', opacity: 0.5, cursor: 'not-allowed', fontFamily: 'var(--font-body)' }}>
                   Fix {blockers} blocker{blockers !== 1 ? 's' : ''} to continue
+                </button>
+              ) : score === 0 ? (
+                <button disabled style={{ flex: 2, height: 52, borderRadius: 12, border: '1.5px solid var(--border)', background: 'var(--off-white)', fontSize: 15, fontWeight: 500, color: 'var(--text-tertiary)', cursor: 'not-allowed', fontFamily: 'var(--font-body)' }}>
+                  Complete validation to continue
                 </button>
               ) : warnings > 0 ? (
                 <button onClick={handleContinue} disabled={continuing} className="btn-gold" style={{ flex: 2, height: 52, borderRadius: 12, opacity: continuing ? 0.6 : 1 }}>

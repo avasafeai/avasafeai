@@ -228,8 +228,17 @@ const SOURCE_LABELS: Record<string, string> = {
 }
 
 function ddmmToISO(v: string): string {
+  if (!v) return ''
+  if (v.startsWith('enc:')) return ''
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
   return m ? `${m[3]}-${m[2]}-${m[1]}` : v
+}
+
+// Safety: never render encrypted values in the UI
+function safeField(v: string): string {
+  if (!v) return ''
+  if (v.startsWith('enc:')) return ''
+  return v
 }
 
 function normGender(v: string): string {
@@ -354,15 +363,29 @@ export default function FormPage() {
     }
 
     // Build user-entered values (direct form keys saved by saveProgress)
+    // Apply date normalisation: DB may have DD/MM/YYYY from buildPrefillMap;
+    // HTML date inputs require YYYY-MM-DD.
+    const DATE_FORM_KEYS = new Set<keyof FormData>(['date_of_birth', 'passport_issue_date', 'passport_expiry_date'])
     const formKeys = Object.keys(INITIAL) as Array<keyof FormData>
     const userEntered: Partial<FormData> = {}
     for (const key of formKeys) {
       const val = rawFormData[key] as string | undefined
-      if (val) userEntered[key] = val
+      if (!val) continue
+      if (val.startsWith('enc:')) continue  // never show encrypted values
+      if (DATE_FORM_KEYS.has(key)) {
+        const normalised = ddmmToISO(val)   // converts DD/MM/YYYY → YYYY-MM-DD; passes YYYY-MM-DD through
+        if (normalised) { userEntered[key] = normalised; continue }
+      }
+      userEntered[key] = val
     }
 
     // Merge: prefill as base, user-entered answers override (they saved explicitly)
-    setForm(prev => ({ ...prev, ...prefillMapped, ...userEntered }))
+    // For prefill-mapped values, also skip any that are still encrypted (shouldn't happen after fix but guard anyway)
+    const safePrefillMapped: Partial<FormData> = {}
+    for (const [k, v] of Object.entries(prefillMapped) as Array<[keyof FormData, string]>) {
+      if (!v.startsWith('enc:')) safePrefillMapped[k] = v
+    }
+    setForm(prev => ({ ...prev, ...safePrefillMapped, ...userEntered }))
     setPrefillSources(src)
 
     // If sessionStorage was empty and DB has a saved step, jump there + show banner
@@ -578,7 +601,7 @@ export default function FormPage() {
                         </label>
                         {g.options ? (
                           <select
-                            value={form[g.field]}
+                            value={safeField(form[g.field])}
                             onChange={(e) => update(g.field, e.target.value)}
                             style={inputStyle(g.field)}
                           >
@@ -590,7 +613,7 @@ export default function FormPage() {
                         ) : (
                           <input
                             type={g.type ?? 'text'}
-                            value={form[g.field]}
+                            value={safeField(form[g.field])}
                             onChange={(e) => update(g.field, e.target.value)}
                             placeholder={g.placeholder}
                             style={fieldErrors[g.field] ? { ...inputStyle(g.field), borderColor: 'var(--error)' } : inputStyle(g.field)}
@@ -644,7 +667,7 @@ export default function FormPage() {
                       </label>
                       <input
                         type={current.type ?? 'text'}
-                        value={form[current.field!]}
+                        value={safeField(form[current.field!])}
                         onChange={(e) => update(current.field!, e.target.value)}
                         placeholder={current.placeholder}
                         style={fieldErrors[current.field!] ? { ...inputStyle(current.field!), borderColor: 'var(--error)' } : inputStyle(current.field!)}

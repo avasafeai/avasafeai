@@ -148,12 +148,12 @@ async function runChecks(
     checks.push({ id: 'passport_expiry', title: 'Passport expiry missing', status: 'failed', severity: 'blocker', message: 'Passport expiry date is required to verify minimum validity.', fix: null, field: 'passport_expiry_date', correct_value: null })
   }
 
-  // Rule 5 — Photo
+  // Rule 5 — Photo (id must be 'doc_photo' to match review page doc_${key} lookup)
   if (locker.includes('photo')) {
-    checks.push({ id: 'photo', title: 'Photo uploaded', status: 'passed', severity: null, message: 'Passport-style photo found in your locker.', fix: null, field: null, correct_value: null })
+    checks.push({ id: 'doc_photo', title: 'Photo uploaded', status: 'passed', severity: null, message: 'Passport-style photo found in your locker.', fix: null, field: null, correct_value: null })
   } else {
     checks.push({
-      id: 'photo',
+      id: 'doc_photo',
       title: 'No photo uploaded',
       status: 'failed',
       severity: 'warning',
@@ -299,7 +299,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const fStr = form_data as Record<string, string>
+  // Decrypt any encrypted fields before validation
+  let fStr: Record<string, string>
+  try {
+    fStr = await decryptSensitiveFields(form_data as Record<string, string>)
+  } catch {
+    fStr = form_data as Record<string, string>
+  }
+  // Safety: strip any remaining enc: values so rules don't evaluate ciphertext
+  for (const [k, v] of Object.entries(fStr)) {
+    if (typeof v === 'string' && v.startsWith('enc:')) fStr[k] = ''
+  }
+
+  console.log('Validating form_data:', {
+    fieldCount: Object.keys(fStr).length,
+    sampleFields: Object.entries(fStr).slice(0, 3).map(([k, v]) => ({
+      key: k, isEncrypted: String(v).startsWith('enc:'), valueLength: String(v).length,
+    })),
+  })
+
   const checks = await runChecks(fStr, passportData, locker)
   const score = calcScore(checks)
   const status = calcStatus(score)
