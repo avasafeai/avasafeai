@@ -398,7 +398,7 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
         {coverage !== null && (
           <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 16, padding: 24, marginBottom: 16, boxShadow: 'var(--shadow-sm)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>Pre-fill coverage</p>
+              <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--navy)' }}>Document pre-fill coverage</p>
               <span style={{
                 fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700,
                 color: coverage >= 90 ? 'var(--success)' : coverage >= 50 ? 'var(--gold)' : 'var(--text-tertiary)',
@@ -416,8 +416,8 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
             </div>
             <p style={{ fontSize: 13, color: 'var(--text-tertiary)', marginTop: 8 }}>
               {coverage >= 90
-                ? `AVA will pre-fill ${coverage}% of your application automatically.`
-                : `Upload the missing documents below to increase coverage to 100%.`}
+                ? `AVA can pre-fill ${coverage}% of your form fields from your documents.`
+                : `Upload the missing documents below to increase coverage. AVA currently has ${coverage}% of your form fields.`}
             </p>
           </div>
         )}
@@ -607,7 +607,6 @@ function DocCard({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [photoValidation, setPhotoValidation] = useState<PhotoValidationResult | null>(null)
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
 
   const presentInLocker = status?.presentInLocker ?? false
   const uploadState = status?.uploadState ?? 'idle'
@@ -617,7 +616,6 @@ function DocCard({
     if (doc.doc_type === 'photo') {
       const result = await validatePhoto(file)
       setPhotoValidation(result)
-      setPhotoFile(file)
       if (!result.valid) return  // Block upload — show error, do not proceed
     }
 
@@ -653,7 +651,6 @@ function DocCard({
 
   function handlePhotoRetry() {
     setPhotoValidation(null)
-    setPhotoFile(null)
     fileInputRef.current?.click()
   }
 
