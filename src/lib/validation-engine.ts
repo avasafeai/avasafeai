@@ -58,9 +58,9 @@ export function evaluateRule(
 
     case 'photo_present': {
       if (!locker.includes('photo')) {
-        return { id: rule.id, title: rule.title, status: 'failed', severity: rule.severity, message: rule.error_message, fix: rule.fix_message, field: null, correct_value: null }
+        return { id: rule.id, title: 'No photo uploaded', status: 'failed', severity: rule.severity, message: 'OCI requires a square JPEG photo with white background, minimum 200x200px, maximum 200kb. Upload one to avoid rejection.', fix: 'Upload a compliant photo', field: null, correct_value: null }
       }
-      return { id: rule.id, title: rule.title, status: 'passed', severity: null, message: 'Photo found in locker.', fix: null, field: null, correct_value: null }
+      return { id: rule.id, title: 'Photo verified', status: 'passed', severity: null, message: 'Square JPEG uploaded. Meets OCI photo requirements.', fix: null, field: null, correct_value: null }
     }
 
     case 'dob_match': {

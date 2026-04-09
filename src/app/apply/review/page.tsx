@@ -245,9 +245,9 @@ export default function ReviewPage() {
               </div>
               <div style={{ marginTop: 20, display: 'flex', alignItems: 'flex-start', gap: 10, padding: '14px 16px', background: 'var(--gold-subtle)', borderRadius: 10 }}>
                 <ShieldCheck size={16} color="var(--gold)" style={{ flexShrink: 0, marginTop: 1 }} />
-                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                  <strong style={{ color: 'var(--text-primary)' }}>Rejection guarantee included.</strong>{' '}
-                  If our validation causes a rejection, we fix it at no cost.
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>The Avasafe Guarantee.</strong>{' '}
+                  If your application is rejected due to an error in AVA&apos;s validation, we will prepare your resubmission at no cost.
                 </p>
               </div>
             </div>
@@ -268,10 +268,18 @@ export default function ReviewPage() {
             {/* All clear */}
             {score >= 90 && (
               <div style={{ background: '#F0FFF4', border: '1px solid rgba(26,107,58,0.25)', borderRadius: 14, padding: '20px 24px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-                <CheckCircle size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
+                <ShieldCheck size={20} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
                 <div>
-                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--success)', marginBottom: 4 }}>Validated against 10 rejection causes</p>
-                  <p style={{ fontSize: 14, color: '#276749', lineHeight: 1.5 }}>Everything looks correct. The rejection guarantee applies to your application.</p>
+                  <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--success)', marginBottom: 6 }}>The Avasafe Guarantee</p>
+                  <p style={{ fontSize: 14, color: '#276749', lineHeight: 1.6, marginBottom: 6 }}>
+                    If your application is rejected due to an error in AVA&apos;s validation, we will prepare your resubmission at no cost.
+                  </p>
+                  <p style={{ fontSize: 13, color: '#276749', lineHeight: 1.5, marginBottom: 2 }}>
+                    <strong>Covered:</strong> field values AVA validated as correct, checks AVA marked as passed that were actually wrong.
+                  </p>
+                  <p style={{ fontSize: 13, color: '#4A8C6A', lineHeight: 1.5 }}>
+                    <strong>Not covered:</strong> missing documents you chose not to upload, information you entered incorrectly, government portal errors, or processing delays.
+                  </p>
                 </div>
               </div>
             )}

@@ -1423,25 +1423,24 @@ export default function HomePage() {
               marginTop: 16,
             }}
           >
-            We validate your application against every known rejection cause before you submit. If your application is rejected due to an error in our validation, we fix it free. No questions asked.
+            If your application is rejected due to an error in AVA&apos;s validation, we will prepare your resubmission at no cost.
           </motion.p>
 
-          <motion.p
+          <motion.div
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true }}
             variants={fadeIn}
             custom={0.3}
-            style={{
-              fontFamily: 'var(--font-body)',
-              fontSize: 14,
-              color: 'white',
-              opacity: 0.8,
-              marginTop: 12,
-            }}
+            style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 6 }}
           >
-            Included on all Locker + Apply and Family plans.
-          </motion.p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 1.6 }}>
+              <strong style={{ color: 'white' }}>Covered:</strong> field values AVA validated as correct, checks AVA marked as passed that were actually wrong.
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: 14, color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+              <strong style={{ color: 'rgba(255,255,255,0.9)' }}>Not covered:</strong> missing documents you chose not to upload, information you entered incorrectly, government portal errors, or processing delays.
+            </p>
+          </motion.div>
         </div>
       </section>
 

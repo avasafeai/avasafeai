@@ -9,7 +9,9 @@ import type { RequirementsResult } from '@/lib/requirements-engine'
 import { isMinor } from '@/lib/prefill-engine'
 import Logo from '@/components/Logo'
 import AvaMessage from '@/components/AvaMessage'
-import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw, Baby, Info } from 'lucide-react'
+import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, RefreshCw, Baby, Info, XCircle } from 'lucide-react'
+import { validatePhoto } from '@/lib/photo-validator'
+import type { PhotoValidationResult } from '@/lib/photo-validator'
 import Link from 'next/link'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -604,11 +606,21 @@ function DocCard({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
+  const [photoValidation, setPhotoValidation] = useState<PhotoValidationResult | null>(null)
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
 
   const presentInLocker = status?.presentInLocker ?? false
   const uploadState = status?.uploadState ?? 'idle'
 
   async function handleFile(file: File) {
+    // Run photo validation before uploading for photo doc type
+    if (doc.doc_type === 'photo') {
+      const result = await validatePhoto(file)
+      setPhotoValidation(result)
+      setPhotoFile(file)
+      if (!result.valid) return  // Block upload — show error, do not proceed
+    }
+
     onUploading()
     const fd = new FormData()
     fd.append('file', file)
@@ -637,6 +649,12 @@ function DocCard({
     setIsDragOver(false)
     const file = e.dataTransfer.files[0]
     if (file) handleFile(file)
+  }
+
+  function handlePhotoRetry() {
+    setPhotoValidation(null)
+    setPhotoFile(null)
+    fileInputRef.current?.click()
   }
 
   if (presentInLocker) {
@@ -753,6 +771,47 @@ function DocCard({
         </p>
         <p style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>JPG, PNG or PDF · max 10MB</p>
       </div>
+
+      {/* Photo validation result */}
+      {doc.doc_type === 'photo' && photoValidation && (
+        <div style={{
+          marginTop: 10, borderRadius: 10, padding: '12px 14px',
+          background: photoValidation.valid ? '#F0FFF4' : '#FEF2F2',
+          border: `1px solid ${photoValidation.valid ? '#BBF7D0' : '#FECACA'}`,
+          display: 'flex', alignItems: 'flex-start', gap: 10,
+        }}>
+          {photoValidation.valid
+            ? <CheckCircle size={16} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
+            : <XCircle size={16} color="#B91C1C" style={{ flexShrink: 0, marginTop: 1 }} />
+          }
+          <div style={{ flex: 1 }}>
+            {photoValidation.valid ? (
+              <>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)', marginBottom: 2 }}>Photo meets all requirements</p>
+                <p style={{ fontSize: 12, color: '#276749', fontFamily: 'var(--font-mono)' }}>
+                  {photoValidation.dimensions.width}x{photoValidation.dimensions.height}px
+                  {' · '}{photoValidation.fileSizeKb}kb
+                  {' · '}JPEG
+                </p>
+                {photoValidation.warnings.length > 0 && (
+                  <p style={{ fontSize: 12, color: '#92400E', marginTop: 4 }}>{photoValidation.warnings[0]}</p>
+                )}
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, fontWeight: 600, color: '#B91C1C', marginBottom: 2 }}>This photo will likely be rejected</p>
+                <p style={{ fontSize: 13, color: '#B91C1C', lineHeight: 1.5 }}>{photoValidation.issues[0]}</p>
+                <button
+                  onClick={handlePhotoRetry}
+                  style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: '#B91C1C', background: 'white', border: '1px solid #FECACA', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}
+                >
+                  Choose a different photo
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}

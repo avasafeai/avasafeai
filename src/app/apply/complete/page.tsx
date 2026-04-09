@@ -117,8 +117,12 @@ export default function CompletePage() {
           <ShieldCheck size={22} color="#C9882A" style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
             <p style={{ fontSize: 15, fontWeight: 600, color: '#C9882A', marginBottom: 4 }}>The Avasafe Guarantee</p>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
-              If rejected due to our validation, we fix it free.
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, marginBottom: 4 }}>
+              If your application is rejected due to an error in AVA&apos;s validation, we will prepare your resubmission at no cost.
+            </p>
+            <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', lineHeight: 1.5 }}>
+              <strong style={{ color: 'rgba(255,255,255,0.65)' }}>Covered:</strong> field values and checks AVA validated as correct.{' '}
+              <strong style={{ color: 'rgba(255,255,255,0.65)' }}>Not covered:</strong> missing docs, incorrect entries, or portal errors.
             </p>
           </div>
         </div>
