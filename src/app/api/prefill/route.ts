@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getService } from '@/lib/services/registry'
 import { buildPrefillMap } from '@/lib/prefill-engine'
+import { decryptField } from '@/lib/field-encryption'
 import { z } from 'zod'
 
 const bodySchema = z.object({
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
       service,
       user.id,
       serviceClient,
+      decryptField,
     )
 
     const { error: updateError } = await serviceClient

@@ -4,7 +4,8 @@
 
 import type { ServiceConfig } from './services/registry'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { decryptField } from './field-encryption'
+// NOTE: field-encryption (KMS) is NOT imported here because prefill-engine
+// is also used from client components. Decryption is injected via decryptFn.
 
 export interface PrefillResult {
   prefilled: Record<string, string>
@@ -41,12 +42,17 @@ export function getFieldValue(
   return null
 }
 
-// Decrypt a field value if it is encrypted, returning '' on failure
-async function safeDecrypt(raw: string | null | undefined): Promise<string> {
+// Decrypt a field value if it is encrypted, returning '' on failure.
+// decryptFn is injected by callers that have server-side KMS access.
+async function safeDecrypt(
+  raw: string | null | undefined,
+  decryptFn: ((v: string) => Promise<string>) | undefined,
+): Promise<string> {
   if (!raw) return ''
   if (!raw.startsWith('enc:')) return raw
+  if (!decryptFn) return ''  // client-side path — never render ciphertext
   try {
-    return await decryptField(raw)
+    return await decryptFn(raw)
   } catch (err) {
     console.error('[prefill] decryptField failed:', err)
     return ''
@@ -124,6 +130,7 @@ export async function buildPrefillMap(
   service: ServiceConfig,
   userId: string,
   supabase: SupabaseClient,
+  decryptFn?: (value: string) => Promise<string>,
 ): Promise<PrefillResult> {
   // 1. Fetch all documents in the user's locker
   const { data: docs, error } = await supabase
@@ -149,7 +156,7 @@ export async function buildPrefillMap(
     ? ((applicantDoc['date_of_birth'] ?? applicantDoc['dob']) as string | undefined)
     : undefined
   const applicantDOB = applicantDOBRaw?.startsWith('enc:')
-    ? await safeDecrypt(applicantDOBRaw)
+    ? await safeDecrypt(applicantDOBRaw, decryptFn)
     : (getFieldValue(applicantDoc ?? {}, 'date_of_birth', 'dob') ?? '')
   const applicationIsForMinor = applicantDOB ? isMinor(applicantDOB) : false
 
@@ -192,7 +199,7 @@ export async function buildPrefillMap(
       for (const candidate of allCandidates) {
         const dbVal = (sourceDoc as Record<string, unknown>)[candidate]
         if (typeof dbVal === 'string' && dbVal.startsWith('enc:')) {
-          resolvedValue = await safeDecrypt(dbVal)
+          resolvedValue = await safeDecrypt(dbVal, decryptFn)
           if (resolvedValue) break
         }
       }
