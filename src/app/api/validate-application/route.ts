@@ -267,14 +267,21 @@ export async function POST(req: NextRequest) {
 
   const { form_data, application_id } = parsed.data
 
-  // Verify application belongs to user
+  // Verify application belongs to user; also read saved form_data as fallback
   const { data: app } = await supabase
     .from('applications')
-    .select('id, service_type')
+    .select('id, service_type, form_data')
     .eq('id', application_id)
     .eq('user_id', user.id)
     .maybeSingle()
   if (!app) return NextResponse.json({ error: 'Application not found' }, { status: 404 })
+
+  // Use provided form_data if non-empty, otherwise fall back to DB form_data
+  const effectiveFormData = (
+    Object.keys(form_data).length > 0
+      ? form_data
+      : (app.form_data as Record<string, unknown> ?? {})
+  ) as Record<string, string>
 
   // Fetch user's stored document types
   const serviceClient = createServiceClient()
@@ -302,9 +309,9 @@ export async function POST(req: NextRequest) {
   // Decrypt any encrypted fields before validation
   let fStr: Record<string, string>
   try {
-    fStr = await decryptSensitiveFields(form_data as Record<string, string>)
+    fStr = await decryptSensitiveFields(effectiveFormData)
   } catch {
-    fStr = form_data as Record<string, string>
+    fStr = effectiveFormData
   }
   // Safety: strip any remaining enc: values so rules don't evaluate ciphertext
   for (const [k, v] of Object.entries(fStr)) {
@@ -338,13 +345,13 @@ export async function POST(req: NextRequest) {
 
   const hasBlockers = blockerCount > 0
   await supabase.from('applications').update({
-    form_data: form_data as unknown as Json,
+    form_data: effectiveFormData as unknown as Json,
     validation_results: result as unknown as Json,
     readiness_score: score,
     status: hasBlockers ? 'form_complete' : 'validated',
   }).eq('id', application_id)
 
-  return NextResponse.json({ data: result })
+  return NextResponse.json({ data: result, form_data: fStr })
 }
 
 // ── GET — return saved results ────────────────────────────────────────────────

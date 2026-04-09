@@ -71,16 +71,23 @@ export default function ReviewPage() {
   const [upgrading, setUpgrading] = useState(false)
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
-    const res = await fetch(`/api/validate-application?application_id=${id}`)
+    // Always run fresh POST validation — GET returns stale/null saved results
+    // form_data comes from sessionStorage (user's just-entered answers) or
+    // falls back to whatever is in the DB via the POST handler itself
+    const formPayload = fd && Object.keys(fd).length > 0 ? fd : {}
+    const res = await fetch('/api/validate-application', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ form_data: formPayload, application_id: id }),
+    })
     const json = await res.json()
     setResult(json.data as ReadinessResult)
+    // If form_data came back from the API (DB read), use it
     if (json.form_data && Object.keys(json.form_data).length > 0) {
       setFormData(json.form_data as Record<string, string>)
     }
-    if (fd) {
-      sessionStorage.setItem('readiness_score', String(json.data?.score ?? 0))
-      sessionStorage.setItem('checks_passed', String(json.data?.checks_passed ?? 0))
-    }
+    sessionStorage.setItem('readiness_score', String(json.data?.score ?? 0))
+    sessionStorage.setItem('checks_passed', String(json.data?.checks_passed ?? 0))
     setLoading(false)
   }, [])
 

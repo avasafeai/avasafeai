@@ -1,11 +1,14 @@
-// ── Prefill Engine — works for ANY service ────────────────────────────────────
-// Pass in a service config + userId → get back pre-filled portal fields
-// with coverage percentage and source attribution.
+// ── Prefill Engine — SERVER-SIDE ONLY ────────────────────────────────────────
+// This module imports field-encryption (KMS) and must only be used in
+// API routes or server components — never imported by client components.
+// Client components that need isMinor() should import from lib/date-utils.ts
 
 import type { ServiceConfig } from './services/registry'
 import type { SupabaseClient } from '@supabase/supabase-js'
-// NOTE: field-encryption (KMS) is NOT imported here because prefill-engine
-// is also used from client components. Decryption is injected via decryptFn.
+import { decryptField } from './field-encryption'
+import { isMinor } from './date-utils'
+
+export { isMinor }  // re-export for backwards compat with any server-side callers
 
 export interface PrefillResult {
   prefilled: Record<string, string>
@@ -15,21 +18,6 @@ export interface PrefillResult {
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-
-export function isMinor(dateOfBirth: string): boolean {
-  if (!dateOfBirth) return false
-  try {
-    const dob = new Date(dateOfBirth)
-    if (isNaN(dob.getTime())) return false
-    const today = new Date()
-    let age = today.getFullYear() - dob.getFullYear()
-    const m = today.getMonth() - dob.getMonth()
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--
-    return age < 18
-  } catch {
-    return false
-  }
-}
 
 export function getFieldValue(
   doc: Record<string, unknown>,
@@ -42,17 +30,13 @@ export function getFieldValue(
   return null
 }
 
-// Decrypt a field value if it is encrypted, returning '' on failure.
-// decryptFn is injected by callers that have server-side KMS access.
-async function safeDecrypt(
-  raw: string | null | undefined,
-  decryptFn: ((v: string) => Promise<string>) | undefined,
-): Promise<string> {
-  if (!raw) return ''
-  if (!raw.startsWith('enc:')) return raw
-  if (!decryptFn) return ''  // client-side path — never render ciphertext
+// Resolve a field value — decrypt if encrypted, return '' on failure
+async function resolveFieldValue(value: unknown): Promise<string> {
+  if (!value) return ''
+  const str = String(value)
+  if (!str.startsWith('enc:')) return str.trim()
   try {
-    return await decryptFn(raw)
+    return await decryptField(str)
   } catch (err) {
     console.error('[prefill] decryptField failed:', err)
     return ''
@@ -99,7 +83,6 @@ function applyTransform(value: string | null, transform: string | null): string 
       return `${monMatch[1]}/${monMap[monMatch[2]]}/${monMatch[3]}`
     }
 
-    // Return as-is if unrecognised
     return cleaned
   }
 
@@ -111,8 +94,6 @@ function applyTransform(value: string | null, transform: string | null): string 
 }
 
 // ── Address field fallbacks ────────────────────────────────────────────────────
-// Claude extracts different field names from address proof documents.
-// Try multiple variants so we don't miss a match.
 
 function getAddressFallbacks(fieldId: string): string[] {
   const fallbacks: Record<string, string[]> = {
@@ -130,7 +111,6 @@ export async function buildPrefillMap(
   service: ServiceConfig,
   userId: string,
   supabase: SupabaseClient,
-  decryptFn?: (value: string) => Promise<string>,
 ): Promise<PrefillResult> {
   // 1. Fetch all documents in the user's locker
   const { data: docs, error } = await supabase
@@ -150,14 +130,12 @@ export async function buildPrefillMap(
     }
   }
 
-  // 2. Detect minor application
+  // 2. Detect minor application — decrypt DOB if encrypted
   const applicantDoc = docMap['us_passport'] ?? docMap['child_passport']
   const applicantDOBRaw = applicantDoc
     ? ((applicantDoc['date_of_birth'] ?? applicantDoc['dob']) as string | undefined)
     : undefined
-  const applicantDOB = applicantDOBRaw?.startsWith('enc:')
-    ? await safeDecrypt(applicantDOBRaw, decryptFn)
-    : (getFieldValue(applicantDoc ?? {}, 'date_of_birth', 'dob') ?? '')
+  const applicantDOB = applicantDOBRaw ? await resolveFieldValue(applicantDOBRaw) : ''
   const applicationIsForMinor = applicantDOB ? isMinor(applicantDOB) : false
 
   // 3. Walk the prefill_map and resolve each field
@@ -171,7 +149,7 @@ export async function buildPrefillMap(
   for (const mapping of service.prefill_map) {
     // Hardcode transforms need no source document — process last to prevent overwrite
     if (mapping.transform?.startsWith('hardcode:')) {
-      continue  // handled in second pass below
+      continue
     }
 
     mappableCount++
@@ -182,27 +160,17 @@ export async function buildPrefillMap(
       continue
     }
 
-    // Try source_field first, then address-specific fallbacks
-    const rawValue = mapping.source_field
-      ? getFieldValue(
-          sourceDoc as Record<string, unknown>,
-          mapping.source_field,
-          ...getAddressFallbacks(mapping.field_id),
-        )
-      : null
+    // Try all candidate field names; decrypt each if needed
+    let resolvedValue = ''
+    const candidates = mapping.source_field
+      ? [mapping.source_field, ...getAddressFallbacks(mapping.field_id)]
+      : []
 
-    // If getFieldValue returned null, check if the raw DB value is encrypted
-    // and decrypt it rather than skipping the field entirely
-    let resolvedValue: string | null = rawValue
-    if (!resolvedValue && mapping.source_field) {
-      const allCandidates = [mapping.source_field, ...getAddressFallbacks(mapping.field_id)]
-      for (const candidate of allCandidates) {
-        const dbVal = (sourceDoc as Record<string, unknown>)[candidate]
-        if (typeof dbVal === 'string' && dbVal.startsWith('enc:')) {
-          resolvedValue = await safeDecrypt(dbVal, decryptFn)
-          if (resolvedValue) break
-        }
-      }
+    for (const candidate of candidates) {
+      const dbVal = (sourceDoc as Record<string, unknown>)[candidate]
+      if (!dbVal) continue
+      const v = await resolveFieldValue(dbVal)
+      if (v) { resolvedValue = v; break }
     }
 
     if (!resolvedValue) continue
@@ -215,7 +183,7 @@ export async function buildPrefillMap(
     }
   }
 
-  // Second pass: apply hardcodes (these always win — cannot be overwritten by doc data)
+  // Second pass: apply hardcodes
   for (const mapping of service.prefill_map) {
     if (!mapping.transform?.startsWith('hardcode:')) continue
     mappableCount++
@@ -224,7 +192,7 @@ export async function buildPrefillMap(
     resolvedCount++
   }
 
-  // 4. Minor-specific overrides: parent names from parent passports
+  // 4. Minor-specific overrides
   if (applicationIsForMinor) {
     const fatherDoc = docMap['father_passport'] ?? docMap['indian_passport']
     const motherDoc = docMap['mother_passport']
@@ -236,7 +204,6 @@ export async function buildPrefillMap(
       if (fatherName) {
         prefilled['father_name'] = fatherName
         sources['father_name'] = docMap['father_passport'] ? 'father_passport' : 'indian_passport'
-        if (!prefilled['father_name']) resolvedCount++  // only increment if new
       }
     }
 
