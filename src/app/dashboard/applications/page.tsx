@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import DashboardShell from '@/components/DashboardShell'
-import { Plus, ClipboardList, ChevronRight } from 'lucide-react'
+import { Plus, ClipboardList } from 'lucide-react'
 import { getService } from '@/lib/services/registry'
 
 const COMPLETED_STATUSES = ['package_generated', 'submitted', 'approved']
@@ -18,10 +18,10 @@ function getAppHref(app: { id: string; service_type: string; tier: string | null
 }
 
 const STATUS_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  draft:             { label: 'Draft',          bg: 'var(--surface)',      color: 'var(--text-tertiary)' },
-  locker_ready:      { label: 'Ready',           bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
-  form_complete:     { label: 'In progress',     bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
-  validated:         { label: 'Validated',       bg: 'rgba(10,22,40,0.06)', color: 'var(--navy-mid)' },
+  draft:             { label: 'Draft',          bg: 'rgba(0,0,0,0.04)',    color: 'var(--text-tertiary)' },
+  locker_ready:      { label: 'Ready',           bg: 'rgba(10,22,40,0.06)', color: 'var(--navy)' },
+  form_complete:     { label: 'In progress',     bg: '#FFF7ED',             color: '#C9882A' },
+  validated:         { label: 'Validated',       bg: 'rgba(10,22,40,0.06)', color: 'var(--navy)' },
   paid:              { label: 'Paid',            bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
   package_generated: { label: 'Package ready',  bg: 'var(--gold-subtle)',  color: 'var(--gold)' },
   submitted:         { label: 'Submitted',       bg: 'var(--success-bg)',   color: 'var(--success)' },
@@ -39,53 +39,110 @@ export default async function ApplicationsPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  const newBtn = (
-    <Link href="/apply" className="btn-navy" style={{ height: 40, padding: '0 16px', fontSize: 14 }}>
-      <Plus size={15} /> New application
-    </Link>
-  )
-
   return (
-    <DashboardShell activePage="applications" pageTitle="Applications" topBarActions={newBtn}>
+    <DashboardShell activePage="applications" pageTitle="Applications">
       {!apps || apps.length === 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <ClipboardList size={32} color="var(--text-tertiary)" />
           </div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 24, color: 'var(--navy)', marginBottom: 10 }}>No applications yet</h2>
-          <p style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 28, maxWidth: 360 }}>
+          <p style={{ fontSize: 15, color: 'var(--text-secondary)', marginBottom: 28, maxWidth: 360, lineHeight: 1.6 }}>
             Ready to start your first application? AVA will use your documents to pre-fill everything.
           </p>
           <Link href="/apply" className="btn-navy"><Plus size={16} /> Start an application</Link>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 720 }}>
-          {apps.map(app => {
-            const s = STATUS_MAP[app.status] ?? { label: app.status, bg: 'var(--surface)', color: 'var(--text-tertiary)' }
-            return (
-              <Link key={app.id} href={getAppHref(app)} style={{ textDecoration: 'none' }}>
-                <div
-                  className="hover:bg-[var(--off-white)] hover:shadow-md transition-all duration-200"
-                  style={{
-                    background: 'white', border: '1px solid var(--border)', borderRadius: 14,
-                    padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 16,
-                    boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: 15, color: 'var(--text-primary)', marginBottom: 3 }}>
-                      {getService(app.service_type)?.name ?? app.service_type}
-                    </p>
-                    <p style={{ fontSize: 13, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                      {new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </p>
+        <div style={{ maxWidth: 720 }}>
+          {/* Section header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>Your applications</p>
+            <Link href="/apply" style={{ fontSize: 13, color: '#C9882A', fontWeight: 500, textDecoration: 'none', fontFamily: 'var(--font-body)' }}>
+              + New application
+            </Link>
+          </div>
+
+          {/* Card grid */}
+          <div className="app-card-grid">
+            {apps.map(app => {
+              const s = STATUS_MAP[app.status] ?? { label: app.status, bg: 'rgba(0,0,0,0.04)', color: 'var(--text-tertiary)' }
+              const isExpert = app.tier === 'human_assisted'
+              const service = getService(app.service_type)
+              const totalSteps = service?.form_steps ?? 13
+              const currentStep = (app.current_step as number | null) ?? 0
+              const progressPct = totalSteps > 0 ? Math.round((currentStep / totalSteps) * 100) : 0
+              const startedAt = new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              const accentColor = isExpert ? '#0F2D52' : '#C9882A'
+              const href = getAppHref(app)
+
+              return (
+                <Link key={app.id} href={href} style={{ textDecoration: 'none' }}>
+                  <div className="app-card" style={{
+                    background: 'white',
+                    border: '0.5px solid var(--border)',
+                    borderLeft: `3px solid ${accentColor}`,
+                    borderRadius: 12,
+                    padding: 16,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                    cursor: 'pointer',
+                    transition: 'box-shadow 150ms ease',
+                  }}>
+                    {/* Row 1 — service name + status */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                        {service?.name ?? app.service_type}
+                      </p>
+                      <span style={{
+                        fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+                        background: s.bg, color: s.color,
+                        padding: '2px 7px', borderRadius: 20,
+                      }}>
+                        {s.label}
+                      </span>
+                    </div>
+
+                    {/* Row 2 — tier + started date */}
+                    <div>
+                      <span style={{
+                        display: 'inline-block',
+                        fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
+                        background: isExpert ? 'rgba(15,45,82,0.08)' : 'var(--gold-subtle)',
+                        color: isExpert ? 'var(--navy)' : 'var(--gold)',
+                        marginBottom: 4,
+                      }}>
+                        {isExpert ? 'Expert Session' : 'Guided'}
+                      </span>
+                      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                        Started {startedAt}
+                      </p>
+                    </div>
+
+                    {/* Row 3 — progress */}
+                    <div>
+                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 5 }}>
+                        {currentStep === 0 ? 'Ready to start' : `Step ${currentStep} of ${totalSteps} · ${progressPct}%`}
+                      </p>
+                      <div style={{ height: 3, background: 'var(--border)', borderRadius: 100 }}>
+                        <div style={{ height: '100%', width: `${progressPct}%`, background: accentColor, borderRadius: 100, transition: 'width 300ms ease' }} />
+                      </div>
+                    </div>
+
+                    {/* Row 4 — CTA button */}
+                    <button style={{
+                      width: '100%', height: 40, borderRadius: 8, border: 'none',
+                      background: accentColor, color: 'white',
+                      fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 12,
+                      cursor: 'pointer', marginTop: 2,
+                    }}>
+                      {isExpert ? 'Prepare →' : 'Continue →'}
+                    </button>
                   </div>
-                  <span className="badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
-                  <ChevronRight size={16} color="var(--text-tertiary)" />
-                </div>
-              </Link>
-            )
-          })}
+                </Link>
+              )
+            })}
+          </div>
         </div>
       )}
     </DashboardShell>

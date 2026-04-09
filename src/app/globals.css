@@ -422,6 +422,19 @@ body {
   }
 }
 
+/* Application cards: 2-col grid on tablet+, single col on mobile */
+.app-card-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 479px) {
+  .app-card-grid { grid-template-columns: 1fr; }
+}
+.app-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10) !important;
+}
+
 /* Landing page grid: 2-col on tablet → 1-col on mobile */
 @media (max-width: 767px) {
   .landing-grid-2 { grid-template-columns: 1fr !important; }
