@@ -73,6 +73,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true })
   }
 
+  // ── Guided → Expert upgrade ───────────────────────────────────────────────────
+  const upgradeType = metadata.upgrade_type
+  const upgradeApplicationId = metadata.application_id
+
+  if (upgradeType === 'guided_to_expert') {
+    if (!upgradeApplicationId) {
+      console.error('Missing application_id for upgrade:', metadata)
+      return NextResponse.json({ received: true })
+    }
+    await supabaseAdmin
+      .from('applications')
+      .update({ tier: 'human_assisted', upgraded_at: new Date().toISOString() })
+      .eq('id', upgradeApplicationId)
+    console.log('Application upgraded to expert:', upgradeApplicationId)
+    return NextResponse.json({ received: true })
+  }
+
   // ── Per-application payment (Guided or Expert Session) ───────────────────────
   if (!userId || !serviceType || !tier) {
     console.error('Missing metadata:', metadata)

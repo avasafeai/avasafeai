@@ -14,6 +14,7 @@ export default function HumanBookingPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [pollingState, setPollingState] = useState<'checking' | 'polling' | 'ready' | 'timeout'>('checking')
   const [bookingConfirmed, setBookingConfirmed] = useState(false)
+  const [showUpgradeBanner, setShowUpgradeBanner] = useState(false)
   const calendlyUrl = process.env.NEXT_PUBLIC_CALENDLY_URL ?? ''
 
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function HumanBookingPage() {
       const params = new URLSearchParams(window.location.search)
       const sessionId = params.get('session_id')
       const appId = params.get('applicationId')
+      if (params.get('upgraded') === 'true') setShowUpgradeBanner(true)
       const svcType = params.get('service_type') ?? sessionStorage.getItem('service_type')
       if (svcType) setServiceType(svcType)
 
@@ -187,6 +189,21 @@ export default function HumanBookingPage() {
       </header>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '40px 24px 80px' }}>
+
+        {/* Upgrade confirmation banner */}
+        {showUpgradeBanner && (
+          <div style={{ background: '#ECFDF5', border: '1px solid rgba(26,107,58,0.25)', borderRadius: 12, padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+            <CheckCircle size={18} color="var(--success)" style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--success)', marginBottom: 4 }}>
+                You have been upgraded to Expert Session
+              </p>
+              <p style={{ fontSize: 13, color: '#276749', lineHeight: 1.5 }}>
+                Your $29 guided payment has been credited. You paid $50 for this upgrade. Book your session below.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Confirmation header */}
         <div style={{ background: 'var(--navy)', borderRadius: 16, padding: '28px 28px', marginBottom: 24, display: 'flex', alignItems: 'flex-start', gap: 16 }}>

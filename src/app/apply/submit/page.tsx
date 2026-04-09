@@ -103,6 +103,9 @@ export default function SubmitPage() {
   const [showHalfway, setShowHalfway] = useState(false)
   const [activeFieldIdx, setActiveFieldIdx] = useState(0)
   const firstFieldRef = useRef<string | null>(null)
+  const [appTier, setAppTier] = useState<string | null>(null)
+  const [applicationId, setApplicationId] = useState<string | null>(null)
+  const [upgrading, setUpgrading] = useState(false)
 
   useEffect(() => {
     const stored = sessionStorage.getItem('form_data')
@@ -113,7 +116,35 @@ export default function SubmitPage() {
     if (progress) {
       try { setConfirmedSections(JSON.parse(progress) as Record<number, boolean>) } catch { /* ignore */ }
     }
+
+    // Load tier to decide whether to show upgrade prompt
+    const urlParams = new URLSearchParams(window.location.search)
+    const appId = urlParams.get('applicationId') ?? sessionStorage.getItem('application_id')
+    if (appId) {
+      setApplicationId(appId)
+      import('@/lib/supabase/client').then(({ createClient }) => {
+        const supabase = createClient()
+        supabase.from('applications').select('tier').eq('id', appId).single()
+          .then(({ data }) => { if (data?.tier) setAppTier(data.tier as string) })
+      })
+    }
   }, [])
+
+  async function handleExpertUpgrade() {
+    if (!applicationId) return
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/create-upgrade-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId }),
+      })
+      const data = await res.json() as { url?: string }
+      if (data.url) window.location.href = data.url
+    } finally {
+      setUpgrading(false)
+    }
+  }
 
   const currentSection = SECTIONS[sectionIdx]
   const textFields = currentSection.fields.filter(f => !f.isDropdown && f.key && !f.key.startsWith('_'))
@@ -248,6 +279,20 @@ export default function SubmitPage() {
       </div>
 
       <div style={{ flex: 1, maxWidth: 640, margin: '0 auto', width: '100%', padding: '24px 24px 80px' }}>
+
+        {/* Subtle upgrade nudge — only for guided tier */}
+        {appTier === 'guided' && (
+          <div style={{ background: 'var(--off-white)', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, border: '0.5px solid var(--border)' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Feeling nervous about the portal?</span>
+            <button
+              onClick={handleExpertUpgrade}
+              disabled={upgrading}
+              style={{ fontSize: 12, color: '#0F2D52', fontWeight: 500, background: 'none', border: 'none', cursor: upgrading ? 'not-allowed' : 'pointer', padding: 0, fontFamily: 'var(--font-body)', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              {upgrading ? 'Redirecting...' : 'Upgrade to Expert Session — $50 →'}
+            </button>
+          </div>
+        )}
 
         {/* AVA note */}
         <div style={{ background: 'white', border: '1px solid var(--border)', borderLeft: '3px solid var(--gold)', borderRadius: 12, padding: '14px 18px', marginBottom: 20, display: 'flex', gap: 10 }}>

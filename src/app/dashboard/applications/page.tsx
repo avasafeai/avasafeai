@@ -76,70 +76,80 @@ export default async function ApplicationsPage() {
               const href = getAppHref(app)
 
               return (
-                <Link key={app.id} href={href} style={{ textDecoration: 'none' }}>
-                  <div className="app-card" style={{
-                    background: 'white',
-                    border: '0.5px solid var(--border)',
-                    borderLeft: `3px solid ${accentColor}`,
-                    borderRadius: 12,
-                    padding: 16,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                    cursor: 'pointer',
-                    transition: 'box-shadow 150ms ease',
-                  }}>
-                    {/* Row 1 — service name + status */}
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.3 }}>
-                        {service?.name ?? app.service_type}
-                      </p>
-                      <span style={{
-                        fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
-                        background: s.bg, color: s.color,
-                        padding: '2px 7px', borderRadius: 20,
-                      }}>
-                        {s.label}
-                      </span>
-                    </div>
+                <div key={app.id} className="app-card" style={{
+                  background: 'white',
+                  border: '0.5px solid var(--border)',
+                  borderLeft: `3px solid ${accentColor}`,
+                  borderRadius: 12,
+                  padding: 16,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  transition: 'box-shadow 150ms ease',
+                }}>
+                  {/* Row 1 — service name + status */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+                      {service?.name ?? app.service_type}
+                    </p>
+                    <span style={{
+                      fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0,
+                      background: s.bg, color: s.color,
+                      padding: '2px 7px', borderRadius: 20,
+                    }}>
+                      {s.label}
+                    </span>
+                  </div>
 
-                    {/* Row 2 — tier + started date */}
-                    <div>
-                      <span style={{
-                        display: 'inline-block',
-                        fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
-                        background: isExpert ? 'rgba(15,45,82,0.08)' : 'var(--gold-subtle)',
-                        color: isExpert ? 'var(--navy)' : 'var(--gold)',
-                        marginBottom: 4,
-                      }}>
-                        {isExpert ? 'Expert Session' : 'Guided'}
-                      </span>
-                      <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                        Started {startedAt}
-                      </p>
-                    </div>
+                  {/* Row 2 — tier + started date */}
+                  <div>
+                    <span style={{
+                      display: 'inline-block',
+                      fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 20,
+                      background: isExpert ? 'rgba(15,45,82,0.08)' : 'var(--gold-subtle)',
+                      color: isExpert ? 'var(--navy)' : 'var(--gold)',
+                      marginBottom: 4,
+                    }}>
+                      {isExpert ? 'Expert Session' : 'Guided'}
+                    </span>
+                    <p style={{ fontSize: 11, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                      Started {startedAt}
+                    </p>
+                  </div>
 
-                    {/* Row 3 — progress */}
-                    <div>
-                      <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 5 }}>
-                        {currentStep === 0 ? 'Ready to start' : `Step ${currentStep} of ${totalSteps} · ${progressPct}%`}
-                      </p>
-                      <div style={{ height: 3, background: 'var(--border)', borderRadius: 100 }}>
-                        <div style={{ height: '100%', width: `${progressPct}%`, background: accentColor, borderRadius: 100, transition: 'width 300ms ease' }} />
-                      </div>
+                  {/* Row 3 — progress */}
+                  <div>
+                    <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 5 }}>
+                      {currentStep === 0 ? 'Ready to start' : `Step ${currentStep} of ${totalSteps} · ${progressPct}%`}
+                    </p>
+                    <div style={{ height: 3, background: 'var(--border)', borderRadius: 100 }}>
+                      <div style={{ height: '100%', width: `${progressPct}%`, background: accentColor, borderRadius: 100, transition: 'width 300ms ease' }} />
                     </div>
+                  </div>
 
-                    {/* Row 4 — CTA button */}
-                    <button style={{
-                      width: '100%', height: 40, borderRadius: 8, border: 'none',
+                  {/* Row 4 — CTA link */}
+                  <Link href={href} style={{ display: 'block', width: '100%', textDecoration: 'none' }}>
+                    <div style={{
+                      width: '100%', height: 40, borderRadius: 8,
                       background: accentColor, color: 'white',
                       fontFamily: 'var(--font-body)', fontWeight: 600, fontSize: 12,
-                      cursor: 'pointer', marginTop: 2,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      marginTop: 2, boxSizing: 'border-box',
                     }}>
                       {isExpert ? 'Prepare →' : 'Continue →'}
-                    </button>
-                  </div>
-                </Link>
+                    </div>
+                  </Link>
+
+                  {/* Upgrade link — guided only */}
+                  {!isExpert && (
+                    <Link
+                      href={`/apply/review?applicationId=${app.id}&upgrade=true`}
+                      style={{ fontSize: 11, color: 'var(--text-tertiary)', textAlign: 'center', display: 'block', textDecoration: 'none', marginTop: 2 }}
+                    >
+                      Want expert help? Upgrade — $50
+                    </Link>
+                  )}
+                </div>
               )
             })}
           </div>

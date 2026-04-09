@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { ReadinessResult, ReadinessCheck } from '@/types/supabase'
-import { CheckCircle, XCircle, Info, ShieldCheck, Lock } from 'lucide-react'
+import { CheckCircle, XCircle, Info, ShieldCheck, Lock, Users } from 'lucide-react'
 import Logo from '@/components/Logo'
 import ReadinessRing from '@/components/ReadinessRing'
 import Link from 'next/link'
@@ -67,6 +67,8 @@ export default function ReviewPage() {
   const [applicationId, setApplicationId] = useState<string | null>(null)
   const [applyingFix, setApplyingFix] = useState<string | null>(null)
   const [isPaidViaStripe, setIsPaidViaStripe] = useState(false)
+  const [appTier, setAppTier] = useState<string | null>(null)
+  const [upgrading, setUpgrading] = useState(false)
 
   const loadValidation = useCallback(async (id: string, fd?: Record<string, string>) => {
     const res = await fetch(`/api/validate-application?application_id=${id}`)
@@ -96,8 +98,11 @@ export default function ReviewPage() {
 
     if (id) {
       const supabase = createClient()
-      supabase.from('applications').select('stripe_payment_id').eq('id', id).single()
-        .then(({ data }) => { if (data?.stripe_payment_id) setIsPaidViaStripe(true) })
+      supabase.from('applications').select('stripe_payment_id, tier').eq('id', id).single()
+        .then(({ data }) => {
+          if (data?.stripe_payment_id) setIsPaidViaStripe(true)
+          if (data?.tier) setAppTier(data.tier as string)
+        })
     }
 
     if (!id) { setLoading(false); return }
@@ -145,10 +150,26 @@ export default function ReviewPage() {
   const isPaid = isPaidViaStripe
   const issueCount = (result?.blockers ?? 0) + (result?.warnings ?? 0)
 
-  // In the new flow, payment always happens before the prepare/form/review screens.
-  // If a user somehow reaches review without a paid application, send them to /apply.
+  // Paywall CTA — unpaid users go to /apply to choose a tier
   function handleUpgrade() {
     router.push('/apply')
+  }
+
+  // Guided → Expert upgrade
+  async function handleExpertUpgrade() {
+    if (!applicationId) return
+    setUpgrading(true)
+    try {
+      const res = await fetch('/api/create-upgrade-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ applicationId }),
+      })
+      const data = await res.json() as { url?: string }
+      if (data.url) window.location.href = data.url
+    } finally {
+      setUpgrading(false)
+    }
   }
 
   return (
@@ -322,6 +343,31 @@ export default function ReviewPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Expert upgrade card — only for guided users with issues */}
+            {appTier === 'guided' && score < 95 && (blockerChecks.length > 0 || warningChecks.length > 0) && (
+              <div style={{ background: 'var(--off-white)', border: '0.5px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                <Users size={20} color="#0F2D52" style={{ flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', marginBottom: 6 }}>
+                    Want an expert to handle this for you?
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 10 }}>
+                    Upgrade to an Expert Session and Siva will guide you through the portal live on a Zoom call. You handle passwords. He handles everything else.
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
+                    You already paid $29 for Guided. Upgrade for just $50 more.
+                  </p>
+                  <button
+                    onClick={handleExpertUpgrade}
+                    disabled={upgrading}
+                    style={{ background: '#0F2D52', color: 'white', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 13, fontWeight: 500, cursor: upgrading ? 'not-allowed' : 'pointer', opacity: upgrading ? 0.6 : 1, fontFamily: 'var(--font-body)' }}
+                  >
+                    {upgrading ? 'Redirecting...' : 'Upgrade to Expert — $50'}
+                  </button>
                 </div>
               </div>
             )}
