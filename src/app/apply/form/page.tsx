@@ -277,62 +277,107 @@ export default function FormPage() {
   const [showResumeBanner, setShowResumeBanner] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormData, string>>>({})
 
-  // Load applicationId from URL params or sessionStorage, then load prefill data and saved progress
+  // Load applicationId from URL params or sessionStorage, then restore progress + prefill
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const urlId = urlParams.get('applicationId')
+    const urlStep = urlParams.get('step')   // passed by getResumeUrl for in-progress apps
     const id = urlId ?? sessionStorage.getItem('application_id')
     setApplicationId(id)
-    if (id) {
-      sessionStorage.setItem('application_id', id)
-      // Restore saved form progress
-      const savedForm = sessionStorage.getItem(`form_progress_${id}`)
-      const savedStep = sessionStorage.getItem(`form_step_${id}`)
-      if (savedForm) {
-        try {
-          const parsed = JSON.parse(savedForm) as Partial<FormData>
-          const hasProgress = Object.values(parsed).some(v => !!v)
-          if (hasProgress) {
-            setForm(prev => ({ ...prev, ...parsed }))
-            setShowResumeBanner(true)
-            if (savedStep) setStep(Math.min(parseInt(savedStep, 10), STEPS.length - 1))
-          }
-        } catch { /* ignore */ }
-      }
-      loadPrefill(id).catch(() => { /* non-fatal */ })
+    if (!id) return
+    sessionStorage.setItem('application_id', id)
+
+    // 1. Try restoring from sessionStorage first (fast, works offline)
+    const savedForm = sessionStorage.getItem(`form_progress_${id}`)
+    const savedStep = sessionStorage.getItem(`form_step_${id}`)
+    let restoredFromSession = false
+
+    if (savedForm) {
+      try {
+        const parsed = JSON.parse(savedForm) as Partial<FormData>
+        const hasProgress = Object.values(parsed).some(v => !!v)
+        if (hasProgress) {
+          setForm(prev => ({ ...prev, ...parsed }))
+          // Prefer URL step param (from getResumeUrl), fall back to saved step
+          const targetStep = urlStep
+            ? Math.min(parseInt(urlStep, 10) - 1, STEPS.length - 1)
+            : savedStep
+              ? Math.min(parseInt(savedStep, 10), STEPS.length - 1)
+              : 0
+          setStep(targetStep)
+          if (targetStep > 0) setShowResumeBanner(true)
+          restoredFromSession = true
+        }
+      } catch { /* ignore */ }
     }
+
+    // 2. If no sessionStorage, apply URL step param regardless (then DB fills form data)
+    if (!restoredFromSession && urlStep) {
+      const targetStep = Math.min(parseInt(urlStep, 10) - 1, STEPS.length - 1)
+      setStep(targetStep)
+      if (targetStep > 0) setShowResumeBanner(true)
+    }
+
+    // 3. Load prefill + saved form_data from DB (fills in answers not in sessionStorage)
+    loadPrefillAndProgress(id).catch(() => { /* non-fatal */ })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function loadPrefill(appId: string) {
+  async function loadPrefillAndProgress(appId: string) {
     const supabase = createClient()
     const { data } = await supabase
       .from('applications')
-      .select('form_data, prefill_sources')
+      .select('form_data, prefill_sources, current_step')
       .eq('id', appId)
       .single()
 
-    if (!data?.form_data) return
+    if (!data) return
 
-    const prefillData = data.form_data as Record<string, string>
     const srcData = (data.prefill_sources as Record<string, string>) ?? {}
 
-    const mapped: Partial<FormData> = {}
-    const src: Partial<Record<keyof FormData, string>> = {}
+    // --- Restore user-entered answers from DB form_data ---
+    // form_data may hold either prefill keys (prefillId format) or direct form keys
+    const rawFormData = (data.form_data as Record<string, unknown>) ?? {}
 
+    // Build prefill-mapped values (from locker data keyed by prefillId)
+    const prefillMapped: Partial<FormData> = {}
+    const src: Partial<Record<keyof FormData, string>> = {}
     for (const m of PREFILL_TO_FORM) {
-      const val = prefillData[m.prefillId]
+      const val = rawFormData[m.prefillId] as string | undefined
       if (val) {
         const transformed = m.transform ? m.transform(val) : val
         if (transformed) {
-          mapped[m.formKey] = transformed
+          prefillMapped[m.formKey] = transformed
           src[m.formKey] = srcData[m.prefillId] ?? 'avasafe'
         }
       }
     }
 
-    setForm(prev => ({ ...prev, ...mapped }))
+    // Build user-entered values (direct form keys saved by saveProgress)
+    const formKeys = Object.keys(INITIAL) as Array<keyof FormData>
+    const userEntered: Partial<FormData> = {}
+    for (const key of formKeys) {
+      const val = rawFormData[key] as string | undefined
+      if (val) userEntered[key] = val
+    }
+
+    // Merge: prefill as base, user-entered answers override (they saved explicitly)
+    setForm(prev => ({ ...prev, ...prefillMapped, ...userEntered }))
     setPrefillSources(src)
+
+    // If sessionStorage was empty and DB has a saved step, jump there + show banner
+    const dbStep = typeof data.current_step === 'number' ? data.current_step : 0
+    if (dbStep > 0) {
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlStep = urlParams.get('step')
+      // Only apply DB step if sessionStorage didn't already restore a step
+      const sessionStep = sessionStorage.getItem(`form_step_${appId}`)
+      if (!sessionStep && !urlStep) {
+        const targetStep = Math.min(dbStep, STEPS.length - 1)
+        setStep(targetStep)
+        setShowResumeBanner(true)
+      }
+    }
   }
 
   function update(key: keyof FormData, value: string) {
@@ -495,7 +540,7 @@ export default function FormPage() {
           {showResumeBanner && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#EEF6FF', border: '1px solid #BFDBFE', borderRadius: 12, padding: '12px 16px', marginBottom: 20, gap: 12 }}>
               <p style={{ fontSize: 13, color: '#1E40AF', fontWeight: 500, margin: 0 }}>
-                Picking up where you left off.
+                Resuming at step {step + 1} of {STEPS.length}. Your previous answers are saved.
               </p>
               <button onClick={() => { setShowResumeBanner(false) }} style={{ fontSize: 12, color: '#1E40AF', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600 }}>
                 Dismiss

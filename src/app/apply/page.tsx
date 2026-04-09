@@ -11,7 +11,7 @@ export default async function ApplyPage() {
 
   const { data: inProgressApps } = await supabase
     .from('applications')
-    .select('id, service_type, tier, current_step, created_at, status')
+    .select('id, service_type, tier, current_step, created_at, status, form_data')
     .eq('user_id', user.id)
     .eq('status', 'in_progress')
     .not('stripe_payment_id', 'is', null)
@@ -32,7 +32,7 @@ export default async function ApplyPage() {
           className="mb-8"
         />
 
-        <ServiceCards inProgressApps={inProgressApps ?? []} />
+        <ServiceCards inProgressApps={(inProgressApps ?? []).map(a => ({ ...a, form_data: (a.form_data as Record<string, unknown> | null) ?? null }))} />
 
         <p style={{ marginTop: 32, fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           Not sure which to choose?{' '}
