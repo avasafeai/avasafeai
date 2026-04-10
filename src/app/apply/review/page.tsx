@@ -8,6 +8,7 @@ import Logo from '@/components/Logo'
 import ReadinessRing from '@/components/ReadinessRing'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { analytics } from '@/lib/analytics'
 
 const FIELD_GROUPS = [
   {
@@ -89,6 +90,18 @@ export default function ReviewPage() {
     sessionStorage.setItem('readiness_score', String(json.data?.score ?? 0))
     sessionStorage.setItem('checks_passed', String(json.data?.checks_passed ?? 0))
     setLoading(false)
+
+    // Fire reviewScreenViewed event
+    const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'
+    const tier = sessionStorage.getItem('user_plan') ?? 'guided'
+    const data = json.data as ReadinessResult | null
+    analytics.reviewScreenViewed({
+      serviceType,
+      readinessScore: data?.score ?? 0,
+      blockerCount: typeof data?.blockers === 'number' ? data.blockers : 0,
+      warningCount: typeof data?.warnings === 'number' ? data.warnings : 0,
+      tier,
+    })
   }, [])
 
   useEffect(() => {
@@ -119,6 +132,8 @@ export default function ReviewPage() {
   async function applyFix(check: ReadinessCheck) {
     if (!check.field || !check.correct_value || !applicationId) return
     setApplyingFix(check.id)
+    const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'
+    analytics.issueFixed({ serviceType, issueId: check.id, fixType: 'inline' })
     const updated = { ...formData, [check.field]: check.correct_value }
     setFormData(updated)
     sessionStorage.setItem('form_data', JSON.stringify(updated))

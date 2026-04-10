@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck } from 'lucide-react'
+import { analytics } from '@/lib/analytics'
 
 const SPLIT_SCREEN_KEY = 'ava_split_screen_done'
 
@@ -21,6 +22,13 @@ export default function CompletePage() {
     setScore(s || 94)
     setChecksPassed(c || 10)
     setIsHumanAssisted(sessionStorage.getItem('user_plan') === 'human_assisted')
+
+    // Fire applicationCompleted event
+    const urlParams = new URLSearchParams(window.location.search)
+    const appId = urlParams.get('applicationId') ?? sessionStorage.getItem('application_id') ?? ''
+    const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'
+    const tier = sessionStorage.getItem('user_plan') === 'human_assisted' ? 'human_assisted' : 'guided'
+    analytics.applicationCompleted({ serviceType, tier, applicationId: appId, readinessScore: s || 94, completionMethod: 'usan' })
 
     // Detect OS
     const p = navigator.userAgent.toLowerCase()

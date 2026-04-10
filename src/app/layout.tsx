@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import AuthStateListener from '@/components/AuthStateListener'
 import Toast from '@/components/Toast'
+import PostHogProvider from '@/providers/PostHogProvider'
+import FeedbackWidget from '@/components/FeedbackWidget'
 
 export const metadata: Metadata = {
   title: 'Avasafe AI | Your OCI card. Your passport renewal. Done.',
@@ -15,7 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AuthStateListener />
         <Toast />
-        {children}
+        <PostHogProvider>
+          {children}
+          <FeedbackWidget triggerLocation="global" autoTriggerMs={120000} />
+        </PostHogProvider>
       </body>
     </html>
   )

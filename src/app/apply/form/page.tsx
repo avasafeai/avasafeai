@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 
 import { CheckCircle } from 'lucide-react'
 import { FIELD_VALIDATORS } from '@/lib/field-validators'
+import { analytics } from '@/lib/analytics'
 
 const VFS_CENTERS: Record<string, string> = {
   CA: 'San Francisco VFS Global',
@@ -329,6 +330,11 @@ export default function FormPage() {
 
     // 3. Load prefill + saved form_data from DB (fills in answers not in sessionStorage)
     loadPrefillAndProgress(id).catch(() => { /* non-fatal */ })
+
+    // Fire formStarted event
+    const urlParams2 = new URLSearchParams(window.location.search)
+    const serviceType = urlParams2.get('serviceType') ?? sessionStorage.getItem('service_type') ?? 'oci_new'
+    analytics.formStarted({ serviceType, applicationId: id })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -460,6 +466,10 @@ export default function FormPage() {
     setStep((s) => {
       const next = s + 1
       saveProgress(form, next)
+      const urlParams = new URLSearchParams(window.location.search)
+      const serviceType = urlParams.get('serviceType') ?? sessionStorage.getItem('service_type') ?? 'oci_new'
+      const wasPreFilled = Object.keys(prefillSources).some(k => !editedFields.has(k as keyof FormData))
+      analytics.formStepCompleted({ serviceType, step: s + 1, totalSteps: STEPS.length, wasPreFilled })
       return next
     })
   }

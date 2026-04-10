@@ -13,6 +13,7 @@ import { CheckCircle, AlertCircle, ChevronRight, ChevronDown, UploadCloud, Refre
 import { validatePhoto } from '@/lib/photo-validator'
 import type { PhotoValidationResult } from '@/lib/photo-validator'
 import Link from 'next/link'
+import { analytics } from '@/lib/analytics'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -221,6 +222,19 @@ export default function PreparePage({ params }: { params: { serviceId: string } 
     } catch { /* use static */ }
 
     setLoading(false)
+
+    // Fire prepareScreenViewed after data is ready
+    if (service) {
+      const allDocs = Object.values(docStatuses)
+      const docsReady = allDocs.filter(s => s.presentInLocker || s.uploadState === 'success').length
+      const docsMissing = allDocs.filter(s => !s.presentInLocker && s.uploadState !== 'success').length
+      analytics.prepareScreenViewed({
+        serviceType: serviceId,
+        prefillCoverage: coverage ?? 0,
+        documentsReady: docsReady,
+        documentsMissing: docsMissing,
+      })
+    }
   }
 
   function onDocUploaded(docType: string, extractedData: Record<string, string>) {

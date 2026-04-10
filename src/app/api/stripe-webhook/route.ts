@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
+import { PostHog } from 'posthog-node'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -128,6 +129,20 @@ export async function POST(req: NextRequest) {
   }
 
   console.log('Application created successfully:', app.id, 'tier:', app.tier, 'service:', app.service_type)
+
+  // Fire server-side paymentCompleted event
+  if (process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    const phClient = new PostHog(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
+      host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com',
+    })
+    const amount = tier === 'human_assisted' ? 79 : 29
+    phClient.capture({
+      distinctId: userId,
+      event: 'payment_completed',
+      properties: { serviceType, tier, amount, applicationId: app.id },
+    })
+    await phClient.shutdown()
+  }
 
   // DO NOT update profile plan for guided/human_assisted —
   // plan only reflects document storage subscription (free/locker)
