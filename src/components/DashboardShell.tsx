@@ -45,7 +45,7 @@ export default async function DashboardShell({
   const isBeta = (profile as { is_beta?: boolean } | null)?.is_beta ?? false
   const betaNumber = (profile as { beta_number?: number | null } | null)?.beta_number ?? null
 
-  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
+  const adminEmails = (process.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim()).filter(Boolean)
   const isAdmin = adminEmails.length > 0 && adminEmails.includes(user?.email ?? '')
 
   return (
