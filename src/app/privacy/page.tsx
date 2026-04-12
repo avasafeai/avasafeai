@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import CopyEmailButton from '@/components/CopyEmailButton'
 
 export const metadata = { title: 'Privacy Policy | Avasafe AI' }
 
@@ -7,7 +8,7 @@ export default function PrivacyPage() {
   return (
     <main style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
       <header style={{ background: 'white', borderBottom: '1px solid var(--border)', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-        <Logo size="sm" href="/" />
+        <Logo size="sm" href="/dashboard" />
       </header>
 
       <article style={{ maxWidth: 680, margin: '0 auto', padding: '56px 24px 100px' }}>
@@ -66,11 +67,11 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="Your rights">
-          <p>You have the right to access, correct, export, or delete any data we hold about you. You can exercise these rights from your account settings, or by emailing us at <a href="mailto:privacy@avasafe.ai" style={{ color: 'var(--gold)', textDecoration: 'none' }}>privacy@avasafe.ai</a>. We will respond within 30 days.</p>
+          <p>You have the right to access, correct, export, or delete any data we hold about you. You can exercise these rights from your account settings, or by emailing us at <CopyEmailButton email="privacy@avasafe.ai" />. We will respond within 30 days.</p>
         </Section>
 
         <Section title="Contact">
-          <p>For any privacy questions, contact us at <a href="mailto:privacy@avasafe.ai" style={{ color: 'var(--gold)', textDecoration: 'none' }}>privacy@avasafe.ai</a>.</p>
+          <p>For any privacy questions, contact us at <CopyEmailButton email="privacy@avasafe.ai" />.</p>
         </Section>
 
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--border)' }}>

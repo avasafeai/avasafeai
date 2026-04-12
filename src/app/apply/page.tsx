@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import AvaMessage from '@/components/AvaMessage'
 import Logo from '@/components/Logo'
 import ServiceCards from './ServiceCards'
+import CopyEmailButton from '@/components/CopyEmailButton'
 
 export default async function ApplyPage() {
   const supabase = createClient()
@@ -20,7 +21,7 @@ export default async function ApplyPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
       <header style={{ height: 64, background: 'white', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-        <Logo size="md" />
+        <Logo size="md" href="/dashboard" />
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>
           Choose service
         </span>
@@ -36,7 +37,7 @@ export default async function ApplyPage() {
 
         <p style={{ marginTop: 32, fontSize: 13, color: 'var(--text-tertiary)', textAlign: 'center' }}>
           Not sure which to choose?{' '}
-          <a href="mailto:support@avasafe.ai" style={{ color: 'var(--gold)', textDecoration: 'none' }}>Ask us</a>
+          <CopyEmailButton email="support@avasafe.ai" label="Ask us" />
         </p>
       </main>
     </div>

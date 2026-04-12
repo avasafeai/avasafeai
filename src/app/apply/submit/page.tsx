@@ -71,11 +71,11 @@ const SECTIONS: SectionDef[] = [
     ],
   },
   {
-    id: 5, name: 'Photo and signature', avaNote: 'Upload your JPEG photo (square, white background, 200x200px min, under 200kb) and your signature image.',
+    id: 5, name: 'Photo and signature', avaNote: 'Upload your JPEG photo (square, white background, 200x200px min, under 1MB) and your signature image.',
     timeNote: 'Takes about 2 minutes',
     fields: [
-      { key: '_photo_req',     label: 'Photo requirements',    portalLabel: 'Photo upload (JPEG, square, white background, min 200x200px, max 200kb)', isDropdown: true, hint: 'Upload from your locker' },
-      { key: '_sig_req',       label: 'Signature requirements', portalLabel: 'Signature (JPEG, aspect ratio 1:3, max 200kb)', isDropdown: true, hint: 'Upload from your locker' },
+      { key: '_photo_req',     label: 'Photo requirements',    portalLabel: 'Photo upload (JPEG, square, white background, min 200x200px, max 1MB)', isDropdown: true, hint: 'Upload from your locker' },
+      { key: '_sig_req',       label: 'Signature requirements', portalLabel: 'Signature (JPEG, aspect ratio 1:3, max 1MB)', isDropdown: true, hint: 'Upload from your locker' },
     ],
   },
 ]

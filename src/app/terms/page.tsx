@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import CopyEmailButton from '@/components/CopyEmailButton'
 
 export const metadata = { title: 'Terms of Service | Avasafe AI' }
 
@@ -7,7 +8,7 @@ export default function TermsPage() {
   return (
     <main style={{ minHeight: '100vh', background: 'var(--off-white)' }}>
       <header style={{ background: 'white', borderBottom: '1px solid var(--border)', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px' }}>
-        <Logo size="sm" href="/" />
+        <Logo size="sm" href="/dashboard" />
       </header>
 
       <article style={{ maxWidth: 680, margin: '0 auto', padding: '56px 24px 100px' }}>
@@ -23,7 +24,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="Your account">
-          <p>You must be 18 or older to create an account. You are responsible for keeping your login credentials secure. You are responsible for all activity that occurs under your account. If you suspect unauthorized access, contact us immediately at <a href="mailto:support@avasafe.ai" style={{ color: 'var(--gold)', textDecoration: 'none' }}>support@avasafe.ai</a>.</p>
+          <p>You must be 18 or older to create an account. You are responsible for keeping your login credentials secure. You are responsible for all activity that occurs under your account. If you suspect unauthorized access, contact us immediately at <CopyEmailButton email="support@avasafe.ai" />.</p>
         </Section>
 
         <Section title="Payments and refunds">
@@ -54,7 +55,7 @@ export default function TermsPage() {
         </Section>
 
         <Section title="Contact">
-          <p>Questions about these terms? Email us at <a href="mailto:legal@avasafe.ai" style={{ color: 'var(--gold)', textDecoration: 'none' }}>legal@avasafe.ai</a>.</p>
+          <p>Questions about these terms? Email us at <CopyEmailButton email="legal@avasafe.ai" />.</p>
         </Section>
 
         <div style={{ marginTop: 48, paddingTop: 24, borderTop: '1px solid var(--border)' }}>

@@ -29,8 +29,8 @@ export const validatePhoto = async (file: File): Promise<PhotoValidationResult> 
       }
 
       const fileSizeKb = Math.round(file.size / 1024)
-      if (fileSizeKb > 200) {
-        issues.push(`File size ${fileSizeKb}kb exceeds 200kb maximum. Please compress the photo.`)
+      if (fileSizeKb > 1000) {
+        issues.push(`File is ${fileSizeKb}kb. Maximum is 1MB. Please compress the photo or take a new one.`)
       }
 
       if (!['image/jpeg', 'image/jpg'].includes(file.type)) {
