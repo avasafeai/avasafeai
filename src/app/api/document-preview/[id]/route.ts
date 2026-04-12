@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getDocumentFile } from '@/lib/storage-helpers'
 
+function sanitizeFilename(name: string): string {
+  return name
+    // Replace unicode spaces and special whitespace with regular space
+    .replace(/[\u00A0\u202F\u2009\u2008\u2007\u2006\u2005\u2004\u2003\u2002\u2001\u200B\uFEFF]/g, ' ')
+    // Remove any remaining non-ASCII characters
+    .replace(/[^\x00-\xFF]/g, '_')
+    // Trim whitespace
+    .trim()
+    // Replace spaces with underscores for cleaner filenames
+    .replace(/\s+/g, '_')
+    // Collapse double underscores
+    .replace(/_+/g, '_')
+}
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -55,9 +69,10 @@ export async function GET(
     }
 
     const mimeType = document.file_type ?? 'application/octet-stream'
-    const filename = document.original_filename ?? `document-${documentId}`
+    const safeFilename = sanitizeFilename(document.original_filename ?? `document-${documentId}`)
+    const encodedFilename = encodeURIComponent(safeFilename)
     const disposition = isDownload
-      ? `attachment; filename="${filename}"`
+      ? `attachment; filename="${safeFilename}"; filename*=UTF-8''${encodedFilename}`
       : 'inline'
 
     return new NextResponse(new Uint8Array(fileBuffer), {
