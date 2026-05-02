@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { LayoutDashboard, FileText, ClipboardList, Bell, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import SidebarSignOut from './SidebarSignOut'
+import { BETA_MODE } from '@/lib/beta'
 
 interface DashboardShellProps {
   children: React.ReactNode
@@ -66,23 +67,30 @@ export default async function DashboardShell({
       >
         {/* Wordmark */}
         <div style={{ padding: '28px 24px 24px' }}>
-          <Link href="/dashboard" aria-label="Avasafe AI" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: 26,
-              lineHeight: 1,
-              letterSpacing: '-0.02em',
-              color: 'white',
-            }}>ava</span>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: 26,
-              lineHeight: 1,
-              letterSpacing: '-0.02em',
-              color: 'var(--gold)',
-            }}>safe</span>
+          <Link href="/dashboard" aria-label="Avasafe AI" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
+              <span style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 26,
+                lineHeight: 1,
+                letterSpacing: '-0.02em',
+                color: 'white',
+              }}>ava</span>
+              <span style={{
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 26,
+                lineHeight: 1,
+                letterSpacing: '-0.02em',
+                color: 'var(--gold)',
+              }}>safe</span>
+            </span>
+            {BETA_MODE && (
+              <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                Beta
+              </span>
+            )}
           </Link>
         </div>
 
@@ -171,9 +179,16 @@ export default async function DashboardShell({
             zIndex: 30,
           }}
         >
-          <Link href="/dashboard" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'white' }}>ava</span>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--gold)' }}>safe</span>
+          <Link href="/dashboard" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 0 }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'white' }}>ava</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 22, color: 'var(--gold)' }}>safe</span>
+            </span>
+            {BETA_MODE && (
+              <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                Beta
+              </span>
+            )}
           </Link>
           {/* Mobile nav: icon-only row */}
           <div className="flex items-center gap-1">
