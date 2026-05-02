@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { BETA_MODE } from '@/lib/beta'
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
@@ -17,7 +18,7 @@ export default function Logo({ size = 'md', className = '', href = '/', onDark =
   const fontSize = sizes[size]
 
   return (
-    <Link href={href} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }} className={className}>
+    <Link href={href} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }} className={className}>
       <span
         style={{
           fontFamily: 'var(--font-display)',
@@ -33,6 +34,11 @@ export default function Logo({ size = 'md', className = '', href = '/', onDark =
         <span style={{ color: onDark ? '#ffffff' : 'var(--navy)' }}>ava</span>
         <span style={{ color: 'var(--gold)' }}>safe</span>
       </span>
+      {BETA_MODE && (
+        <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+          Beta
+        </span>
+      )}
     </Link>
   )
 }

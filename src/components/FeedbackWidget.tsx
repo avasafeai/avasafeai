@@ -109,7 +109,7 @@ export default function FeedbackWidget({ triggerLocation = 'manual', serviceType
   }
 
   const heading = BETA_MODE
-    ? "You're using Avasafe Beta — we'd love your feedback!"
+    ? "You're using Avasafe Beta, we'd love your feedback!"
     : 'How are we doing?'
 
   const subtitle = BETA_MODE
