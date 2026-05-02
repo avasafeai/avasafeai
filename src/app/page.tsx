@@ -454,11 +454,11 @@ function Nav() {
     <div
       style={{
         position: 'sticky',
-        top: 24,
+        top: 16,
         zIndex: 50,
         display: 'flex',
         justifyContent: 'center',
-        padding: '0 24px',
+        padding: '0 12px',
         pointerEvents: 'none',
       }}
     >
@@ -469,7 +469,7 @@ function Nav() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '12px 20px',
+          padding: '10px 16px',
           borderRadius: 100,
           background: scrolled
             ? 'rgba(255,255,255,0.92)'
@@ -497,9 +497,10 @@ function Nav() {
             Pricing
           </Link>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/auth"
+            className="whitespace-nowrap"
             style={{
               fontSize: 14,
               fontWeight: 500,
@@ -510,8 +511,8 @@ function Nav() {
           >
             Sign in
           </Link>
-          <Link href="/auth?mode=signup" className="btn-pill-navy" style={{ padding: '10px 20px', fontSize: 14 }}>
-            Get started free
+          <Link href="/auth?mode=signup" className="btn-pill-navy whitespace-nowrap" style={{ padding: '8px 12px', fontSize: 12 }}>
+            Get started
           </Link>
         </div>
       </nav>

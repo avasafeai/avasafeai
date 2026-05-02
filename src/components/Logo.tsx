@@ -35,7 +35,7 @@ export default function Logo({ size = 'md', className = '', href = '/', onDark =
         <span style={{ color: 'var(--gold)' }}>safe</span>
       </span>
       {BETA_MODE && (
-        <span className="text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+        <span className="text-[10px] sm:text-xs font-medium bg-green-100 text-green-700 px-1.5 sm:px-2 py-0 sm:py-0.5 rounded-full leading-5">
           Beta
         </span>
       )}
