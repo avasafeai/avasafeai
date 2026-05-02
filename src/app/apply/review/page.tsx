@@ -9,6 +9,7 @@ import ReadinessRing from '@/components/ReadinessRing'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { analytics } from '@/lib/analytics'
+import { triggerFeedback } from '@/lib/feedback'
 
 const FIELD_GROUPS = [
   {
@@ -90,6 +91,7 @@ export default function ReviewPage() {
     sessionStorage.setItem('readiness_score', String(json.data?.score ?? 0))
     sessionStorage.setItem('checks_passed', String(json.data?.checks_passed ?? 0))
     setLoading(false)
+    triggerFeedback('review_screen')
 
     // Fire reviewScreenViewed event
     const serviceType = sessionStorage.getItem('service_type') ?? 'oci_new'

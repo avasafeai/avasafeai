@@ -10,6 +10,7 @@ import { createClient } from '@/lib/supabase/client'
 import { CheckCircle } from 'lucide-react'
 import { FIELD_VALIDATORS } from '@/lib/field-validators'
 import { analytics } from '@/lib/analytics'
+import { triggerFeedback } from '@/lib/feedback'
 
 const VFS_CENTERS: Record<string, string> = {
   CA: 'San Francisco VFS Global',
@@ -470,6 +471,7 @@ export default function FormPage() {
       const serviceType = urlParams.get('serviceType') ?? sessionStorage.getItem('service_type') ?? 'oci_new'
       const wasPreFilled = Object.keys(prefillSources).some(k => !editedFields.has(k as keyof FormData))
       analytics.formStepCompleted({ serviceType, step: s + 1, totalSteps: STEPS.length, wasPreFilled })
+      triggerFeedback('section_complete')
       return next
     })
   }

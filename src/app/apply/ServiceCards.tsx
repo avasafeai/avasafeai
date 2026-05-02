@@ -6,6 +6,7 @@ import { Clock, RotateCcw, CheckCircle } from 'lucide-react'
 import { getAvailableServices, getComingSoonServices, getService } from '@/lib/services/registry'
 import { getResumeUrl } from '@/lib/plan-utils'
 import { BETA_MODE, getBetaDisplayPrice } from '@/lib/beta'
+import { triggerFeedback } from '@/lib/feedback'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   oci_new:          () => <span style={{ fontSize: 20 }}>🪪</span>,
@@ -78,6 +79,8 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
 
         const json = await res.json() as { applicationId?: string }
         const appId = json.applicationId
+
+        triggerFeedback('application_created')
 
         if (tier === 'human_assisted') {
           router.push(appId ? `/apply/human?applicationId=${appId}` : '/apply/human')
