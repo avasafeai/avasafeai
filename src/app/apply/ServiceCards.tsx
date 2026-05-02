@@ -164,7 +164,12 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                     {s.fees.government_usd > 0 ? `$${s.fees.government_usd} govt. fee` : 'Govt. fee varies'}
                   </span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>
-                    + $29 Guided / $79 Expert
+                    {BETA_MODE ? (
+                      <>
+                        <span className="line-through text-muted-foreground">$29 Guided / $79 Expert</span>
+                        {' '}<span className="text-green-600 font-medium">Free during Beta</span>
+                      </>
+                    ) : '+ $29 Guided / $79 Expert'}
                   </span>
                 </div>
               </div>
@@ -224,7 +229,12 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       Start {s.short_name}
                     </button>
                     <p style={{ fontSize: 12, color: 'var(--text-tertiary)', textAlign: 'center', marginTop: 8 }}>
-                      Guided $29 · Expert Session $79
+                      {BETA_MODE ? (
+                        <>
+                          <span className="line-through text-muted-foreground">Guided $29 · Expert Session $79</span>
+                          {' '}<span className="text-green-600 font-medium">Free during Beta</span>
+                        </>
+                      ) : 'Guided $29 · Expert Session $79'}
                     </p>
                     {s.processing_weeks && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8 }}>
