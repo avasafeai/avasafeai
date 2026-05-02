@@ -80,9 +80,41 @@ export function getResumeUrl(app: {
   id: string
   service_type: string
   tier?: string | null
+  current_step?: number | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form_data?: Record<string, any> | null
 }): string {
   if (app.tier === 'human_assisted') {
     return `/apply/human?applicationId=${app.id}`
   }
+
+  const step = app.current_step ?? 0
+  const hasFormData = app.form_data != null && Object.keys(app.form_data).length > 0
+
+  // State 1: never started prepare — form_data empty and step 0
+  if (step === 0 && !hasFormData) {
+    return `/apply/prepare/${app.service_type}?applicationId=${app.id}`
+  }
+
+  // State 2: prepare complete, form not yet started (prefill ran, step still 0)
+  if (step === 0 && hasFormData) {
+    return `/apply/form?applicationId=${app.id}`
+  }
+
+  // State 3: in progress on form
+  if (step >= 1 && step <= 13) {
+    return `/apply/form?applicationId=${app.id}&step=${step}`
+  }
+
+  // State 4: completed form — at review
+  if (step === 14) {
+    return `/apply/review?applicationId=${app.id}`
+  }
+
+  // State 5: beyond review — complete/package
+  if (step >= 15) {
+    return `/apply/complete?applicationId=${app.id}`
+  }
+
   return `/apply/prepare/${app.service_type}?applicationId=${app.id}`
 }

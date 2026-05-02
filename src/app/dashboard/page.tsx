@@ -286,7 +286,8 @@ export default async function DashboardPage() {
               const startedAt = new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
               const tier = app.tier as string | null
               const isExpert = tier === 'human_assisted'
-              const resumeUrl = getResumeUrl({ id: app.id, service_type: app.service_type, tier })
+              const appFormData = (app.form_data as Record<string, unknown> | null) ?? null
+              const resumeUrl = getResumeUrl({ id: app.id, service_type: app.service_type, tier, current_step: currentStep, form_data: appFormData })
               return (
                 <div
                   key={app.id}
@@ -323,17 +324,25 @@ export default async function DashboardPage() {
                     </span>
                   </div>
                   <div style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                        {currentStep === 0 ? 'Ready to start' : `Step ${currentStep} of ${totalSteps}`}
-                      </span>
-                      <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
-                        {currentStep === 0 ? 'Tap Resume to begin' : `${progressPct}%`}
-                      </span>
-                    </div>
-                    <div style={{ height: 4, background: 'var(--border)', borderRadius: 100 }}>
-                      <div style={{ height: '100%', background: 'var(--gold)', borderRadius: 100, width: `${progressPct}%` }} />
-                    </div>
+                    {currentStep === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)', marginBottom: 5 }}>
+                        {appFormData && Object.keys(appFormData).length > 0 ? 'Ready to continue' : 'Not started'}
+                      </p>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                            Form progress · Step {currentStep} of {totalSteps}
+                          </span>
+                          <span style={{ fontSize: 12, color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                            {progressPct}%
+                          </span>
+                        </div>
+                        <div style={{ height: 4, background: 'var(--border)', borderRadius: 100 }}>
+                          <div style={{ height: '100%', background: 'var(--gold)', borderRadius: 100, width: `${progressPct}%` }} />
+                        </div>
+                      </>
+                    )}
                   </div>
                   <Link
                     href={resumeUrl}
