@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Clock, RotateCcw, CheckCircle } from 'lucide-react'
 import { getAvailableServices, getComingSoonServices, getService } from '@/lib/services/registry'
 import { getResumeUrl } from '@/lib/plan-utils'
+import { BETA_MODE, getBetaDisplayPrice } from '@/lib/beta'
 
 const ICON_MAP: Record<string, React.ElementType> = {
   oci_new:          () => <span style={{ fontSize: 20 }}>🪪</span>,
@@ -25,6 +26,8 @@ interface InProgressApp {
   current_step: number | null
   created_at: string
   status: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form_data?: Record<string, any> | null
 }
 
 interface ServiceCardsProps {
@@ -61,6 +64,30 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
   async function handleCheckout(serviceType: string, tier: 'guided' | 'human_assisted') {
     setLoadingTier(tier)
     try {
+      if (BETA_MODE) {
+        const res = await fetch('/api/beta-start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serviceType, tier }),
+        })
+
+        if (res.status === 409) {
+          alert('Expert Session slots are full for the beta period. Guided access is still free!')
+          return
+        }
+
+        const json = await res.json() as { applicationId?: string }
+        const appId = json.applicationId
+
+        if (tier === 'human_assisted') {
+          router.push(appId ? `/apply/human?applicationId=${appId}` : '/apply/human')
+        } else {
+          router.push(appId ? `/apply/prepare/${serviceType}?applicationId=${appId}&new=true` : `/apply/prepare/${serviceType}`)
+        }
+        return
+      }
+
+      // Original Stripe flow
       const res = await fetch('/api/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -160,7 +187,8 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                   )}
                 </div>
                 <button
-                  onClick={() => router.push(getResumeUrl({ id: existingApp.id, service_type: s.id, tier: existingApp.tier }))}
+                  onClick={() => router.push(getResumeUrl({ id: existingApp.id, service_type: s.id, tier: existingApp.tier, current_step: existingApp.current_step, form_data: existingApp.form_data }))}
+
                   style={{
                     width: '100%', height: 46, borderRadius: 12, border: 'none',
                     background: 'var(--gold)', color: 'white',
@@ -234,7 +262,15 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       background: '#FDF6EC',
                     }}>
                       <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#C9882A', marginBottom: 6 }}>Guided</p>
-                      <p style={{ fontSize: 22, fontWeight: 600, color: 'var(--navy)', margin: '0 0 2px', fontFamily: 'var(--font-body)' }}>$29</p>
+                      {(() => { const { original, isBeta } = getBetaDisplayPrice('guided'); return isBeta ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span style={{ fontSize: 22, fontWeight: 600, color: '#1A6B3A', fontFamily: 'var(--font-body)' }}>$0</span>
+                          <span style={{ fontSize: 14, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>${original}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, background: '#F0FFF4', color: '#1A6B3A', padding: '2px 6px', borderRadius: 100 }}>Beta — Free</span>
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: 22, fontWeight: 600, color: 'var(--navy)', margin: '0 0 2px', fontFamily: 'var(--font-body)' }}>${original}</p>
+                      )})()}
                       <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 10 }}>one-time</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
                         {GUIDED_FEATURES.map(f => (
@@ -267,7 +303,15 @@ export default function ServiceCards({ inProgressApps }: ServiceCardsProps) {
                       background: 'var(--off-white)',
                     }}>
                       <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0F2D52', marginBottom: 6 }}>Expert Session</p>
-                      <p style={{ fontSize: 22, fontWeight: 600, color: 'var(--navy)', margin: '0 0 2px', fontFamily: 'var(--font-body)' }}>$79</p>
+                      {(() => { const { original, isBeta } = getBetaDisplayPrice('human_assisted'); return isBeta ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                          <span style={{ fontSize: 22, fontWeight: 600, color: '#1A6B3A', fontFamily: 'var(--font-body)' }}>$0</span>
+                          <span style={{ fontSize: 14, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}>${original}</span>
+                          <span style={{ fontSize: 10, fontWeight: 600, background: '#F0FFF4', color: '#1A6B3A', padding: '2px 6px', borderRadius: 100 }}>Beta — Free</span>
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: 22, fontWeight: 600, color: 'var(--navy)', margin: '0 0 2px', fontFamily: 'var(--font-body)' }}>${original}</p>
+                      )})()}
                       <p style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 10 }}>one-time</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
                         {EXPERT_FEATURES.map(f => (
